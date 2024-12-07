@@ -1,16 +1,20 @@
 import { Button, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 
 function LoginView({ onPress }: { onPress: () => void }) {
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+  console.log('apiUrl:', apiUrl);
+
   return (
     <Pressable onPress={onPress} style={styles.container}>
       <LinearGradient
         colors={['#90C590', '#F6EDD9']}
         style={styles.gradient}
-        end={{x: 1, y: .6
-        }}
+        end={{x: 1, y: .6}}
       >
          <Text style={styles.text}>Login Screen</Text>
+         <Text>{apiUrl}</Text>
          <Button title="Login" onPress={onPress} />
       </LinearGradient>
     </Pressable>
