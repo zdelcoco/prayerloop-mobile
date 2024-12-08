@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux';
 import { login } from '../../store/authSlice'; // Adjust this import path as needed
 
-import LoginView from '@/components/ui/LoginView';
+import LoginView from '@/components/login/LoginView';
 
 export default function LoginScreen() {
   const dispatch = useDispatch();
@@ -11,7 +11,7 @@ export default function LoginScreen() {
     dispatch(login());
   };
 
-  return (
+  return (    
     <LoginView onPress={handleLogin} />
   );
 }
