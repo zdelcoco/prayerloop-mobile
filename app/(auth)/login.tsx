@@ -1,17 +1,35 @@
-import { useDispatch } from 'react-redux';
-import { login } from '../../store/authSlice'; // Adjust this import path as needed
-
+import { Text, StyleSheet } from 'react-native';
+import { login, memoizedAuthSelector } from '../../store/authSlice';
 import LoginView from '@/components/login/LoginView';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { RootState } from '../../store/store'; // Adjust the import path as needed
 
 export default function LoginScreen() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
-  const handleLogin = () => {
-    // Dispatch action to set isAuthenticated to true
-    dispatch(login());
+  const { error, status } = useAppSelector(memoizedAuthSelector);
+
+  const handleLogin = (username: string, password: string) => {
+    dispatch(login(username, password));
   };
 
-  return (    
-    <LoginView onPress={handleLogin} />
+  if (status === 'failed') {
+    console.log(error);
+  }
+
+  return (
+    <>
+      <LoginView 
+        onPress={(username: string, password: string) => handleLogin(username, password)} 
+        errorMessage={status === 'failed' && error ? error : undefined} 
+      />      
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+  },
+});

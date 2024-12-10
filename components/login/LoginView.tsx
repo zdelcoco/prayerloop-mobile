@@ -9,14 +9,32 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import Constants from 'expo-constants';
 
-function LoginView({ onPress }: { onPress: () => void }) {
+import MainButton from '../ui/MainButton';
+interface LoginViewProps {
+  onPress: (username: string, password: string) => void;
+  errorMessage?: string;
+}
+function LoginView({ onPress, errorMessage }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showError, setShowError] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+  const onUserNameChange = (text: string) => {
+    setShowError(false);
+    setUsername(text);
+  };
+
+  const onPasswordChange = (text: string) => {
+    setShowError(false);
+    setPassword(text);
+  };
+
+  const onSignIn = () => {
+    setShowError(true);
+    onPress(username, password);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -31,25 +49,33 @@ function LoginView({ onPress }: { onPress: () => void }) {
       >
         <View style={styles.formContainer}>
           <Text style={styles.title}>Welcome!</Text>
-          <Text style={styles.subtitle}>
-            Enter your username and password to get started with prayerloop
-          </Text>
+          {errorMessage && showError ? (
+            <Text style={[styles.subtitle, styles.errorText]}>{errorMessage}</Text>
+          ) : (
+            <Text style={styles.subtitle}>
+              Enter your username and password to get started with prayerloop
+            </Text>
+          )}
 
           <TextInput
             style={styles.input}
             placeholder='Username'
+            placeholderTextColor={'#666'}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={onUserNameChange}
             autoCapitalize='none'
           />
 
           <TextInput
             style={styles.input}
             placeholder='Password'
+            placeholderTextColor={'#666'}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={onPasswordChange}
             secureTextEntry
           />
+
+          {/* {errorMessage && showError && <Text style={styles.errorText}>{errorMessage}</Text>} */}
 
           <View style={styles.optionsRow}>
             <View style={styles.rememberMe}>
@@ -63,10 +89,12 @@ function LoginView({ onPress }: { onPress: () => void }) {
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </Pressable>
           </View>
-
-          <Pressable style={styles.signInButton} onPress={onPress}>
-            <Text style={styles.signInText}>Sign In</Text>
-          </Pressable>
+          <MainButton
+            title='Sign In'
+            onPress={onSignIn}
+            accessibilityLabel='Sign In to your account'
+            buttonStyle={styles.signInButton}
+          />
         </View>
       </LinearGradient>
     </KeyboardAvoidingView>
@@ -135,23 +163,20 @@ const styles = StyleSheet.create({
   rememberText: {
     color: '#666',
     fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular'
+    fontFamily: 'InstrumentSans-Regular',
   },
   forgotPassword: {
     color: '#008000',
     fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular'
+    fontFamily: 'InstrumentSans-Regular',
   },
   signInButton: {
     backgroundColor: '#008000',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+    marginTop: 20,
   },
-  signInText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
+  errorText: {
+    color: 'red',
+    paddingBottom: 18,
   },
 });
 
