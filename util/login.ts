@@ -18,7 +18,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
     const url = `${BASE_API_URL}:${BASE_API_PORT}/login`;
     const response = await axios.post(url, { username, password });
 
-    const userResponse = {
+    const loginResponse = {
       token: response.data.token,
       userProfileId: response.data.user.userProfileId,
       username: response.data.user.username,
@@ -27,7 +27,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
       lastName: response.data.user.lastName
     }
 
-    return { success: true, data: userResponse };
+    return { success: true, data: loginResponse };
     
   } catch (error) {
     if (axios.isAxiosError(error)) {
