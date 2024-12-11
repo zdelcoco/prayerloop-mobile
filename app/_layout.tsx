@@ -6,7 +6,7 @@ import { useFonts } from 'expo-font';
 import store from '../store/store';
 
 function RootLayoutNav() {
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
   const router = useRouter();
   
   useEffect(() => {

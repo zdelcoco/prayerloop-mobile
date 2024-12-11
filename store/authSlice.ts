@@ -3,13 +3,9 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 import { loginUser } from '../util/login';
 
-
-// Define types
 interface User {
-  // Define user properties here
   id: string;
   username: string;
-  // Add other user properties as needed
 }
 
 interface AuthState {
@@ -19,7 +15,6 @@ interface AuthState {
   error: string | null;
 }
 
-// Define initial state
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
@@ -27,7 +22,6 @@ const initialState: AuthState = {
   error: null,
 };
 
-// Create the slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -52,10 +46,8 @@ const authSlice = createSlice({
   },
 });
 
-// Export actions
 export const { loginStart, loginSuccess, loginFailure, logoutSuccess } = authSlice.actions;
 
-// Define AppThunk type
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   RootState,
@@ -63,7 +55,6 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   PayloadAction<any>
 >;
 
-// Async thunk action
 export const login = (username: string, password: string): AppThunk => async (dispatch) => {
   dispatch(loginStart());
   try {
@@ -78,12 +69,10 @@ export const login = (username: string, password: string): AppThunk => async (di
   }
 };
 
-// Sync action
 export const logout = (): AppThunk => (dispatch) => {
   dispatch(logoutSuccess());
 };
 
-// Selector
 export const selectAuthState = (state: RootState) => state.auth;
 
 export const memoizedAuthSelector = createSelector(selectAuthState, (auth) => ({

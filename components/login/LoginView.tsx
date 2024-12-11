@@ -75,8 +75,6 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
             secureTextEntry
           />
 
-          {/* {errorMessage && showError && <Text style={styles.errorText}>{errorMessage}</Text>} */}
-
           <View style={styles.optionsRow}>
             <View style={styles.rememberMe}>
               <Pressable

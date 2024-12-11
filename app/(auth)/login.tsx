@@ -1,8 +1,7 @@
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { login, memoizedAuthSelector } from '../../store/authSlice';
 import LoginView from '@/components/login/LoginView';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { RootState } from '../../store/store'; // Adjust the import path as needed
 
 export default function LoginScreen() {
   const dispatch = useAppDispatch();
