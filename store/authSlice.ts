@@ -4,8 +4,12 @@ import { RootState } from './store';
 import { loginUser } from '../util/login';
 
 interface User {
-  id: string;
+  token: string;
+  userProfileId: string;
   username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface AuthState {
