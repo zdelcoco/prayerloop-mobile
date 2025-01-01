@@ -4,6 +4,7 @@ import { RootState } from './store';
 import { loginUser } from '../util/login';
 
 import { LoginResponse, User } from '../util/login.types';
+import { clearUserPrayers } from './userPrayersSlice';
 
 interface AuthState {
   user: User | null;
@@ -41,7 +42,7 @@ const authSlice = createSlice({
     logoutSuccess: (state) => {
       state.user = null;
       state.status = 'idle';
-      state.isAuthenticated = false;
+      state.isAuthenticated = false;      
     },
   },
 });
@@ -71,6 +72,7 @@ export const login = (username: string, password: string): AppThunk => async (di
 
 export const logout = (): AppThunk => (dispatch) => {
   dispatch(logoutSuccess());
+  dispatch(clearUserPrayers());
 };
 
 export const selectAuthState = (state: RootState) => state.auth;

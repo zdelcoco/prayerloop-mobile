@@ -1,46 +1,48 @@
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
-import { LoginResponse } from './login.types';
+import { GetUserPrayersResponse } from './getUserPrayers.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
-export const loginUser = async (username: string, password: string): Promise<Result> => {
-  if (username === '' || password === '') {
+export const getUserPrayers = async (token: string, userProfileId: number): Promise<Result> => {
+  if (!token) {
     return {
       success: false,
       error: {
-        type: 'InvalidInput',
-        message: 'Username and password are required',
+        type: 'Unauthorized',
+        message: 'Unauthorized access. Please log in.',
       },
     };
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/login`;
-    const response = await axios.post(url, { username, password });
+    const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/prayers`; 
+    const response = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-    const loginResponse: LoginResponse = {
+    const prayersResponse: GetUserPrayersResponse = {
       message: response.data.message,
-      token: response.data.token,
-      user: response.data.user
-    }
+      prayers: response.data.prayers,
+    };
 
-    return { success: true, data: loginResponse };
-    
+    return { success: true, data: prayersResponse };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
-      
+
       if (axiosError.response) {
         if (axiosError.response.status === 401) {
           return {
             success: false,
             error: {
-              type: 'InvalidCredentials',
-              message: 'Invalid username or password',
+              type: 'Unauthorized',
+              message: 'Unauthorized access. Please log in.',
             },
           };
         } else if (axiosError.response.status >= 500) {
@@ -62,9 +64,13 @@ export const loginUser = async (username: string, password: string): Promise<Res
         };
       }
     }
+
     return {
       success: false,
-      error: { type: 'UnknownError', message: 'An unknown error occurred.' },
+      error: {
+        type: 'UnknownError',
+        message: 'An unknown error occurred. Please try again later.',
+      },
     };
   }
 };
