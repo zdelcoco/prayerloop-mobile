@@ -1,3 +1,4 @@
+import React from 'react';
 import { StyleSheet } from 'react-native';
 import { login, memoizedAuthSelector } from '../../store/authSlice';
 import LoginView from '@/components/login/LoginView';
