@@ -3,17 +3,11 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 import { loginUser } from '../util/login';
 
-interface User {
-  token: string;
-  userProfileId: string;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}
+import { LoginResponse, User } from '../util/login.types';
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
@@ -21,6 +15,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
+  token: null,
   isAuthenticated: false,
   status: 'idle',
   error: null,
@@ -33,10 +28,11 @@ const authSlice = createSlice({
     loginStart: (state) => {
       state.status = 'loading';
     },
-    loginSuccess: (state, action: PayloadAction<User>) => {
+    loginSuccess: (state, action: PayloadAction<LoginResponse>) => {
       state.status = 'succeeded';
       state.isAuthenticated = true;
-      state.user = action.payload;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.status = 'failed';

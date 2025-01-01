@@ -36,7 +36,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name='cards'
         options={{
-          title: 'Cards',
+          title: 'Prayer Cards',
+          tabBarLabel: 'Cards',
           tabBarIcon: ({ focused, color, size}) => (
             <FontAwesome
               name='vcard'
@@ -49,10 +50,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name='userProfile'
         options={{
-          title: 'Profile',
+          title: 'Home',
           tabBarIcon: ({ focused, color, size}) => (
             <FontAwesome
-              name='user'
+              name='home'
               size={size}
               color={color}
             />

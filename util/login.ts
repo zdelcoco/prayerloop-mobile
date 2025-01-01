@@ -1,30 +1,30 @@
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
-import { LoginError } from '../app/(auth)/shared.types';
-
-interface LoginResponse {
-  success: boolean;
-  data?: any;
-  error?: LoginError;
-}
+import { LoginResponse, LoginResult } from './login.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
-export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  try {
+export const loginUser = async (username: string, password: string): Promise<LoginResult> => {
+  if (username === '' || password === '') {
+    return {
+      success: false,
+      error: {
+        type: 'InvalidInput',
+        message: 'Username and password are required',
+      },
+    };
+  }
 
+  try {
     const url = `${BASE_API_URL}:${BASE_API_PORT}/login`;
     const response = await axios.post(url, { username, password });
 
-    const loginResponse = {
+    const loginResponse: LoginResponse = {
+      message: response.data.message,
       token: response.data.token,
-      userProfileId: response.data.user.userProfileId,
-      username: response.data.user.username,
-      email: response.data.user.email,
-      firstName: response.data.user.firstName,
-      lastName: response.data.user.lastName
+      user: response.data.user
     }
 
     return { success: true, data: loginResponse };
