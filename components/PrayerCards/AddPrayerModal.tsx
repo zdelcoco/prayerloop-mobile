@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Platform,
   Switch,
+  Alert,
 } from 'react-native';
 
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
@@ -28,57 +29,70 @@ export default function AddPrayerModal({
   const [prayerDescription, setPrayerDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
 
-  const onPrayerTitleChange = (text: string) => setPrayerTitle(text);
-  const onPrayerDescriptionChange = (text: string) =>
-    setPrayerDescription(text);
-  const onIsPrivateChange = (value: boolean) => setIsPrivate(value);
+  const onPrayerTitleChange = useCallback((text: string) => setPrayerTitle(text), []);
+  const onPrayerDescriptionChange = useCallback(
+    (text: string) => setPrayerDescription(text),
+    []
+  );
+  const onIsPrivateChange = useCallback((value: boolean) => setIsPrivate(value), []);
 
-  const addPrayer = () => {
-    const prayerData: CreateUserPrayerRequest = {
-      title: prayerTitle,
-      prayerDescription,
-      isPrivate,
-      prayerType: 'general',
-    };
-    onAddPrayer(prayerData);
+  const resetForm = useCallback(() => {
     setPrayerTitle('');
     setPrayerDescription('');
     setIsPrivate(false);
-    onClose();
-  };
+  }, []);
 
-  const cancelAddPrayer = () => {
-    setPrayerTitle('');
-    setPrayerDescription('');
-    setIsPrivate(false);
+  const addPrayer = useCallback(() => {
+    if (!prayerTitle.trim() || !prayerDescription.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    try {
+      const prayerData: CreateUserPrayerRequest = {
+        title: prayerTitle.trim(),
+        prayerDescription: prayerDescription.trim(),
+        isPrivate,
+        prayerType: 'general',
+      };
+      onAddPrayer(prayerData);
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error('Error adding prayer:', error);
+      Alert.alert('Error', 'Something went wrong while adding the prayer.');
+    }
+  }, [prayerTitle, prayerDescription, isPrivate, onAddPrayer, onClose, resetForm]);
+
+  const cancelAddPrayer = useCallback(() => {
+    resetForm();
     onClose();
-  }
+  }, [resetForm, onClose]);
 
   return (
     <Modal
-      animationType='fade'
-      transparent={true}
+      animationType="fade"
+      transparent
       visible={visible}
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalOverlay}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <View style={styles.modalContainer}>
           <Text style={styles.modalTitle}>Add a New Prayer</Text>
           <TextInput
             style={styles.input}
-            placeholder='Enter prayer title'
-            placeholderTextColor='#888'
+            placeholder="Enter prayer title"
+            placeholderTextColor="#888"
             value={prayerTitle}
             onChangeText={onPrayerTitleChange}
           />
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder='Enter prayer details'
-            placeholderTextColor='#888'
+            placeholder="Enter prayer details"
+            placeholderTextColor="#888"
             value={prayerDescription}
             onChangeText={onPrayerDescriptionChange}
             multiline
@@ -97,8 +111,13 @@ export default function AddPrayerModal({
               <Text style={styles.buttonText}>Cancel</Text>
             </Pressable>
             <Pressable
-              style={[styles.button, styles.addButton]}
+              style={[
+                styles.button,
+                styles.addButton,
+                // (!prayerTitle || !prayerDescription) && styles.disabledButton,
+              ]}
               onPress={addPrayer}
+              disabled={!prayerTitle || !prayerDescription}
             >
               <Text style={styles.buttonText}>Add</Text>
             </Pressable>
@@ -114,7 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   modalContainer: {
     width: '90%',
@@ -172,6 +191,9 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#008000',
+  },
+  disabledButton: {
+    backgroundColor: '#aaa',
   },
   buttonText: {
     color: '#fff',

@@ -21,7 +21,7 @@ export default function PrayerCards({ prayers }: PrayerCardsProps) {
   return (
     <FlatList
       data={prayers}
-      keyExtractor={(item, index) => index.toString()}
+      keyExtractor={(item) => item.prayerId.toString()}
       renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
     />
