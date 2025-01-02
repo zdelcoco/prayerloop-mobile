@@ -48,7 +48,6 @@ export default function TabsLayout() {
             <FontAwesome
               name='sign-out'
               size={ms(24)}
-              color={'#F1FDED'}
               onPress={logoutHandler}
               style={{ marginRight: 16 }}
             />

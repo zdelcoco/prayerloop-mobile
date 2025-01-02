@@ -10,6 +10,8 @@ import { Dimensions } from 'react-native';
 
 import type { Prayer } from '@/util/getUserPrayers.types';
 
+import PrayerCards from '@/components/ui/PrayerCards';
+
 const renderItem: ListRenderItem<Prayer> = ({ item }) => (
   <Card
     title={item.title}
@@ -52,20 +54,7 @@ export default function Cards() {
         {!prayers || prayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
         ) : (
-          <FlatList
-            data={prayers}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <Card
-                title={item.title}
-                createdDate={item.datetimeCreate}
-                answered={item.isAnswered}
-              >
-                <Text>{item.prayerDescription}</Text>
-              </Card>
-            )}
-            contentContainerStyle={styles.listContainer}
-          />
+          <PrayerCards prayers={prayers} />
         )}
       </View>
     </LinearGradient>
@@ -76,9 +65,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
-  },
-  listContainer: {
-    paddingBottom: 24,
   },
   text: {
     color: '#000',
