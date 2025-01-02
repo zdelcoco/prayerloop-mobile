@@ -6,6 +6,8 @@ const config: ExpoConfig = {
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
+  scheme: "prayerloop",
+  newArchEnabled: true,
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",

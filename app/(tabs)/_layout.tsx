@@ -3,7 +3,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useAppDispatch } from '@/hooks/redux';
 import { logout } from '@/store/authSlice';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 
 import Colors from '@/constants/Colors';
 
@@ -15,7 +15,7 @@ export default function TabsLayout() {
   };
 
   function ms(size: number): number {
-    const scale = 1.2; // Example scale factor
+    const scale = 1.2;
     return Math.round(size * scale);
   }
   const SCREEN_HEIGHT = Dimensions.get('window').height;

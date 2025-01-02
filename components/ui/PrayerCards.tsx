@@ -18,20 +18,11 @@ const renderItem: ListRenderItem<Prayer> = ({ item }) => (
 );
 
 export default function PrayerCards({ prayers }: PrayerCardsProps) {
-  console.log(prayers);
   return (
     <FlatList
       data={prayers}
       keyExtractor={(item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <Card
-          title={item.title}
-          createdDate={item.datetimeCreate}
-          answered={item.isAnswered ?? false}
-        >
-          <Text>{item.prayerDescription}</Text>
-        </Card>
-      )}
+      renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
     />
   );

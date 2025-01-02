@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, FlatList, ListRenderItem, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchUserPrayers } from '@/store/userPrayersSlice';
+import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
 import { RootState } from '../../store/store';
 import Card from '@/components/ui/PrayerCard';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -10,19 +10,15 @@ import { Dimensions } from 'react-native';
 
 import type { Prayer } from '@/util/getUserPrayers.types';
 
-import PrayerCards from '@/components/ui/PrayerCards';
+import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
-const renderItem: ListRenderItem<Prayer> = ({ item }) => (
-  <Card
-    title={item.title}
-    createdDate={item.datetimeCreate}
-    answered={item.isAnswered}
-  >
-    <Text>{item.prayerDescription}</Text>
-  </Card>
-);
+import PrayerCards from '@/components/ui/PrayerCards';
+import AddButton from '@/components/ui/AddButton';
+import AddPrayerModal from '@/components/PrayerCards/AddPrayerModal';
 
 export default function Cards() {
+  const [modalVisible, setModalVisible] = useState(false);
+
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
@@ -41,6 +37,16 @@ export default function Cards() {
     }
   }, [dispatch, user, isAuthenticated, status]);
 
+  const onAddPressHandler = () => {
+    toggleModal();
+  };
+
+  const onAddPrayerHandler = (prayerData: CreateUserPrayerRequest) => {
+    dispatch(addUserPrayer(prayerData));
+  };
+
+  const toggleModal = () => setModalVisible(!modalVisible);
+
   return (
     <LinearGradient
       colors={['#90c590', '#ffffff']}
@@ -57,6 +63,12 @@ export default function Cards() {
           <PrayerCards prayers={prayers} />
         )}
       </View>
+      <AddPrayerModal
+        visible={modalVisible}
+        onAddPrayer={onAddPrayerHandler}
+        onClose={toggleModal}
+      />
+      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }

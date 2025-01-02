@@ -6,15 +6,18 @@ import {
   View,
   TextInput,
   Platform,
+  Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
 import MainButton from '../ui/MainButton';
+
 interface LoginViewProps {
   onPress: (username: string, password: string) => void;
   errorMessage?: string;
 }
+
 function LoginView({ onPress, errorMessage }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +53,9 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
         <View style={styles.formContainer}>
           <Text style={styles.title}>Welcome!</Text>
           {errorMessage && showError ? (
-            <Text style={[styles.subtitle, styles.errorText]}>{errorMessage}</Text>
+            <Text style={[styles.subtitle, styles.errorText]}>
+              {errorMessage}
+            </Text>
           ) : (
             <Text style={styles.subtitle}>
               Enter your username and password to get started with prayerloop
@@ -77,15 +82,14 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
 
           <View style={styles.optionsRow}>
             <View style={styles.rememberMe}>
-              <Pressable
-                style={[styles.checkbox, rememberMe && styles.checked]}
-                onPress={() => setRememberMe(!rememberMe)}
-              />
-              <Text style={styles.rememberText}>Remember me?</Text>
+              <Text style={styles.rememberText}>Remember Me</Text>
             </View>
-            <Pressable onPress={() => console.log('Forgot password')}>
-              <Text style={styles.forgotPassword}>Forgot Password?</Text>
-            </Pressable>
+            <Switch
+              value={rememberMe}
+              onValueChange={(value) => setRememberMe(value)}
+              thumbColor={rememberMe ? '#white' : 'white'}
+              trackColor={{ false: '#ccc', true: '#008000' }}
+            />
           </View>
           <MainButton
             title='Sign In'
@@ -137,31 +141,21 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
   },
   optionsRow: {
+    paddingTop: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 8,
   },
   rememberMe: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: '#666',
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  checked: {
-    backgroundColor: '#008000',
-    borderColor: '#008000',
-  },
   rememberText: {
     color: '#666',
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+    marginLeft: 8,
   },
   forgotPassword: {
     color: '#008000',
