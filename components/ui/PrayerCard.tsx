@@ -34,7 +34,7 @@ const Card = ({ title, children, onPress, style, answered, createdDate }: CardPr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#F1FDED',
     borderRadius: 10,
     padding: 16,
     marginVertical: 8,

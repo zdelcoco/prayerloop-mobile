@@ -1,21 +1,30 @@
 import React, { useEffect } from 'react';
-import { Text, FlatList } from 'react-native';
+import { Text, FlatList, ListRenderItem, View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers } from '@/store/userPrayersSlice';
 import { RootState } from '../../store/store';
 import Card from '@/components/ui/PrayerCard';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { Dimensions } from 'react-native';
 
-const renderItem = ({ item }) => (
+import type { Prayer } from '@/util/getUserPrayers.types';
+
+const renderItem: ListRenderItem<Prayer> = ({ item }) => (
   <Card
     title={item.title}
-    createdDate={item.createdDate}
-    answered={item.answered}
+    createdDate={item.datetimeCreate}
+    answered={item.isAnswered}
   >
     <Text>{item.prayerDescription}</Text>
   </Card>
 );
 
 export default function Cards() {
+  const headerHeight = useHeaderHeight();
+  const screenHeight = Dimensions.get('window').height;
+  const headerGradientEnd = headerHeight / screenHeight;
+
   const dispatch = useAppDispatch();
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.userPrayers
@@ -30,15 +39,51 @@ export default function Cards() {
     }
   }, [dispatch, user, isAuthenticated, status]);
 
-  if (status === 'loading') return <Text>Loading...</Text>;
-  if (error) return <Text>Error: {error}</Text>;
-  if (!prayers || prayers.length === 0) return <Text>No prayers found</Text>;
-
   return (
-    <FlatList
-      data={prayers}
-      keyExtractor={(item, index) => index.toString()}
-      renderItem={renderItem}
-    />
+    <LinearGradient
+      colors={['#90c590', '#ffffff']}
+      style={StyleSheet.absoluteFillObject}
+      start={{ x: 0, y: headerGradientEnd }}
+      end={{ x: 0, y: 1 }}
+    >
+      <View style={[{ paddingTop: headerHeight }, styles.container]}>
+        {status === 'loading' && <Text style={styles.text}>Loading...</Text>}
+        {error && <Text style={styles.text}>Error: {error}</Text>}
+        {!prayers || prayers.length === 0 ? (
+          <Text style={styles.text}>No prayers found</Text>
+        ) : (
+          <FlatList
+            data={prayers}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <Card
+                title={item.title}
+                createdDate={item.datetimeCreate}
+                answered={item.isAnswered}
+              >
+                <Text>{item.prayerDescription}</Text>
+              </Card>
+            )}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+      </View>
+    </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: 'relative',
+  },
+  listContainer: {
+    paddingBottom: 20,
+    flex: 1,
+  },
+  text: {
+    color: '#000',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+});
