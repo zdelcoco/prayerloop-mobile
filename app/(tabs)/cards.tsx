@@ -78,8 +78,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   listContainer: {
-    paddingBottom: 20,
-    flex: 1,
+    paddingBottom: 24,
   },
   text: {
     color: '#000',
