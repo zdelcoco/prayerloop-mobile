@@ -42,14 +42,14 @@ const styles = StyleSheet.create({
     transform: [{ scale: 2 }],
   },
   container: {
-    paddingTop: 20,
+    paddingTop: 48,
     paddingBottom: 30,
     paddingHorizontal: 60,
     borderRadius: 8,
     alignItems: 'center',
   },
   text: {
-    marginTop: 24,
+    marginTop: 48,
     fontSize: 24,
     color: '#b2d8b2',
     fontFamily: 'InstrumentSans-SemiBold',

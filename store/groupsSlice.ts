@@ -4,6 +4,7 @@ import { RootState } from './store';
 import { getUserGroups } from '@/util/getUserGroups';
 
 import { Group } from '@/util/getUserGroups.types';
+import { clearGroupPrayers } from './groupPrayersSlice';
 
 interface UserGroupsState {
   groups: Group[] | null;
@@ -68,6 +69,7 @@ export const fetchUserGroups = (): AppThunk => async (dispatch, getState) => {
     return;
   }
 
+  dispatch(clearGroupPrayers());
   dispatch(getUserGroupsStart());
 
   try {

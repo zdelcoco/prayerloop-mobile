@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Text, FlatList, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
@@ -15,6 +15,7 @@ import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import AddButton from '@/components/ui/AddButton';
 import AddPrayerModal from '@/components/PrayerCards/AddPrayerModal';
+import { useFocusEffect } from 'expo-router';
 
 export default function Cards() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -33,11 +34,11 @@ export default function Cards() {
     (state: RootState) => state.auth
   );
 
-  useEffect(() => {
-    if (isAuthenticated && status === 'idle') {
-      dispatch(fetchUserPrayers());
-    }
-  }, [dispatch, user, isAuthenticated, status]);
+  const fetchData = useCallback(() => {
+    dispatch(fetchUserPrayers());
+  }, [dispatch]);
+
+  useFocusEffect(fetchData);
 
   const onAddPressHandler = () => {
     toggleModal();

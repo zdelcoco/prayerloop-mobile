@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Text, View, StyleSheet, FlatList } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,9 +12,20 @@ import type { Group } from '@/util/getUserGroups.types';
 
 import GroupCard from '@/components/Groups/GroupCard';
 import LoadingModal from '@/components/ui/LoadingModal';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { clearGroupPrayers } from '@/store/groupPrayersSlice';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+
+type GroupPrayersRouteParams = {
+  group: string; // Serialized group
+};
 
 export default function Groups() {
+  const navigation = useNavigation();
+  const route =
+    useRoute<
+      RouteProp<{ GroupPrayers: GroupPrayersRouteParams }, 'GroupPrayers'>
+    >();
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef<FlatList<Group>>(null);
 
@@ -30,11 +41,12 @@ export default function Groups() {
     (state: RootState) => state.auth
   );
 
-  useEffect(() => {
-    if (isAuthenticated && status === 'idle') {
-      dispatch(fetchUserGroups());
-    }
-  }, [dispatch, user, isAuthenticated, status]);
+  const fetchData = useCallback(() => {
+    dispatch(clearGroupPrayers());
+    dispatch(fetchUserGroups());
+  }, [route, navigation]);
+
+  useFocusEffect(fetchData);
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -54,7 +66,7 @@ export default function Groups() {
 
   const onPressHandler = (groupId: number) => {
     const group = groups!.find((g) => g.groupId === groupId);
-  
+
     if (group) {
       router.push({
         pathname: '/groups/GroupPrayers',
@@ -62,7 +74,6 @@ export default function Groups() {
       });
     }
   };
-  
 
   const statusOverride = false;
 
