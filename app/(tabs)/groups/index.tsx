@@ -12,6 +12,7 @@ import type { Group } from '@/util/getUserGroups.types';
 
 import GroupCard from '@/components/Groups/GroupCard';
 import LoadingModal from '@/components/ui/LoadingModal';
+import { router } from 'expo-router';
 
 export default function Groups() {
   const [refreshing, setRefreshing] = useState(false);
@@ -36,12 +37,12 @@ export default function Groups() {
   }, [dispatch, user, isAuthenticated, status]);
 
   const onRefresh = async () => {
-    if (refreshing) return; // Prevent duplicate refresh triggers
+    if (refreshing) return;
     setRefreshing(true);
     try {
       await dispatch(fetchUserGroups());
     } catch (error) {
-      console.error("Failed to refresh groups:", error);
+      console.error('Failed to refresh groups:', error);
     } finally {
       setRefreshing(false);
       // Use a timeout to ensure that scrollToOffset doesn't conflict with FlatList's internal logic
@@ -50,6 +51,18 @@ export default function Groups() {
       }, 100); // 100ms delay to avoid conflicts
     }
   };
+
+  const onPressHandler = (groupId: number) => {
+    const group = groups!.find((g) => g.groupId === groupId);
+  
+    if (group) {
+      router.push({
+        pathname: '/groups/GroupPrayers',
+        params: { group: JSON.stringify(group) }, // Serialize group object
+      });
+    }
+  };
+  
 
   const statusOverride = false;
 
@@ -60,18 +73,21 @@ export default function Groups() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
-      <LoadingModal visible={status === 'loading' || statusOverride} message="Loading groups..." />
+      <LoadingModal
+        visible={status === 'loading' || statusOverride}
+        message='Loading groups...'
+      />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         <FlatList
           ref={flatListRef}
           data={groups}
-          keyExtractor={(item) => item.groupId.toString()} // Adjusted to use `groupId` if available
+          keyExtractor={(item) => item.groupId.toString()}
           renderItem={({ item }) => (
             <GroupCard
               title={item.groupName}
               description={item.groupDescription}
               members={'render group members here'}
-              onPress={() => console.log(`Pressed: ${item.groupName}`)}
+              onPress={() => onPressHandler(item.groupId)}
             />
           )}
           initialNumToRender={10}

@@ -13,20 +13,15 @@ interface GroupCardProps {
   title: string;
   description: string;
   members: string;
-  onPress?: () => void;
+  onPress: () => void;
   style?: object;
 }
 
 const GroupCard = ({ title, description, members, onPress, style }: GroupCardProps) => {
   const animatedValue = new Animated.Value(0);
-  const handlePress = () => {
-    if (onPress) {
-      onPress();
-    }
-  };
 
   return (
-    <Pressable onPress={handlePress} style={[styles.cardContainer, style]}>
+    <Pressable onPress={onPress} style={[styles.cardContainer, style]}>
       <Animated.View style={[styles.card]}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
