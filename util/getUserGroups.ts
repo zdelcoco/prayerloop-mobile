@@ -23,6 +23,7 @@ export const getUserGroups = async (
 
   try {
     const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/groups`;
+    console.log('getUserGroups url: ', url);
     const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -30,6 +31,7 @@ export const getUserGroups = async (
     });
 
     const groupsResponse: Group[] = response.data;
+    console.log('getUserGroups response: ', groupsResponse);
 
     return { success: true, data: groupsResponse };
   } catch (error) {

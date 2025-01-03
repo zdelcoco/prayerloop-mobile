@@ -27,6 +27,8 @@ export const createUserPrayer = async (
 
   try {
     const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/prayers`;
+    console.log('createUserPrayer url: ', url);
+    console.log('createUserPrayer data: ', prayerData);
     const response = await axios.post(url, prayerData, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -38,6 +40,7 @@ export const createUserPrayer = async (
       prayerId: response.data.prayerId,
       prayerAccessId: response.data.prayerAccessId,
     };
+    console.log('createUserPrayer response: ', prayerResponse);
 
     return { success: true, data: prayerResponse };
   } catch (error) {

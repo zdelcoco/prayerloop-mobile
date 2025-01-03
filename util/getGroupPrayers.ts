@@ -34,6 +34,7 @@ export const getGroupPrayers = async (
       message: response.data.message,
       prayers: response.data.prayers,
     };
+    console.log('getGroupPrayers response: ', prayersResponse)
 
     return { success: true, data: prayersResponse };
   } catch (error) {

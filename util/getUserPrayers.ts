@@ -23,6 +23,7 @@ export const getUserPrayers = async (
 
   try {
     const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/prayers`;
+    console.log('getUserPrayers url: ', url);
     const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -33,6 +34,7 @@ export const getUserPrayers = async (
       message: response.data.message,
       prayers: response.data.prayers,
     };
+    console.log('getUserPrayers response: ', prayersResponse);
 
     return { success: true, data: prayersResponse };
   } catch (error) {

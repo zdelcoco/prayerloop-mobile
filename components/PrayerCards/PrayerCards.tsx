@@ -23,7 +23,6 @@ const renderItem: ListRenderItem<Prayer> = ({ item }) => (
 );
 
 export default function PrayerCards({ prayers, refreshing, onRefresh, flatListRef }: PrayerCardsProps) {
-  console.log('Received prayers:', prayers); // Debug received prayers
   return (
     <FlatList
       ref={flatListRef}

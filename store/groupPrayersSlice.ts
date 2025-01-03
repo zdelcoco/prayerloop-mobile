@@ -88,7 +88,6 @@ export const selectGroupPrayersError = (state: RootState) =>
   state.groupPrayers.error;
 
 export const clearGroupPrayers = (): AppThunk => async (dispatch) => {
-  console.log('clearning group prayers');
   dispatch(groupPrayersSlice.actions.clearGroupPrayers());
 };
 

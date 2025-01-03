@@ -22,7 +22,9 @@ export const loginUser = async (
   }
 
   try {
+    console.log('logging in as ', username);
     const url = `${BASE_API_URL}:${BASE_API_PORT}/login`;
+    console.log('login url:', url);
     const response = await axios.post(url, { username, password });
 
     const loginResponse: LoginResponse = {
@@ -30,7 +32,7 @@ export const loginUser = async (
       token: response.data.token,
       user: response.data.user,
     };
-
+    console.log('login response: ', loginResponse);
     return { success: true, data: loginResponse };
   } catch (error) {
     if (axios.isAxiosError(error)) {
