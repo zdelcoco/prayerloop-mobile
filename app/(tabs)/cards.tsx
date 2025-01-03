@@ -50,13 +50,19 @@ export default function Cards() {
   const toggleModal = () => setModalVisible(!modalVisible);
 
   const onRefresh = async () => {
+    if (refreshing) return; // Prevent duplicate refresh triggers
     setRefreshing(true);
     try {
       await dispatch(fetchUserPrayers());
+    } catch (error) {
+      console.error("Failed to refresh prayers:", error);
     } finally {
       setRefreshing(false);
+      // Use a timeout to ensure that scrollToOffset doesn't conflict with FlatList's internal logic
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100); // 100ms delay to avoid conflicts
     }
-    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
   };
 
   const statusOverride = false;
