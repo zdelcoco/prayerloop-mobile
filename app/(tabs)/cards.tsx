@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Text, FlatList, ListRenderItem, View, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { Text, FlatList, View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
 import { RootState } from '../../store/store';
-import Card from '@/components/PrayerCards/PrayerCard';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Dimensions } from 'react-native';
+import LoadingModal from '@/components/ui/LoadingModal';
 
 import type { Prayer } from '@/util/getUserPrayers.types';
 
@@ -18,6 +18,8 @@ import AddPrayerModal from '@/components/PrayerCards/AddPrayerModal';
 
 export default function Cards() {
   const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const flatListRef = useRef<FlatList<Prayer>>(null);
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -47,6 +49,18 @@ export default function Cards() {
 
   const toggleModal = () => setModalVisible(!modalVisible);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchUserPrayers());
+    } finally {
+      setRefreshing(false);
+    }
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const statusOverride = false;
+
   return (
     <LinearGradient
       colors={['#90c590', '#ffffff']}
@@ -55,12 +69,20 @@ export default function Cards() {
       end={{ x: 0, y: 1 }}
     >
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        {status === 'loading' && <Text style={styles.text}>Loading...</Text>}
+        <LoadingModal
+          visible={status === 'loading' || statusOverride}
+          message='Loading prayers...'
+        />
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!prayers || prayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
         ) : (
-          <PrayerCards prayers={prayers} />
+          <PrayerCards
+            prayers={prayers}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            flatListRef={flatListRef}
+          />
         )}
       </View>
       <AddPrayerModal

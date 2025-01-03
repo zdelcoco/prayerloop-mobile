@@ -1,3 +1,4 @@
+import { Prayer } from '@/util/getUserPrayers.types';
 import React, { useState } from 'react';
 import {
   View,
@@ -7,18 +8,21 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
+  GestureResponderEvent,
 } from 'react-native';
 
 interface CardProps {
+  id: string;
   title?: string;
   children: React.ReactNode;
-  onPress?: () => void;
+  onPress?: (prayer: Prayer) => void;
   style?: object;
   answered?: boolean;
   createdDate?: string;
 }
 
 const Card = ({
+  id,
   title,
   children,
   onPress,
@@ -76,8 +80,12 @@ const Card = ({
     backfaceVisibility: 'hidden' as const,
   };
 
+  const onPressHandler = () => {  
+    console.log('Card pressed', id);
+  };
+
   return (
-    <Pressable onLongPress={flipCard} style={[styles.cardContainer, style]}>
+    <Pressable onPress={onPressHandler} onLongPress={flipCard} style={[styles.cardContainer, style]}>
       <View style={[styles.cardWrapper, { height: maxHeight || 'auto' }]}>
         <Animated.View
           style={[
