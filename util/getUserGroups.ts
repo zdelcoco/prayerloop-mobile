@@ -1,13 +1,13 @@
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
-import { GetUserPrayersResponse } from './getUserPrayers.types';
+import { Group } from './getUserGroups.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
-export const getUserPrayers = async (
+export const getUserGroups = async (
   token: string,
   userProfileId: number
 ): Promise<Result> => {
@@ -22,19 +22,16 @@ export const getUserPrayers = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/prayers`;
+    const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/groups`;
     const response = await axios.get(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    const prayersResponse: GetUserPrayersResponse = {
-      message: response.data.message,
-      prayers: response.data.prayers,
-    };
+    const groupsResponse: Group[] = response.data;
 
-    return { success: true, data: prayersResponse };
+    return { success: true, data: groupsResponse };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
@@ -61,7 +58,7 @@ export const getUserPrayers = async (
         return {
           success: false,
           error: {
-            type: 'TimeoutError',
+            type: 'Timeout',
             message: 'Request timed out. Please try again.',
           },
         };
@@ -71,8 +68,8 @@ export const getUserPrayers = async (
     return {
       success: false,
       error: {
-        type: 'UnknownError',
-        message: 'An unknown error occurred. Please try again later.',
+        type: 'Unknown',
+        message: 'An unknown error occurred. Please try again.',
       },
     };
   }

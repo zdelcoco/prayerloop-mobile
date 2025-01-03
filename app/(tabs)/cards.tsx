@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
 import { RootState } from '../../store/store';
-import Card from '@/components/ui/PrayerCard';
+import Card from '@/components/PrayerCards/PrayerCard';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Dimensions } from 'react-native';
 
@@ -12,7 +12,7 @@ import type { Prayer } from '@/util/getUserPrayers.types';
 
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
-import PrayerCards from '@/components/ui/PrayerCards';
+import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import AddButton from '@/components/ui/AddButton';
 import AddPrayerModal from '@/components/PrayerCards/AddPrayerModal';
 

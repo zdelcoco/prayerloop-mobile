@@ -102,8 +102,8 @@ export default function AddPrayerModal({
             <Switch
               value={isPrivate}
               onValueChange={onIsPrivateChange}
-              thumbColor={isPrivate ? '#008000' : '#ccc'}
-              trackColor={{ false: '#ccc', true: '#90c590' }}
+              thumbColor={isPrivate ? 'white' : 'white'}
+              trackColor={{ false: '#ccc', true: '#008000' }}
             />
           </View>
           <View style={styles.buttonContainer}>

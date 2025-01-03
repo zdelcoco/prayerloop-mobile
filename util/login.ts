@@ -7,7 +7,10 @@ import { Result } from './shared.types';
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
-export const loginUser = async (username: string, password: string): Promise<Result> => {
+export const loginUser = async (
+  username: string,
+  password: string
+): Promise<Result> => {
   if (username === '' || password === '') {
     return {
       success: false,
@@ -25,15 +28,14 @@ export const loginUser = async (username: string, password: string): Promise<Res
     const loginResponse: LoginResponse = {
       message: response.data.message,
       token: response.data.token,
-      user: response.data.user
-    }
+      user: response.data.user,
+    };
 
     return { success: true, data: loginResponse };
-    
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
-      
+
       if (axiosError.response) {
         if (axiosError.response.status === 401) {
           return {

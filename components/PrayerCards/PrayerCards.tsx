@@ -1,7 +1,7 @@
 import { Text, FlatList, ListRenderItem, View, StyleSheet } from 'react-native';
 import type { Prayer } from '@/util/getUserPrayers.types';
 
-import Card from '@/components/ui/PrayerCard';
+import Card from '@/components/PrayerCards/PrayerCard';
 
 interface PrayerCardsProps {
   prayers: Prayer[]; 

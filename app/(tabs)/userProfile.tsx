@@ -1,10 +1,12 @@
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, ScrollView, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Dimensions } from 'react-native';
+
+import UserCard from '@/components/Home/UserCard';
 
 export default function UserProfile() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -20,19 +22,16 @@ export default function UserProfile() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
-      <View style={{ paddingTop: headerHeight }}>
-        <Text>userProfile page</Text>
+      <ScrollView style={{ paddingTop: headerHeight }}>
         {user && (
-          <>
-            <Text>Token: {token}</Text>
-            <Text>User Profile Id: {user.userProfileId}</Text>
-            <Text>Username: {user.username}</Text>
-            <Text>Email: {user.email}</Text>
-            <Text>First Name: {user.firstName}</Text>
-            <Text>Last Name: {user.lastName}</Text>
-          </>
+          <UserCard
+            username={user.username}
+            email={user.email}
+            firstName={user.firstName}
+            lastName={user.lastName}
+          />
         )}
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }

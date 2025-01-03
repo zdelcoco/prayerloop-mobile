@@ -93,30 +93,34 @@ export const fetchUserPrayers = (): AppThunk => async (dispatch, getState) => {
   }
 };
 
-export const addUserPrayer = (
-  prayerRequest: CreateUserPrayerRequest
-): AppThunk => async (dispatch, getState) => {
-  const { auth } = getState();
-  if (!auth.isAuthenticated || !auth.token || !auth.user) {
-    dispatch(createUserPrayerFailure('User not authenticated'));
-    return;
-  }
-
-  dispatch(createUserPrayerStart());
-  try {
-    const result = await createUserPrayer(auth.token, auth.user.userProfileId, prayerRequest);
-    if (result.success) {
-      dispatch(createUserPrayerSuccess());
-      dispatch(fetchUserPrayers());
-    } else {
-      dispatch(
-        createUserPrayerFailure(result.error?.message || 'An error occurred.')
-      );
+export const addUserPrayer =
+  (prayerRequest: CreateUserPrayerRequest): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(createUserPrayerFailure('User not authenticated'));
+      return;
     }
-  } catch (error) {
-    dispatch(createUserPrayerFailure('An error occurred.'));
-  }
-}
+
+    dispatch(createUserPrayerStart());
+    try {
+      const result = await createUserPrayer(
+        auth.token,
+        auth.user.userProfileId,
+        prayerRequest
+      );
+      if (result.success) {
+        dispatch(createUserPrayerSuccess());
+        dispatch(fetchUserPrayers());
+      } else {
+        dispatch(
+          createUserPrayerFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      dispatch(createUserPrayerFailure('An error occurred.'));
+    }
+  };
 
 export const clearUserPrayers = (): AppThunk => async (dispatch) => {
   dispatch(userPrayersSlice.actions.clearUserPrayers());

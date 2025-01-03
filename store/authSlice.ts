@@ -5,6 +5,7 @@ import { loginUser } from '../util/login';
 
 import { LoginResponse, User } from '../util/login.types';
 import { clearUserPrayers } from './userPrayersSlice';
+import { clearUserGroups } from './groupsSlice';
 
 interface AuthState {
   user: User | null;
@@ -42,12 +43,13 @@ const authSlice = createSlice({
     logoutSuccess: (state) => {
       state.user = null;
       state.status = 'idle';
-      state.isAuthenticated = false;      
+      state.isAuthenticated = false;
     },
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logoutSuccess } = authSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, logoutSuccess } =
+  authSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
@@ -56,23 +58,28 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   PayloadAction<any>
 >;
 
-export const login = (username: string, password: string): AppThunk => async (dispatch) => {
-  dispatch(loginStart());
-  try {
-    const result = await loginUser(username, password);
-    if (result.success) {
-      dispatch(loginSuccess(result.data));
-    } else {
-      dispatch(loginFailure(result.error?.message || 'An unknown error occurred'));
+export const login =
+  (username: string, password: string): AppThunk =>
+  async (dispatch) => {
+    dispatch(loginStart());
+    try {
+      const result = await loginUser(username, password);
+      if (result.success) {
+        dispatch(loginSuccess(result.data));
+      } else {
+        dispatch(
+          loginFailure(result.error?.message || 'An unknown error occurred')
+        );
+      }
+    } catch (error) {
+      dispatch(loginFailure('An unknown error occurred'));
     }
-  } catch (error) {
-    dispatch(loginFailure('An unknown error occurred'));
-  }
-};
+  };
 
 export const logout = (): AppThunk => (dispatch) => {
   dispatch(logoutSuccess());
   dispatch(clearUserPrayers());
+  dispatch(clearUserGroups());
 };
 
 export const selectAuthState = (state: RootState) => state.auth;
