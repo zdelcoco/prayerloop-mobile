@@ -8,7 +8,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { Dimensions } from 'react-native';
 import LoadingModal from '@/components/ui/LoadingModal';
 
-import type { Prayer } from '@/util/getUserPrayers.types';
+import type { Prayer } from '@/util/shared.types';
 
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
@@ -20,6 +20,7 @@ import { useFocusEffect } from 'expo-router';
 export default function Cards() {
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList<Prayer>>(null);
 
   const headerHeight = useHeaderHeight();
@@ -30,7 +31,7 @@ export default function Cards() {
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.userPrayers
   );
-  const { user, isAuthenticated } = useAppSelector(
+  const { user, token, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   );
 
@@ -46,6 +47,7 @@ export default function Cards() {
 
   const onAddPrayerHandler = (prayerData: CreateUserPrayerRequest) => {
     dispatch(addUserPrayer(prayerData));
+    console.log('onAddPrayer triggered:', prayerData);
   };
 
   const toggleModal = () => setModalVisible(!modalVisible);
@@ -68,6 +70,8 @@ export default function Cards() {
 
   const statusOverride = false;
 
+  console.log(loading);
+
   return (
     <LinearGradient
       colors={['#90c590', '#ffffff']}
@@ -77,7 +81,7 @@ export default function Cards() {
     >
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         <LoadingModal
-          visible={status === 'loading' || statusOverride}
+          visible={status === 'loading' || loading}
           message='Loading prayers...'
         />
         {error && <Text style={styles.text}>Error: {error}</Text>}
@@ -85,10 +89,12 @@ export default function Cards() {
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
+            token={token ?? ''}
             prayers={prayers}
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
+            setLoading={setLoading}
           />
         )}
       </View>

@@ -56,12 +56,13 @@ export default function AddPrayerModal({
         prayerType: 'general',
       };
       onAddPrayer(prayerData);
+      console.log('Prayer added:', prayerData);
       resetForm();
       onClose();
     } catch (error) {
       console.error('Error adding prayer:', error);
       Alert.alert('Error', 'Something went wrong while adding the prayer.');
-    }
+    } 
   }, [prayerTitle, prayerDescription, isPrivate, onAddPrayer, onClose, resetForm]);
 
   const cancelAddPrayer = useCallback(() => {

@@ -3,7 +3,8 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 import { getUserPrayers } from '@/util/getUserPrayers';
 
-import { GetUserPrayersResponse, Prayer } from '@/util/getUserPrayers.types';
+import { GetUserPrayersResponse } from '@/util/getUserPrayers.types';
+import { Prayer } from '@/util/shared.types';
 import { createUserPrayer } from '@/util/createUserPrayer';
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
@@ -72,10 +73,15 @@ export type AppThunk<ReturnType = void> = ThunkAction<
 >;
 
 export const fetchUserPrayers = (): AppThunk => async (dispatch, getState) => {
-  const { auth } = getState();
+  const { auth, userPrayers } = getState();
   if (!auth.isAuthenticated || !auth.token || !auth.user) {
     dispatch(getUserPrayersFailure('User not authenticated'));
     return;
+  }
+
+  if (userPrayers.status === 'loading') {
+    console.log("fetchUserPrayers already in progress.");
+    return; // Avoid duplicate calls
   }
 
   dispatch(getUserPrayersStart());
@@ -102,7 +108,11 @@ export const addUserPrayer =
       return;
     }
 
+    console.log('userPRayersSlice: prayerRequest:', prayerRequest);
+
     dispatch(createUserPrayerStart());
+
+    console.log('userPRayersSlice: started createUserPrayerStart');
     try {
       const result = await createUserPrayer(
         auth.token,
@@ -110,9 +120,11 @@ export const addUserPrayer =
         prayerRequest
       );
       if (result.success) {
+        console.log('userPrayersSlice: createUserPrayer success');
         dispatch(createUserPrayerSuccess());
         dispatch(fetchUserPrayers());
       } else {
+        console.log('userPrayersSlice: createUserPrayer failure');
         dispatch(
           createUserPrayerFailure(result.error?.message || 'An error occurred.')
         );
