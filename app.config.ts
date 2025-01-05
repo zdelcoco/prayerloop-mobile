@@ -2,7 +2,8 @@ import { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
   name: "My App",
-  slug: "my-app",
+  owner: "delsuckahh",
+  slug: "prayerloop",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -20,20 +21,26 @@ const config: ExpoConfig = {
     "**/*"
   ],
   ios: {
-    supportsTablet: true
+    supportsTablet: true,
+    bundleIdentifier: "com.yourname.prayerloop.test"
   },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#FFFFFF"
-    }
+    },
+    package: "com.yourname.prayerloop.test",
   },
   web: {
     favicon: "./assets/favicon.png"
   },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
-    apiPort: process.env.EXPO_PUBLIC_API_PORT 
+    apiPort: process.env.EXPO_PUBLIC_API_PORT,
+    eas: {
+        projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+      }
+ 
   }
 };
 
