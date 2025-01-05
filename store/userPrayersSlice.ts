@@ -10,7 +10,7 @@ import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
 interface UserPrayersState {
   prayers: Prayer[] | null;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'creating' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -39,7 +39,7 @@ const userPrayersSlice = createSlice({
       state.error = action.payload;
     },
     createUserPrayerStart: (state) => {
-      state.status = 'loading';
+      state.status = 'creating';
     },
     createUserPrayerSuccess: (state) => {
       state.status = 'succeeded';
@@ -108,11 +108,8 @@ export const addUserPrayer =
       return;
     }
 
-    console.log('userPRayersSlice: prayerRequest:', prayerRequest);
-
     dispatch(createUserPrayerStart());
 
-    console.log('userPRayersSlice: started createUserPrayerStart');
     try {
       const result = await createUserPrayer(
         auth.token,
@@ -120,11 +117,9 @@ export const addUserPrayer =
         prayerRequest
       );
       if (result.success) {
-        console.log('userPrayersSlice: createUserPrayer success');
         dispatch(createUserPrayerSuccess());
         dispatch(fetchUserPrayers());
       } else {
-        console.log('userPrayersSlice: createUserPrayer failure');
         dispatch(
           createUserPrayerFailure(result.error?.message || 'An error occurred.')
         );

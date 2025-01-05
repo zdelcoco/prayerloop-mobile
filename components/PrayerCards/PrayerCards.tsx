@@ -42,6 +42,7 @@ export default function PrayerCards({
       keyExtractor={(item) => item.prayerId.toString()}
       renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
+      extraData={prayers}
       refreshing={refreshing}
       onRefresh={onRefresh}
       windowSize={5}

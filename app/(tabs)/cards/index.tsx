@@ -1,39 +1,38 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Text, FlatList, View, StyleSheet } from 'react-native';
+import { Text, FlatList, View, StyleSheet, Dimensions, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useHeaderHeight } from '@react-navigation/elements';
+import { router, useFocusEffect } from 'expo-router';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
-import { RootState } from '../../store/store';
-import { useHeaderHeight } from '@react-navigation/elements';
-import { Dimensions } from 'react-native';
+import { RootState } from '../../../store/store';
+
 import LoadingModal from '@/components/ui/LoadingModal';
+import PrayerCards from '@/components/PrayerCards/PrayerCards';
+import AddButton from '@/components/ui/AddButton';
 
 import type { Prayer } from '@/util/shared.types';
 
-import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
-
-import PrayerCards from '@/components/PrayerCards/PrayerCards';
-import AddButton from '@/components/ui/AddButton';
-import AddPrayerModal from '@/components/PrayerCards/AddPrayerModal';
-import { useFocusEffect } from 'expo-router';
-
 export default function Cards() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const flatListRef = useRef<FlatList<Prayer>>(null);
-
-  const headerHeight = useHeaderHeight();
-  const screenHeight = Dimensions.get('window').height;
-  const headerGradientEnd = headerHeight / screenHeight;
-
   const dispatch = useAppDispatch();
+
+  const { token } = useAppSelector((state: RootState) => state.auth);
+
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.userPrayers
   );
-  const { user, token, isAuthenticated } = useAppSelector(
-    (state: RootState) => state.auth
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [loadingModalVisible, setLoadingModalVisible] = useState(
+    status === 'loading' || loading
   );
+
+  const flatListRef = useRef<FlatList<Prayer>>(null);
+  const headerHeight = useHeaderHeight();
+  const screenHeight = Dimensions.get('window').height;
+  const headerGradientEnd = headerHeight / screenHeight;
 
   const fetchData = useCallback(() => {
     dispatch(fetchUserPrayers());
@@ -42,15 +41,10 @@ export default function Cards() {
   useFocusEffect(fetchData);
 
   const onAddPressHandler = () => {
-    toggleModal();
+    router.push('/cards/AddPrayer');
   };
 
-  const onAddPrayerHandler = (prayerData: CreateUserPrayerRequest) => {
-    dispatch(addUserPrayer(prayerData));
-    console.log('onAddPrayer triggered:', prayerData);
-  };
-
-  const toggleModal = () => setModalVisible(!modalVisible);
+  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   const onRefresh = async () => {
     if (refreshing) return; // Prevent duplicate refresh triggers
@@ -58,7 +52,7 @@ export default function Cards() {
     try {
       await dispatch(fetchUserPrayers());
     } catch (error) {
-      console.error("Failed to refresh prayers:", error);
+      console.error('Failed to refresh prayers:', error);
     } finally {
       setRefreshing(false);
       // Use a timeout to ensure that scrollToOffset doesn't conflict with FlatList's internal logic
@@ -68,9 +62,13 @@ export default function Cards() {
     }
   };
 
-  const statusOverride = false;
-
-  console.log(loading);
+  useEffect(() => {
+    if (loading) {
+      setLoadingModalVisible(true);
+    } else {
+      setLoadingModalVisible(false);
+    }
+  }, [loading]);
 
   return (
     <LinearGradient
@@ -79,11 +77,12 @@ export default function Cards() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
+      <LoadingModal
+        visible={status === 'loading' || loadingModalVisible}
+        message='Loading prayers...'
+        onClose={toggleLoadingModal}
+      />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        <LoadingModal
-          visible={status === 'loading' || loading}
-          message='Loading prayers...'
-        />
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!prayers || prayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
@@ -98,11 +97,7 @@ export default function Cards() {
           />
         )}
       </View>
-      <AddPrayerModal
-        visible={modalVisible}
-        onAddPrayer={onAddPrayerHandler}
-        onClose={toggleModal}
-      />
+
       <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );

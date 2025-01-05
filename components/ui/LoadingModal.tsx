@@ -1,28 +1,28 @@
 import React from 'react';
-import {
-  Modal,
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { Modal, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 
 interface LoadingModalProps {
   visible: boolean;
   message?: string;
+  onClose: () => void;
 }
 
-const LoadingModal: React.FC<LoadingModalProps> = ({ visible, message }) => {
+const LoadingModal: React.FC<LoadingModalProps> = ({
+  visible,
+  message,
+  onClose,
+}) => {
   return (
     <Modal
-      animationType="fade"
+      animationType='fade'
       transparent
       visible={visible}
+      onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
-        <View style={styles.extraLargeSpinner}>
-            <ActivityIndicator size="large" color="#b2d8b2" />
+          <View style={styles.extraLargeSpinner}>
+            <ActivityIndicator size='large' color='#b2d8b2' />
           </View>
           {message && <Text style={styles.text}>{message}</Text>}
         </View>
