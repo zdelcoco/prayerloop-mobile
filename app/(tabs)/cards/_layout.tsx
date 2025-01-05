@@ -9,7 +9,7 @@ export default function CardsLayout() {
       />
       <Stack.Screen
         name="AddPrayer" 
-        options={{ headerShown: false, presentation: 'modal' }}
+        options={{ headerShown: true, headerTitle: "Add a Prayer Request",presentation: 'modal' }}
       />
     </Stack>
   );

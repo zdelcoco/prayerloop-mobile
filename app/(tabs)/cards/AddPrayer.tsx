@@ -72,52 +72,51 @@ export default function AddPrayer() {
     navigation,
   ]);
 
+  /* todo -- fix styling to be consistent with rest of app, aka add linear gradient */
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <View style={styles.contentContainer}>
-        <Text style={styles.title}>Add a New Prayer</Text>
-        <TextInput
-          style={styles.input}
-          placeholder='Enter prayer title'
-          placeholderTextColor='#888'
-          value={prayerTitle}
-          onChangeText={onPrayerTitleChange}
+      <TextInput
+        style={styles.input}
+        placeholder='Enter prayer title'
+        placeholderTextColor='#888'
+        value={prayerTitle}
+        onChangeText={onPrayerTitleChange}
+      />
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        placeholder='Enter prayer details'
+        placeholderTextColor='#888'
+        value={prayerDescription}
+        onChangeText={onPrayerDescriptionChange}
+        multiline
+      />
+      <View style={styles.checkboxContainer}>
+        <Text style={styles.checkboxLabel}>Mark as Private</Text>
+        <Switch
+          value={isPrivate}
+          onValueChange={onIsPrivateChange}
+          thumbColor={isPrivate ? 'white' : 'white'}
+          trackColor={{ false: '#ccc', true: '#008000' }}
         />
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder='Enter prayer details'
-          placeholderTextColor='#888'
-          value={prayerDescription}
-          onChangeText={onPrayerDescriptionChange}
-          multiline
-        />
-        <View style={styles.checkboxContainer}>
-          <Text style={styles.checkboxLabel}>Mark as Private</Text>
-          <Switch
-            value={isPrivate}
-            onValueChange={onIsPrivateChange}
-            thumbColor={isPrivate ? 'white' : 'white'}
-            trackColor={{ false: '#ccc', true: '#008000' }}
-          />
-        </View>
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={[styles.button, styles.cancelButton]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.buttonText}>Cancel</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.button, styles.addButton]}
-            onPress={handleAddPrayer}
-            disabled={!prayerTitle || !prayerDescription}
-          >
-            <Text style={styles.buttonText}>Add</Text>
-          </Pressable>
-        </View>
+      </View>
+      <View style={styles.buttonContainer}>
+        <Pressable
+          style={[styles.button, styles.cancelButton]}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.buttonText}>Cancel</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.button, styles.addButton]}
+          onPress={handleAddPrayer}
+          disabled={!prayerTitle || !prayerDescription}
+        >
+          <Text style={styles.buttonText}>Add</Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -126,7 +125,6 @@ export default function AddPrayer() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     backgroundColor: '#f9f9f9',
     padding: 20,
   },
@@ -157,7 +155,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   textArea: {
-    height: 100,
+    height: 200,
     textAlignVertical: 'top',
   },
   checkboxContainer: {
