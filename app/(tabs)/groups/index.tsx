@@ -41,6 +41,15 @@ export default function Groups() {
     (state: RootState) => state.auth
   );
 
+  const [loading, setLoading] = useState(false);
+
+  const [loadingModalVisible, setLoadingModalVisible] = useState(
+      status === 'loading' || loading
+    );
+  
+
+  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
+
   const fetchData = useCallback(() => {
     dispatch(clearGroupPrayers());
     dispatch(fetchUserGroups());
@@ -87,6 +96,7 @@ export default function Groups() {
       <LoadingModal
         visible={status === 'loading' || statusOverride}
         message='Loading groups...'
+        onClose={toggleLoadingModal}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         <FlatList

@@ -1,4 +1,3 @@
-import { Prayer } from '@/util/getUserPrayers.types';
 import React, { useState } from 'react';
 import {
   View,
@@ -8,39 +7,49 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
-  GestureResponderEvent,
+  Alert,
 } from 'react-native';
+import { removePrayerAccess } from '@/util/removePrayerAccess';
+import { useAppDispatch } from '@/hooks/redux';
+import { fetchUserPrayers } from '@/store/userPrayersSlice';
 
 interface CardProps {
-  id: string;
+  id: number;
+  userToken: string;
+  prayerAccessId: number;
   title?: string;
   children: React.ReactNode;
-  onPress?: (prayer: Prayer) => void;
+  onPress?: () => void;
   style?: object;
   answered?: boolean;
   createdDate?: string;
+  setLoading: (isLoading: boolean) => void; // Pass down loading status setter
 }
 
 const Card = ({
   id,
+  userToken,
+  prayerAccessId,
   title,
   children,
   onPress,
   style,
   answered,
   createdDate,
+  setLoading,
 }: CardProps) => {
   const [flipped, setFlipped] = useState(false);
   const [frontHeight, setFrontHeight] = useState<number | undefined>(undefined);
   const [backHeight, setBackHeight] = useState<number | undefined>(undefined);
   const animatedValue = useState(new Animated.Value(0))[0];
+  const dispatch = useAppDispatch();
 
   const flipCard = () => {
     Animated.timing(animatedValue, {
       toValue: flipped ? 0 : 1,
       duration: 300,
       easing: Easing.ease,
-      useNativeDriver: false, // Fix for type compatibility issue
+      useNativeDriver: false,
     }).start(() => setFlipped(!flipped));
   };
 
@@ -52,6 +61,28 @@ const Card = ({
   const handleBackLayout = (event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout;
     setBackHeight(height);
+  };
+
+  const onDeleteHandler = async () => {
+    try {
+      setLoading(true); // Notify parent that loading has started
+      const result = await removePrayerAccess(userToken, id, prayerAccessId);
+      if (result.success) {
+        dispatch(fetchUserPrayers()); // Refresh state
+        Alert.alert('Success', 'Prayer deleted successfully.');
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to delete prayer.'
+        );
+      }
+    } catch (error) {
+      console.error('Error deleting prayer:', error);
+      Alert.alert('Error', 'An unknown error occurred.');
+      setLoading(false)
+    } finally {
+      setLoading(false); // Notify parent that loading has finished
+    }
   };
 
   const maxHeight = Math.max(frontHeight || 0, backHeight || 0);
@@ -125,7 +156,7 @@ const Card = ({
             </Pressable>
             <Pressable
               style={[styles.button, styles.deleteButton]}
-              onPress={() => console.log('Delete pressed')}
+              onPress={onDeleteHandler}
             >
               <Text style={styles.buttonText}>Delete</Text>
             </Pressable>

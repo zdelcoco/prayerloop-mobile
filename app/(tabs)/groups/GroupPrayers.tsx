@@ -18,7 +18,7 @@ import { RootState } from '../../../store/store';
 import { Group } from '@/util/getUserGroups.types';
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
-import { Prayer } from '@/util/getUserPrayers.types';
+import { Prayer } from '@/util/shared.types';
 
 type GroupPrayersRouteParams = {
   group: string; // Serialized group
@@ -35,6 +35,7 @@ export default function GroupPrayers() {
   const group: Group = JSON.parse(route.params.group);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList<Prayer>>(null);
 
   const headerHeight = useHeaderHeight();
@@ -45,7 +46,7 @@ export default function GroupPrayers() {
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.groupPrayers
   );
-  const { user, isAuthenticated } = useAppSelector(
+  const { user, token, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   );
 
@@ -114,7 +115,7 @@ export default function GroupPrayers() {
     >
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         <LoadingModal
-          visible={status === 'loading' || statusOverride}
+          visible={status === 'loading' || loading}
           message='Loading group prayers...'
         />
         {error && <Text style={styles.text}>Error: {error}</Text>}
@@ -122,10 +123,12 @@ export default function GroupPrayers() {
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
+            token={token ?? ''}
             prayers={sanitizedPrayers}
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
+            setLoading={setLoading}
           />
         )}
       </View>

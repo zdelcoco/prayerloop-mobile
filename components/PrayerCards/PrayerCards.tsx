@@ -1,28 +1,40 @@
+import React, { useState } from 'react';
 import { Text, FlatList, ListRenderItem, StyleSheet } from 'react-native';
-import type { Prayer } from '@/util/getUserPrayers.types';
-import React from 'react';
+import type { Prayer } from '@/util/shared.types';
 
 import Card from '@/components/PrayerCards/PrayerCard';
 
 interface PrayerCardsProps {
-  prayers: Prayer[]; 
+  token: string;
+  prayers: Prayer[];
   refreshing: boolean;
   onRefresh: () => void;
   flatListRef: React.RefObject<FlatList<any>>;
+  setLoading: (isLoading: boolean) => void; // Pass down loading status
 }
 
-const renderItem: ListRenderItem<Prayer> = ({ item }) => (
-  <Card
-    id={item.prayerId.toString()}
-    title={item.title}
-    createdDate={item.datetimeCreate}
-    answered={item.isAnswered}
-  >
-    <Text>{item.prayerDescription}</Text>
-  </Card>
-);
+export default function PrayerCards({
+  token,
+  prayers,
+  refreshing,
+  onRefresh,
+  flatListRef,
+  setLoading,
+}: PrayerCardsProps) {
+  const renderItem: ListRenderItem<Prayer> = ({ item }) => (
+    <Card
+      id={item.prayerId}
+      userToken={token}
+      prayerAccessId={item.prayerAccessId}
+      title={item.title}
+      createdDate={item.datetimeCreate}
+      answered={item.isAnswered}
+      setLoading={setLoading} // Pass down loading status setter
+    >
+      <Text>{item.prayerDescription}</Text>
+    </Card>
+  );
 
-export default function PrayerCards({ prayers, refreshing, onRefresh, flatListRef }: PrayerCardsProps) {
   return (
     <FlatList
       ref={flatListRef}
@@ -30,12 +42,10 @@ export default function PrayerCards({ prayers, refreshing, onRefresh, flatListRe
       keyExtractor={(item) => item.prayerId.toString()}
       renderItem={renderItem}
       contentContainerStyle={styles.listContainer}
-      initialNumToRender={10}
+      extraData={prayers}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
       windowSize={5}
-      removeClippedSubviews={true}
-      refreshing={refreshing} 
-      onRefresh={onRefresh} 
-      progressViewOffset={50} 
     />
   );
 }

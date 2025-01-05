@@ -3,7 +3,8 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 
 import { getGroupPrayers } from '../util/getGroupPrayers';
-import { GetUserPrayersResponse, Prayer } from '../util/getUserPrayers.types';
+import { GetUserPrayersResponse } from '../util/getUserPrayers.types';
+import { Prayer } from '../util/shared.types';
 
 interface GroupPrayersState {
   prayers: Prayer[] | null;

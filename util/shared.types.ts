@@ -8,3 +8,26 @@ export interface Result {
   error?: ResponseError;
   success: boolean;
 }
+
+export interface DeleteMethodAPIResponse {
+  message?: string;
+  error?: string;
+};
+
+export interface Prayer {
+  createdBy: number;
+  datetimeAnswered: string | null;
+  datetimeCreate: string;
+  datetimeUpdate: string;
+  deleted: boolean;
+  isAnswered: boolean;
+  isPrivate: boolean;
+  prayerDescription: string;
+  prayerAccessId: number;
+  prayerId: number;
+  prayerPriority: number;
+  prayerType: string;
+  title: string;
+  updatedBy: number;
+  userProfileId: number;
+}
