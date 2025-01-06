@@ -14,6 +14,12 @@ import { useAppDispatch } from '@/hooks/redux';
 import { fetchUserPrayers } from '@/store/userPrayersSlice';
 
 import { Prayer } from '@/util/shared.types';
+import { useNavigation } from 'expo-router';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  PrayerModal: { mode: string, prayer: Prayer };
+};
 
 interface CardProps {
   userId: number;
@@ -35,6 +41,8 @@ const Card = ({
   style,
   setLoading,
 }: CardProps) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
   const [flipped, setFlipped] = useState(false);
   const [frontHeight, setFrontHeight] = useState<number | undefined>(undefined);
   const [backHeight, setBackHeight] = useState<number | undefined>(undefined);
@@ -59,6 +67,11 @@ const Card = ({
     const { height } = event.nativeEvent.layout;
     setBackHeight(height);
   };
+
+  const onEditHandler = () => {
+    flipCard();
+    navigation.navigate('PrayerModal', { mode: 'edit', prayer });
+  }
 
   const onDeleteHandler = async () => {
     try {
@@ -161,7 +174,7 @@ const Card = ({
               <>
                 <Pressable
                   style={styles.button}
-                  onPress={() => console.log('Edit pressed')}
+                  onPress={onEditHandler}
                 >
                   <Text style={styles.buttonText}>Edit</Text>
                 </Pressable>

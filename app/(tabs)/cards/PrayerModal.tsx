@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useAppDispatch } from '@/hooks/redux';
 import { addUserPrayer } from '@/store/userPrayersSlice';
+import { putUserPrayer } from '@/store/userPrayersSlice';
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -25,23 +26,27 @@ interface AddPrayerProps {
 export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
-  const route = useRoute<{ key: string; name: string; params: { mode: 'add' | 'edit' } }>();
+  const route = useRoute<{
+    key: string;
+    name: string;
+    params: { mode: 'add' | 'edit'; prayer?: Prayer };
+  }>();
 
   const [prayerTitle, setPrayerTitle] = useState(() => {
-    if (route.params.mode === 'edit' && prayer) {
-      return prayer.title;
+    if (route.params.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer?.title;
     }
     return '';
   });
   const [prayerDescription, setPrayerDescription] = useState(() => {
-    if (route.params.mode === 'edit' && prayer) {
-      return prayer.prayerDescription;
+    if (route.params.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer?.prayerDescription;
     }
     return '';
   });
   const [isPrivate, setIsPrivate] = useState(() => {
-    if (route.params.mode === 'edit' && prayer) {
-      return prayer.isPrivate;
+    if (route.params.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer?.isPrivate;
     }
     return false;
   });
@@ -95,6 +100,42 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
     navigation,
   ]);
 
+  const handleEditPrayer = useCallback(async () => {
+    if (!prayerTitle.trim() || !prayerDescription.trim()) {
+      Alert.alert('Validation Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    if (!route.params.prayer) {
+      Alert.alert('Error', 'Failed to edit prayer. Please try again.');
+      return;
+    }
+
+    const prayerData: CreateUserPrayerRequest = {
+      title: prayerTitle.trim(),
+      prayerDescription: prayerDescription.trim(),
+      isPrivate,
+      prayerType: 'general',
+    };
+
+    try {
+      await dispatch(putUserPrayer(route.params.prayer!.prayerId, prayerData));
+      resetForm();
+      navigation.goBack(); // Close the modal/screen
+    } catch (error) {
+      console.error('Error editing prayer:', error);
+      Alert.alert('Error', 'Something went wrong while editing the prayer.');
+    }
+  }, [
+    prayerTitle,
+    prayerDescription,
+    isPrivate,
+    dispatch,
+    resetForm,
+    navigation,
+    prayer,
+  ]);
+
   /* todo -- fix styling to be consistent with rest of app, aka add linear gradient */
 
   return (
@@ -135,10 +176,14 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
         </Pressable>
         <Pressable
           style={[styles.button, styles.addButton]}
-          onPress={handleAddPrayer}
+          onPress={
+            route.params.mode === 'add' ? handleAddPrayer : handleEditPrayer
+          }
           disabled={!prayerTitle || !prayerDescription}
         >
-          <Text style={styles.buttonText}>{route.params.mode === 'add' ? 'add' : 'edit'}</Text>
+          <Text style={styles.buttonText}>
+            {route.params.mode === 'add' ? 'Add' : 'Save'}
+          </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
