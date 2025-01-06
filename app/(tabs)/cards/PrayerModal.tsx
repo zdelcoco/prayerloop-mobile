@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -54,8 +54,13 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
 
   const headerHeight = useHeaderHeight();
 
-  navigation.setOptions({
-    title: route.params.mode === 'add' ? 'Add a Prayer Request' : 'Edit Prayer Request'
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title:
+        route.params.mode === 'add'
+          ? 'Add a Prayer Request'
+          : 'Edit Prayer Request',
+    });
   });
 
   const onPrayerTitleChange = useCallback(
