@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 
 export default function CardsLayout() {
@@ -8,7 +9,12 @@ export default function CardsLayout() {
         name='PrayerModal'
         options={{
           headerShown: true,
-          headerTitle: 'Add a Prayer Request',
+          headerTransparent: true,
+          headerTitleAlign: 'left',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontFamily: 'InstrumentSans-Bold',
+          },
           presentation: 'modal',
         }}
       />

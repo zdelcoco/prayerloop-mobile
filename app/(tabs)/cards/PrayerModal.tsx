@@ -17,6 +17,7 @@ import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import type { Prayer } from '@/util/shared.types';
+import { useHeaderHeight } from '@react-navigation/elements';
 
 interface AddPrayerProps {
   mode: 'add' | 'edit';
@@ -49,6 +50,12 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
       return route.params.prayer?.isPrivate;
     }
     return false;
+  });
+
+  const headerHeight = useHeaderHeight();
+
+  navigation.setOptions({
+    title: route.params.mode === 'add' ? 'Add a Prayer Request' : 'Edit Prayer Request'
   });
 
   const onPrayerTitleChange = useCallback(
@@ -141,7 +148,7 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[{ paddingTop: headerHeight }, styles.container]}
     >
       <TextInput
         style={styles.input}
@@ -196,16 +203,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     padding: 20,
   },
-  contentContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
+  // contentContainer: {
+  //   backgroundColor: '#fff',
+  //   borderRadius: 10,
+  //   padding: 20,
+  //   shadowColor: '#000',
+  //   shadowOffset: { width: 0, height: 2 },
+  //   shadowOpacity: 0.25,
+  //   shadowRadius: 4,
+  //   elevation: 5,
+  // },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -220,7 +227,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 10,
     fontSize: 16,
-    color: '#333',
+    backgroundColor: '#F1FDED',
   },
   textArea: {
     height: 200,
