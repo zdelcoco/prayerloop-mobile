@@ -16,7 +16,7 @@ import type { Prayer } from '@/util/shared.types';
 export default function Cards() {
   const dispatch = useAppDispatch();
 
-  const { token } = useAppSelector((state: RootState) => state.auth);
+  const { token, user } = useAppSelector((state: RootState) => state.auth);
 
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.userPrayers
@@ -88,6 +88,7 @@ export default function Cards() {
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
+            userId={user!.userProfileId}
             token={token ?? ''}
             prayers={prayers}
             refreshing={refreshing}

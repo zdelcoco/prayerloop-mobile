@@ -13,29 +13,26 @@ import { removePrayerAccess } from '@/util/removePrayerAccess';
 import { useAppDispatch } from '@/hooks/redux';
 import { fetchUserPrayers } from '@/store/userPrayersSlice';
 
+import { Prayer } from '@/util/shared.types';
+
 interface CardProps {
-  id: number;
+  userId: number;
   userToken: string;
-  prayerAccessId: number;
-  title?: string;
+  prayer: Prayer;
   children: React.ReactNode;
   onPress?: () => void;
   style?: object;
-  answered?: boolean;
   createdDate?: string;
-  setLoading: (isLoading: boolean) => void; // Pass down loading status setter
+  setLoading: (isLoading: boolean) => void;
 }
 
 const Card = ({
-  id,
+  userId,
   userToken,
-  prayerAccessId,
-  title,
+  prayer,
   children,
   onPress,
   style,
-  answered,
-  createdDate,
   setLoading,
 }: CardProps) => {
   const [flipped, setFlipped] = useState(false);
@@ -65,10 +62,14 @@ const Card = ({
 
   const onDeleteHandler = async () => {
     try {
-      setLoading(true); // Notify parent that loading has started
-      const result = await removePrayerAccess(userToken, id, prayerAccessId);
+      setLoading(true);
+      const result = await removePrayerAccess(
+        userToken,
+        prayer.prayerId,
+        prayer.prayerAccessId
+      );
       if (result.success) {
-        dispatch(fetchUserPrayers()); // Refresh state
+        dispatch(fetchUserPrayers());
         Alert.alert('Success', 'Prayer deleted successfully.');
       } else {
         Alert.alert(
@@ -79,9 +80,9 @@ const Card = ({
     } catch (error) {
       console.error('Error deleting prayer:', error);
       Alert.alert('Error', 'An unknown error occurred.');
-      setLoading(false)
+      setLoading(false);
     } finally {
-      setLoading(false); // Notify parent that loading has finished
+      setLoading(false);
     }
   };
 
@@ -111,12 +112,20 @@ const Card = ({
     backfaceVisibility: 'hidden' as const,
   };
 
-  const onPressHandler = () => {  
-    console.log('Card pressed', id);
+  const onPressHandler = () => {
+    console.log('Card pressed', prayer.prayerId);
+  };
+
+  const canEditAndDelete = () => {
+    return userId === prayer.userProfileId;
   };
 
   return (
-    <Pressable onPress={onPressHandler} onLongPress={flipCard} style={[styles.cardContainer, style]}>
+    <Pressable
+      onPress={onPressHandler}
+      onLongPress={flipCard}
+      style={[styles.cardContainer, style]}
+    >
       <View style={[styles.cardWrapper, { height: maxHeight || 'auto' }]}>
         <Animated.View
           style={[
@@ -128,13 +137,13 @@ const Card = ({
           onLayout={handleFrontLayout} // Measure height of the front
           pointerEvents={flipped ? 'none' : 'auto'}
         >
-          {title && <Text style={styles.title}>{title}</Text>}
+          <Text style={styles.title}>{prayer.title}</Text>
           <View style={styles.content}>{children}</View>
           <View style={styles.footer}>
-            <Text style={styles.status}>{answered ? 'Answered?' : ''}</Text>
-            {createdDate && (
-              <Text style={styles.date}>Created {createdDate}</Text>
-            )}
+            <Text style={styles.status}>
+              {prayer.isAnswered ? 'Answered?' : ''}
+            </Text>
+            <Text style={styles.date}>Created {prayer.datetimeCreate}</Text>
           </View>
         </Animated.View>
         <Animated.View
@@ -148,18 +157,23 @@ const Card = ({
           pointerEvents={flipped ? 'auto' : 'none'}
         >
           <View style={styles.buttonRow}>
-            <Pressable
-              style={styles.button}
-              onPress={() => console.log('Edit pressed')}
-            >
-              <Text style={styles.buttonText}>Edit</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.deleteButton]}
-              onPress={onDeleteHandler}
-            >
-              <Text style={styles.buttonText}>Delete</Text>
-            </Pressable>
+            {canEditAndDelete() ? (
+              <>
+                <Pressable
+                  style={styles.button}
+                  onPress={() => console.log('Edit pressed')}
+                >
+                  <Text style={styles.buttonText}>Edit</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.button, styles.deleteButton]}
+                  onPress={onDeleteHandler}
+                >
+                  <Text style={styles.buttonText}>Delete</Text>
+                </Pressable>
+              </>
+            ) : (<Text>Prayer can only be edited/deleted by the prayer's creator.</Text>)}
           </View>
         </Animated.View>
       </View>

@@ -12,7 +12,10 @@ import { Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { clearGroupPrayers, fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import {
+  clearGroupPrayers,
+  fetchGroupPrayers,
+} from '@/store/groupPrayersSlice';
 import { RootState } from '../../../store/store';
 
 import { Group } from '@/util/getUserGroups.types';
@@ -49,6 +52,12 @@ export default function GroupPrayers() {
   const { user, token, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   );
+
+  const [loadingModalVisible, setLoadingModalVisible] = useState(
+    status === 'loading' || loading
+  );
+
+  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   useLayoutEffect(() => {
     const parentNavigation = navigation.getParent();
@@ -117,12 +126,14 @@ export default function GroupPrayers() {
         <LoadingModal
           visible={status === 'loading' || loading}
           message='Loading group prayers...'
+          onClose={toggleLoadingModal}
         />
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!sanitizedPrayers || sanitizedPrayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
+            userId={user!.userProfileId}
             token={token ?? ''}
             prayers={sanitizedPrayers}
             refreshing={refreshing}

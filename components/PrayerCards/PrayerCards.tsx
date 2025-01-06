@@ -5,15 +5,17 @@ import type { Prayer } from '@/util/shared.types';
 import Card from '@/components/PrayerCards/PrayerCard';
 
 interface PrayerCardsProps {
+  userId: number;
   token: string;
   prayers: Prayer[];
   refreshing: boolean;
   onRefresh: () => void;
   flatListRef: React.RefObject<FlatList<any>>;
-  setLoading: (isLoading: boolean) => void; // Pass down loading status
+  setLoading: (isLoading: boolean) => void;
 }
 
 export default function PrayerCards({
+  userId,
   token,
   prayers,
   refreshing,
@@ -23,13 +25,10 @@ export default function PrayerCards({
 }: PrayerCardsProps) {
   const renderItem: ListRenderItem<Prayer> = ({ item }) => (
     <Card
-      id={item.prayerId}
+      userId={userId}
+      prayer={item}
       userToken={token}
-      prayerAccessId={item.prayerAccessId}
-      title={item.title}
-      createdDate={item.datetimeCreate}
-      answered={item.isAnswered}
-      setLoading={setLoading} // Pass down loading status setter
+      setLoading={setLoading}
     >
       <Text>{item.prayerDescription}</Text>
     </Card>
