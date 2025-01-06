@@ -13,15 +13,38 @@ import {
 import { useAppDispatch } from '@/hooks/redux';
 import { addUserPrayer } from '@/store/userPrayersSlice';
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-export default function AddPrayer() {
+import type { Prayer } from '@/util/shared.types';
+
+interface AddPrayerProps {
+  mode: 'add' | 'edit';
+  prayer?: Prayer;
+}
+
+export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
+  const route = useRoute<{ key: string; name: string; params: { mode: 'add' | 'edit' } }>();
 
-  const [prayerTitle, setPrayerTitle] = useState('');
-  const [prayerDescription, setPrayerDescription] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [prayerTitle, setPrayerTitle] = useState(() => {
+    if (route.params.mode === 'edit' && prayer) {
+      return prayer.title;
+    }
+    return '';
+  });
+  const [prayerDescription, setPrayerDescription] = useState(() => {
+    if (route.params.mode === 'edit' && prayer) {
+      return prayer.prayerDescription;
+    }
+    return '';
+  });
+  const [isPrivate, setIsPrivate] = useState(() => {
+    if (route.params.mode === 'edit' && prayer) {
+      return prayer.isPrivate;
+    }
+    return false;
+  });
 
   const onPrayerTitleChange = useCallback(
     (text: string) => setPrayerTitle(text),
@@ -115,7 +138,7 @@ export default function AddPrayer() {
           onPress={handleAddPrayer}
           disabled={!prayerTitle || !prayerDescription}
         >
-          <Text style={styles.buttonText}>Add</Text>
+          <Text style={styles.buttonText}>{route.params.mode === 'add' ? 'add' : 'edit'}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

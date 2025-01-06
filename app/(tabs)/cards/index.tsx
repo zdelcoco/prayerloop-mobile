@@ -1,8 +1,16 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Text, FlatList, View, StyleSheet, Dimensions, Alert } from 'react-native';
+import {
+  Text,
+  FlatList,
+  View,
+  StyleSheet,
+  Dimensions,
+  Alert,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
 import { RootState } from '../../../store/store';
@@ -13,7 +21,12 @@ import AddButton from '@/components/ui/AddButton';
 
 import type { Prayer } from '@/util/shared.types';
 
+type RootStackParamList = {
+  PrayerModal: { mode: string };
+};
+
 export default function Cards() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
 
   const { token, user } = useAppSelector((state: RootState) => state.auth);
@@ -41,7 +54,7 @@ export default function Cards() {
   useFocusEffect(fetchData);
 
   const onAddPressHandler = () => {
-    router.push('/cards/AddPrayer');
+    navigation.navigate('PrayerModal', { mode: 'add' });
   };
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);

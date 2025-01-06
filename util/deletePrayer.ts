@@ -8,7 +8,7 @@
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
-import { DeleteMethodAPIResponse } from './shared.types';
+import { DefaultAPIResponse } from './shared.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
@@ -38,8 +38,9 @@ export const deletePrayer = async (
       },
     });
 
-    const deletePrayerResponse: DeleteMethodAPIResponse = {
+    const deletePrayerResponse: DefaultAPIResponse = {
       message: response.data.message,
+      error: response.data.error,
     };
     console.log('deletePrayer response: ', deletePrayerResponse);
 

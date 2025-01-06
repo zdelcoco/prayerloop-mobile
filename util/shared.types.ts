@@ -9,7 +9,7 @@ export interface Result {
   success: boolean;
 }
 
-export interface DeleteMethodAPIResponse {
+export interface DefaultAPIResponse {
   message?: string;
   error?: string;
 };

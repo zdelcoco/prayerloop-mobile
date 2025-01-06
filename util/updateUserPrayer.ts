@@ -1,23 +1,16 @@
-/*
-
-  TODO -- BACKEND ADJUSTMENT TO HANDLE DELETE PRAYER IF LAST OF PRAYER_ACCESS
-
-  FOR NOW THIS WILL RESULT IN ORPHANED PRAYER RECORDS
-
-*/
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 
-import { DefaultAPIResponse } from './shared.types';
-import { Result } from './shared.types';
+import { CreateUserPrayerRequest } from './createUserPrayer.types';
+import { DefaultAPIResponse, Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
-export const removePrayerAccess = async (
+export const updateUserPrayer = async (
   token: string,
   prayerId: number,
-  prayerAccessId: number
+  prayerData: CreateUserPrayerRequest,
 ): Promise<Result> => {
   if (!token) {
     return {
@@ -30,22 +23,22 @@ export const removePrayerAccess = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/prayers/${prayerId}/access/${prayerAccessId}`;
-    console.log('removePrayerAccess url:', url);
-    console.log('removePrayerAccess prayerId:', prayerId);
-    console.log('removePrayerAccess prayerAccessId:', prayerAccessId);
-    const response = await axios.delete(url, {
+    const url = `${BASE_API_URL}:${BASE_API_PORT}/prayers/${prayerId}`;
+    console.log('updateUserPrayer url: ', url);
+    console.log('updateUserPrayer data: ', prayerData);
+    const response = await axios.put(url, prayerData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
-    const removePrayerResponse: DefaultAPIResponse = {
+    const prayerResponse: DefaultAPIResponse = {
       message: response.data.message,
+      error: response.data.error,
     };
-    console.log('removePrayerAccess response: ', removePrayerResponse);
+    console.log('updateUserPrayer response: ', prayerResponse);
 
-    return { success: true, data: removePrayerResponse };
+    return { success: true, data: prayerResponse };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
@@ -64,26 +57,26 @@ export const removePrayerAccess = async (
             success: false,
             error: {
               type: 'ServerError',
-              message: 'Server error occurred. Please try again later.',
+              message: 'Server error. Please try again later.',
             },
           };
         }
-      } else if (axiosError.code === 'ECONNABORTED') {
-        return {
-          success: false,
-          error: {
-            type: 'Timeout',
-            message: 'Request timed out. Please try again later.',
-          },
-        };
       }
+
+      return {
+        success: false,
+        error: {
+          type: 'RequestError',
+          message: 'Request error. Please try again later.',
+        },
+      };
     }
 
     return {
       success: false,
       error: {
-        type: 'Unknown',
-        message: 'An unknown error occurred. Please try again later.',
+        type: 'UnknownError',
+        message: 'Unknown error. Please try again later.',
       },
     };
   }

@@ -1,16 +1,20 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
-import { getUserPrayers } from '@/util/getUserPrayers';
 
+import { getUserPrayers } from '@/util/getUserPrayers';
 import { GetUserPrayersResponse } from '@/util/getUserPrayers.types';
-import { Prayer } from '@/util/shared.types';
+
 import { createUserPrayer } from '@/util/createUserPrayer';
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
+import { updateUserPrayer } from '@/util/updateUserPrayer';
+
+import { Prayer } from '@/util/shared.types';
+
 interface UserPrayersState {
   prayers: Prayer[] | null;
-  status: 'idle' | 'loading' | 'creating' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'creating' | 'updating' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -48,6 +52,16 @@ const userPrayersSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    updateUserPrayerStart: (state) => {
+      state.status = 'updating';
+    },
+    updateUserPrayerSuccess: (state) => {
+      state.status = 'succeeded';
+    },
+    updateUserPrayerFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
     clearUserPrayers: (state) => {
       state.status = 'idle';
       state.prayers = null;
@@ -63,6 +77,9 @@ export const {
   createUserPrayerStart,
   createUserPrayerSuccess,
   createUserPrayerFailure,
+  updateUserPrayerStart,
+  updateUserPrayerSuccess,
+  updateUserPrayerFailure,
 } = userPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -80,7 +97,7 @@ export const fetchUserPrayers = (): AppThunk => async (dispatch, getState) => {
   }
 
   if (userPrayers.status === 'loading') {
-    console.log("fetchUserPrayers already in progress.");
+    console.log('fetchUserPrayers already in progress.');
     return; // Avoid duplicate calls
   }
 
@@ -126,6 +143,32 @@ export const addUserPrayer =
       }
     } catch (error) {
       dispatch(createUserPrayerFailure('An error occurred.'));
+    }
+  };
+
+export const putUserPrayer = 
+  (prayerId: number, prayerData: CreateUserPrayerRequest): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(updateUserPrayerFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(updateUserPrayerStart());
+
+    try {
+      const result = await updateUserPrayer(auth.token, prayerId, prayerData);
+      if (result.success) {
+        dispatch(updateUserPrayerSuccess());
+        dispatch(fetchUserPrayers());
+      } else {
+        dispatch(
+          updateUserPrayerFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      dispatch(updateUserPrayerFailure('An error occurred.'));
     }
   };
 
