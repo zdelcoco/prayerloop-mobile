@@ -15,6 +15,7 @@ import LoadingModal from '@/components/ui/LoadingModal';
 import { router, useFocusEffect } from 'expo-router';
 import { clearGroupPrayers } from '@/store/groupPrayersSlice';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import AddButton from '@/components/ui/AddButton';
 
 type GroupPrayersRouteParams = {
   group: string; // Serialized group
@@ -44,9 +45,8 @@ export default function Groups() {
   const [loading, setLoading] = useState(false);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
-      status === 'loading' || loading
-    );
-  
+    status === 'loading' || loading
+  );
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
@@ -56,6 +56,11 @@ export default function Groups() {
   }, [route, navigation]);
 
   useFocusEffect(fetchData);
+
+  const onAddPressHandler = () => {
+    console.log('Add group pressed');
+    router.push({ pathname: '/groups/GroupModal' });
+  };
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -119,6 +124,7 @@ export default function Groups() {
           progressViewOffset={50}
         />
       </View>
+      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }

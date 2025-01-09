@@ -11,6 +11,20 @@ export default function GroupsLayout() {
         name="GroupPrayers" 
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="GroupModal"
+        options={{
+          title: "Create a new group",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleAlign: 'left',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontFamily: 'InstrumentSans-Bold',
+          },
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }
