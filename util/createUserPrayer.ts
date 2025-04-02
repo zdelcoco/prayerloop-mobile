@@ -79,7 +79,7 @@ export const createUserPrayer = async (
       success: false,
       error: {
         type: 'Unknown',
-        message: 'An unknown error occurred. Please try again.',
+        message: 'An unknown error occurred.\n' + error,
       },
     };
   }

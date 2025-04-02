@@ -73,7 +73,7 @@ export const deletePrayer = async (
       success: false,
       error: {
         type: 'UnknownError',
-        message: 'An unknown error occurred. Please try again later.',
+        message: 'An unknown error occurred.\n' + error,
       },
     };
   }

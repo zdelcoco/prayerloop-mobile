@@ -67,7 +67,10 @@ export const loginUser = async (
     }
     return {
       success: false,
-      error: { type: 'UnknownError', message: 'An unknown error occurred.' + error},
+      error: {
+        type: 'UnknownError',
+        message: 'An unknown error occurred.\n' + error,
+      },
     };
   }
 };

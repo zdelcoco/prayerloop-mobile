@@ -73,7 +73,7 @@ export const getGroupPrayers = async (
       success: false,
       error: {
         type: 'Unknown',
-        message: 'An unknown error occurred. Please try again later.',
+        message: 'An unknown error occurred.\n' + error,
       },
     };
   }

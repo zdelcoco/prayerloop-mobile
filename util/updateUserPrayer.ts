@@ -75,7 +75,7 @@ export const updateUserPrayer = async (
       success: false,
       error: {
         type: 'UnknownError',
-        message: 'Unknown error. Please try again later.',
+        message: 'An unknown error occurred.\n' + error,
       },
     };
   }
