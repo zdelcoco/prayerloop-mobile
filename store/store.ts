@@ -1,5 +1,4 @@
 import { configureStore } from '@reduxjs/toolkit';
-//import { composeWithDevTools } from 'redux-devtools-extension';
 import authReducer from './authSlice';
 import userPrayersReducer from './userPrayersSlice';
 import userGroupsReducer from './groupsSlice';

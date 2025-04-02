@@ -35,6 +35,19 @@ export interface Prayer {
   userProfileId: number;
 }
 
+export interface CreatePrayerRequest {
+  title: string;
+  prayerDescription: string;
+  isPrivate: boolean;
+  prayerType: string;
+}
+
+export interface CreatePrayerResponse {
+  message: string;
+  prayerId: number;
+  prayerAccessId: number;
+}
+
 export const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
 
 export const defaultNetworkCatch = (error: unknown): Result => {

@@ -1,3 +1,4 @@
+// GroupPrayers.tsx
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import {
   View,
@@ -12,27 +13,30 @@ import { Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import {
-  clearGroupPrayers,
-  fetchGroupPrayers,
-} from '@/store/groupPrayersSlice';
+import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
 import { RootState } from '../../../store/store';
 
 import { Group } from '@/util/getUserGroups.types';
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import { Prayer } from '@/util/shared.types';
+import AddButton from '@/components/ui/AddButton';
+import { StackNavigationProp } from '@react-navigation/stack';
 
-type GroupPrayersRouteParams = {
-  group: string; // Serialized group
+// Define the route param list. Note that each route's parameters must be an object.
+type RootStackParamList = {
+  GroupPrayers: { group: string }; // Serialized group as a string
+  PrayerModal: { mode: string; groupProfileId: number; groupName: string };
 };
 
+type GroupPrayersNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'GroupPrayers'
+>;
+
 export default function GroupPrayers() {
-  const navigation = useNavigation();
-  const route =
-    useRoute<
-      RouteProp<{ GroupPrayers: GroupPrayersRouteParams }, 'GroupPrayers'>
-    >();
+  const navigation = useNavigation<GroupPrayersNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'GroupPrayers'>>();
 
   // Deserialize the group parameter
   const group: Group = JSON.parse(route.params.group);
@@ -89,7 +93,7 @@ export default function GroupPrayers() {
     if (isAuthenticated && status === 'idle') {
       dispatch(fetchGroupPrayers(group.groupId));
     }
-  }, [dispatch, user, isAuthenticated, status]);
+  }, [dispatch, user, isAuthenticated, status, group.groupId]);
 
   const onRefresh = async () => {
     if (refreshing) return; // Prevent duplicate refresh triggers
@@ -107,13 +111,20 @@ export default function GroupPrayers() {
     }
   };
 
-  // todo -- fix this on the backend
+  // Todo: fix this on the backend
   const sanitizedPrayers = prayers?.filter(
     (prayer, index, self) =>
       index === self.findIndex((p) => p.prayerId === prayer.prayerId)
   );
 
-  const statusOverride = false;
+  const onAddPressHandler = () => {
+    console.log('Add button pressed');
+    navigation.navigate('PrayerModal', {
+      mode: 'add',
+      groupProfileId: group.groupId,
+      groupName: group.groupName,
+    });
+  };
 
   return (
     <LinearGradient
@@ -139,10 +150,10 @@ export default function GroupPrayers() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
-            setLoading={setLoading}
           />
         )}
       </View>
+      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }
