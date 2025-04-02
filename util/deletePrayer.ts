@@ -12,7 +12,6 @@ import { DefaultAPIResponse } from './shared.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const deletePrayer = async (
   token: string,
@@ -29,7 +28,7 @@ export const deletePrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/prayers/${prayerId}`;
+    const url = `${BASE_API_URL}/prayers/${prayerId}`;
     console.log('deletePrayer url:', url);
     console.log('deletePrayer prayerId:', prayerId);
     const response = await axios.delete(url, {

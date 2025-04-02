@@ -3,6 +3,7 @@ import { Text, FlatList, ListRenderItem, StyleSheet } from 'react-native';
 import type { Prayer } from '@/util/shared.types';
 
 import Card from '@/components/PrayerCards/PrayerCard';
+import PrayerDetailModal from './PrayerDetailModal';
 
 interface PrayerCardsProps {
   userId: number;
@@ -11,7 +12,6 @@ interface PrayerCardsProps {
   refreshing: boolean;
   onRefresh: () => void;
   flatListRef: React.RefObject<FlatList<any>>;
-  setLoading: (isLoading: boolean) => void;
 }
 
 export default function PrayerCards({
@@ -21,31 +21,47 @@ export default function PrayerCards({
   refreshing,
   onRefresh,
   flatListRef,
-  setLoading,
 }: PrayerCardsProps) {
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
+
+  const onPressHandler = (prayer: Prayer) => {
+    setSelectedPrayer(prayer);
+    setDetailModalVisible(true);
+  };
+
   const renderItem: ListRenderItem<Prayer> = ({ item }) => (
-    <Card
-      userId={userId}
-      prayer={item}
-      userToken={token}
-      setLoading={setLoading}
-    >
+    <Card prayer={item} onPress={() => onPressHandler(item)}>
       <Text>{item.prayerDescription}</Text>
     </Card>
   );
 
   return (
-    <FlatList
-      ref={flatListRef}
-      data={prayers}
-      keyExtractor={(item) => item.prayerId.toString()}
-      renderItem={renderItem}
-      contentContainerStyle={styles.listContainer}
-      extraData={prayers}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      windowSize={5}
-    />
+    <>
+      {selectedPrayer && (
+        <PrayerDetailModal
+          visible={detailModalVisible}
+          userId={userId}
+          userToken={token}
+          prayer={selectedPrayer}
+          onClose={() => {
+            setDetailModalVisible(false);
+            setSelectedPrayer(null);
+          }}
+        />
+      )}
+      <FlatList
+        ref={flatListRef}
+        data={prayers}
+        keyExtractor={(item) => item.prayerId.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContainer}
+        extraData={prayers}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        windowSize={5}
+      />
+    </>
   );
 }
 

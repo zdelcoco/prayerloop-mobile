@@ -12,7 +12,6 @@ import { DefaultAPIResponse } from './shared.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const removePrayerAccess = async (
   token: string,
@@ -30,7 +29,7 @@ export const removePrayerAccess = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/prayers/${prayerId}/access/${prayerAccessId}`;
+    const url = `${BASE_API_URL}/prayers/${prayerId}/access/${prayerAccessId}`;
     console.log('removePrayerAccess url:', url);
     console.log('removePrayerAccess prayerId:', prayerId);
     console.log('removePrayerAccess prayerAccessId:', prayerAccessId);

@@ -8,7 +8,6 @@ import {
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const createUserPrayer = async (
   token: string,
@@ -26,7 +25,7 @@ export const createUserPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/users/${userProfileId}/prayers`;
+    const url = `${BASE_API_URL}/users/${userProfileId}/prayers`;
     console.log('createUserPrayer url: ', url);
     console.log('createUserPrayer data: ', prayerData);
     const response = await axios.post(url, prayerData, {

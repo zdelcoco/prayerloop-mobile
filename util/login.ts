@@ -5,7 +5,6 @@ import { LoginResponse } from './login.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const loginUser = async (
   username: string,
@@ -23,7 +22,7 @@ export const loginUser = async (
 
   try {
     console.log('logging in as ', username);
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/login`;
+    const url = `${BASE_API_URL}/login`;
     console.log('login url:', url);
     const response = await axios.post(url, { username, password });
 
@@ -68,7 +67,7 @@ export const loginUser = async (
     }
     return {
       success: false,
-      error: { type: 'UnknownError', message: 'An unknown error occurred.' },
+      error: { type: 'UnknownError', message: 'An unknown error occurred.' + error},
     };
   }
 };

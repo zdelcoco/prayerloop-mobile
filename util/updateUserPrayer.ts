@@ -5,7 +5,6 @@ import { CreateUserPrayerRequest } from './createUserPrayer.types';
 import { DefaultAPIResponse, Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const updateUserPrayer = async (
   token: string,
@@ -23,7 +22,7 @@ export const updateUserPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/prayers/${prayerId}`;
+    const url = `${BASE_API_URL}/prayers/${prayerId}`;
     console.log('updateUserPrayer url: ', url);
     console.log('updateUserPrayer data: ', prayerData);
     const response = await axios.put(url, prayerData, {

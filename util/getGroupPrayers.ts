@@ -5,7 +5,6 @@ import { GetUserPrayersResponse } from './getUserPrayers.types';
 import { Result } from './shared.types';
 
 const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
-const BASE_API_PORT = Constants.expoConfig?.extra?.apiPort;
 
 export const getGroupPrayers = async (
   token: string,
@@ -22,7 +21,7 @@ export const getGroupPrayers = async (
   }
 
   try {
-    const url = `${BASE_API_URL}:${BASE_API_PORT}/groups/${groupId}/prayers`;
+    const url = `${BASE_API_URL}/groups/${groupId}/prayers`;
     console.log('getGroupPrayers url:', url);
     const response = await axios.get(url, {
       headers: {
