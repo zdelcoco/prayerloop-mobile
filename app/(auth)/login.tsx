@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { login, memoizedAuthSelector } from '../../store/authSlice';
 import LoginView from '@/components/login/LoginView';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import LoadingModal from '@/components/ui/LoadingModal';
 
 export default function LoginScreen() {
   const dispatch = useAppDispatch();
@@ -13,16 +14,29 @@ export default function LoginScreen() {
     dispatch(login(username, password));
   };
 
+  const [loadingModalVisible, setLoadingModalVisible] = useState(
+    status === 'loading'
+  );
+
+  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
+
   if (status === 'failed') {
     console.log(error);
   }
 
   return (
     <>
-      <LoginView 
-        onPress={(username: string, password: string) => handleLogin(username, password)} 
-        errorMessage={status === 'failed' && error ? error : undefined} 
-      />      
+      <LoadingModal
+        visible={status === 'loading' || loadingModalVisible}
+        message='Logging in...'
+        onClose={toggleLoadingModal}
+      />
+      <LoginView
+        onPress={(username: string, password: string) =>
+          handleLogin(username, password)
+        }
+        errorMessage={status === 'failed' && error ? error : undefined}
+      />
     </>
   );
 }

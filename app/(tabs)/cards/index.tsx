@@ -107,7 +107,6 @@ export default function Cards() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
-            setLoading={setLoading}
           />
         )}
       </View>
