@@ -3,16 +3,23 @@ import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 
 import { getGroupPrayers } from '../util/getGroupPrayers';
-import { GetUserPrayersResponse } from '../util/getUserPrayers.types';
-import { Prayer } from '../util/shared.types';
+import { createGroupPrayer } from '../util/createGroupPrayer';
+import { Prayer, CreatePrayerRequest } from '../util/shared.types';
+
+interface GroupPrayersResponse {
+  groupProfileId: number;
+  prayers: Prayer[];
+}
 
 interface GroupPrayersState {
+  groupProfileId: number;
   prayers: Prayer[] | null;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'creating' | 'succeeded' | 'failed';
   error: string | null;
 }
 
 const initialState: GroupPrayersState = {
+  groupProfileId: 0,
   prayers: null,
   status: 'idle',
   error: null,
@@ -25,11 +32,25 @@ const groupPrayersSlice = createSlice({
     getGroupPrayersStart: (state) => {
       state.status = 'loading';
     },
-    getGroupPrayersSuccess: (state, action: PayloadAction<GetUserPrayersResponse>) => {
+    getGroupPrayersSuccess: (
+      state,
+      action: PayloadAction<GroupPrayersResponse>
+    ) => {
       state.status = 'succeeded';
       state.prayers = action.payload.prayers;
+      state.groupProfileId = action.payload.groupProfileId;
     },
     getGroupPrayersFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
+    createGroupPrayerStart: (state) => {
+      state.status = 'creating';
+    },
+    createGroupPrayerSuccess: (state) => {
+      state.status = 'succeeded';
+    },
+    createGroupPrayerFailure: (state, action: PayloadAction<string>) => {
       state.status = 'failed';
       state.error = action.payload;
     },
@@ -45,6 +66,9 @@ export const {
   getGroupPrayersStart,
   getGroupPrayersSuccess,
   getGroupPrayersFailure,
+  createGroupPrayerStart,
+  createGroupPrayerSuccess,
+  createGroupPrayerFailure,
 } = groupPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -56,7 +80,7 @@ export type AppThunk<ReturnType = void> = ThunkAction<
 
 export const fetchGroupPrayers =
   (
-    groupId: number
+    groupProfileId: number
   ): ThunkAction<void, RootState, unknown, PayloadAction<any>> =>
   async (dispatch, getState) => {
     const { auth } = getState();
@@ -68,9 +92,14 @@ export const fetchGroupPrayers =
     dispatch(getGroupPrayersStart());
 
     try {
-      const result = await getGroupPrayers(auth.token, groupId);
+      const result = await getGroupPrayers(auth.token, groupProfileId);
       if (result.success) {
-        dispatch(getGroupPrayersSuccess(result.data as GetUserPrayersResponse));
+        dispatch(
+          getGroupPrayersSuccess({
+            groupProfileId,
+            prayers: result.data.prayers,
+          })
+        );
       } else {
         dispatch(
           getGroupPrayersFailure(result.error?.message || 'An error occurred.')
@@ -78,6 +107,38 @@ export const fetchGroupPrayers =
       }
     } catch (error) {
       dispatch(getGroupPrayersFailure('An error occurred.'));
+    }
+  };
+
+export const addGroupPrayer =
+  (groupProfileId: number, prayerRequest: CreatePrayerRequest): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(createGroupPrayerFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(createGroupPrayerStart());
+
+    try {
+      const result = await createGroupPrayer(
+        auth.token,
+        groupProfileId,
+        prayerRequest
+      );
+      if (result.success) {
+        dispatch(createGroupPrayerSuccess());
+        dispatch(fetchGroupPrayers(groupProfileId));
+      } else {
+        dispatch(
+          createGroupPrayerFailure(
+            result.error?.message || 'An error occurred.'
+          )
+        );
+      }
+    } catch (error) {
+      dispatch(createGroupPrayerFailure('An error occurred.'));
     }
   };
 
@@ -91,6 +152,5 @@ export const selectGroupPrayersError = (state: RootState) =>
 export const clearGroupPrayers = (): AppThunk => async (dispatch) => {
   dispatch(groupPrayersSlice.actions.clearGroupPrayers());
 };
-
 
 export default groupPrayersSlice.reducer;

@@ -6,11 +6,10 @@ import { getUserPrayers } from '@/util/getUserPrayers';
 import { GetUserPrayersResponse } from '@/util/getUserPrayers.types';
 
 import { createUserPrayer } from '@/util/createUserPrayer';
-import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
 
 import { updateUserPrayer } from '@/util/updateUserPrayer';
 
-import { Prayer } from '@/util/shared.types';
+import { Prayer, CreatePrayerRequest } from '@/util/shared.types';
 
 interface UserPrayersState {
   prayers: Prayer[] | null;
@@ -117,7 +116,7 @@ export const fetchUserPrayers = (): AppThunk => async (dispatch, getState) => {
 };
 
 export const addUserPrayer =
-  (prayerRequest: CreateUserPrayerRequest): AppThunk =>
+  (prayerRequest: CreatePrayerRequest): AppThunk =>
   async (dispatch, getState) => {
     const { auth } = getState();
     if (!auth.isAuthenticated || !auth.token || !auth.user) {
@@ -146,8 +145,8 @@ export const addUserPrayer =
     }
   };
 
-export const putUserPrayer = 
-  (prayerId: number, prayerData: CreateUserPrayerRequest): AppThunk =>
+export const putUserPrayer =
+  (prayerId: number, prayerData: CreatePrayerRequest): AppThunk =>
   async (dispatch, getState) => {
     const { auth } = getState();
     if (!auth.isAuthenticated || !auth.token || !auth.user) {

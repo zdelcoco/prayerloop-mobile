@@ -8,9 +8,9 @@ import {
   Result,
 } from './shared.types';
 
-export const createUserPrayer = async (
+export const createGroupPrayer = async (
   token: string,
-  userProfileId: number,
+  groupProfileId: number,
   prayerData: CreatePrayerRequest
 ): Promise<Result> => {
   if (!token) {
@@ -24,19 +24,19 @@ export const createUserPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/prayers`;
+    const url = `${BASE_API_URL}/groups/${groupProfileId}/prayers`;
     const response = await axios.post(url, prayerData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    });
+    });    
 
     const prayerResponse: CreatePrayerResponse = {
       message: response.data.message,
       prayerId: response.data.prayerId,
       prayerAccessId: response.data.prayerAccessId,
     };
-    console.log('createUserPrayer response: ', prayerResponse);
+    console.log('createGroupPrayer response: ', prayerResponse);
 
     return { success: true, data: prayerResponse };
   } catch (error: unknown) {
