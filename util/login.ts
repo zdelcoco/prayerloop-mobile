@@ -1,10 +1,7 @@
 import axios, { AxiosError } from 'axios';
-import Constants from 'expo-constants';
 
 import { LoginResponse } from './login.types';
-import { Result } from './shared.types';
-
-const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
+import { BASE_API_URL, Result } from './shared.types';
 
 export const loginUser = async (
   username: string,

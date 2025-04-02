@@ -1,10 +1,7 @@
-import axios, { AxiosError } from 'axios';
-import Constants from 'expo-constants';
+import axios from 'axios';
 
 import { CreateUserPrayerRequest } from './createUserPrayer.types';
-import { DefaultAPIResponse, Result } from './shared.types';
-
-const BASE_API_URL = Constants.expoConfig?.extra?.apiUrl;
+import { BASE_API_URL, DefaultAPIResponse, defaultNetworkCatch, Result } from './shared.types';
 
 export const updateUserPrayer = async (
   token: string,
@@ -23,8 +20,6 @@ export const updateUserPrayer = async (
 
   try {
     const url = `${BASE_API_URL}/prayers/${prayerId}`;
-    console.log('updateUserPrayer url: ', url);
-    console.log('updateUserPrayer data: ', prayerData);
     const response = await axios.put(url, prayerData, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -38,45 +33,7 @@ export const updateUserPrayer = async (
     console.log('updateUserPrayer response: ', prayerResponse);
 
     return { success: true, data: prayerResponse };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
-
-      if (axiosError.response) {
-        if (axiosError.response.status === 401) {
-          return {
-            success: false,
-            error: {
-              type: 'Unauthorized',
-              message: 'Unauthorized access. Please log in.',
-            },
-          };
-        } else if (axiosError.response.status >= 500) {
-          return {
-            success: false,
-            error: {
-              type: 'ServerError',
-              message: 'Server error. Please try again later.',
-            },
-          };
-        }
-      }
-
-      return {
-        success: false,
-        error: {
-          type: 'RequestError',
-          message: 'Request error. Please try again later.',
-        },
-      };
+  } catch (error: unknown) {
+      return defaultNetworkCatch(error);
     }
-
-    return {
-      success: false,
-      error: {
-        type: 'UnknownError',
-        message: 'An unknown error occurred.\n' + error,
-      },
-    };
-  }
 };
