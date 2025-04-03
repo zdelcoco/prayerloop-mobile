@@ -133,14 +133,14 @@ export default function GroupPrayers() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
+      <LoadingModal
+        visible={status === 'loading' || loading}
+        message='Loading group prayers...'
+        onClose={toggleLoadingModal}
+      />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        <LoadingModal
-          visible={status === 'loading' || loading}
-          message='Loading group prayers...'
-          onClose={toggleLoadingModal}
-        />
         {error && <Text style={styles.text}>Error: {error}</Text>}
-        {!sanitizedPrayers || sanitizedPrayers.length === 0 ? (
+        {!user || !sanitizedPrayers || sanitizedPrayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
