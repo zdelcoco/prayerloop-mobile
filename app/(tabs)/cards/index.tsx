@@ -97,7 +97,7 @@ export default function Cards() {
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {error && <Text style={styles.text}>Error: {error}</Text>}
-        {!prayers || prayers.length === 0 ? (
+        {!user || !prayers || prayers.length === 0 ? (
           <Text style={styles.text}>No prayers found</Text>
         ) : (
           <PrayerCards
