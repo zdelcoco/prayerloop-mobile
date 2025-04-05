@@ -38,6 +38,20 @@ export default function GroupsLayout() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name='UsersModal'
+        options={{
+          title: 'Group Members',
+          headerShown: false,
+          headerTransparent: true,
+          headerTitleAlign: 'left',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontFamily: 'InstrumentSans-Bold',
+          },
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }

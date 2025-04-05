@@ -40,9 +40,9 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
 
+  // need to handle group prayers -- edit/delete won't currently work
+  // update this to compare prayer.createdBy for group prayers
   const canEditAndDelete = () => userId === prayer.userProfileId;
-
-  console.log('description in PrayerDetailModal:', prayer.prayerDescription);
 
   const onEditHandler = () => {
     onClose();

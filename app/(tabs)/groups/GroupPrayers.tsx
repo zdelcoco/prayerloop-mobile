@@ -23,10 +23,10 @@ import { Prayer } from '@/util/shared.types';
 import AddButton from '@/components/ui/AddButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-// Define the route param list. Note that each route's parameters must be an object.
 type RootStackParamList = {
   GroupPrayers: { group: string }; // Serialized group as a string
   PrayerModal: { mode: string; groupProfileId: number; groupName: string };
+  UsersModal: {};
 };
 
 type GroupPrayersNavigationProp = StackNavigationProp<
@@ -152,6 +152,21 @@ export default function GroupPrayers() {
             flatListRef={flatListRef}
           />
         )}
+        <TouchableOpacity
+          onPress={() => {
+            navigation.navigate('UsersModal', {
+              groupProfileId: group.groupId,
+            });
+          }}
+          style={{
+            justifyContent: 'center',
+            paddingBottom: 18,
+            borderColor: '#ccc',
+            borderWidth: 1,
+          }}
+        >
+          <Text style={styles.text}>Show Group Members</Text>
+        </TouchableOpacity>
       </View>
       <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
@@ -165,8 +180,9 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 18,
+    fontWeight: '600',
     color: '#333',
-    marginTop: 20,
+    marginTop: 18,
     textAlign: 'center',
   },
   backButton: {

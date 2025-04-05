@@ -56,6 +56,7 @@ const groupPrayersSlice = createSlice({
     },
     clearGroupPrayers: (state) => {
       state.status = 'idle';
+      state.groupProfileId = 0;
       state.prayers = null;
       state.error = null;
     },
