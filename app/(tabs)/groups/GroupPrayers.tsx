@@ -1,5 +1,5 @@
 // GroupPrayers.tsx
-import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import { Prayer } from '@/util/shared.types';
 import AddButton from '@/components/ui/AddButton';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useFocusEffect } from 'expo-router';
 
 type RootStackParamList = {
   GroupPrayers: { group: string }; // Serialized group as a string
@@ -53,7 +54,7 @@ export default function GroupPrayers() {
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.groupPrayers
   );
-  const { user, token, isAuthenticated } = useAppSelector(
+  const { user, token } = useAppSelector(
     (state: RootState) => state.auth
   );
 
@@ -89,14 +90,14 @@ export default function GroupPrayers() {
     };
   }, [navigation, group]);
 
-  useEffect(() => {
-    if (isAuthenticated && status === 'idle') {
-      dispatch(fetchGroupPrayers(group.groupId));
-    }
-  }, [dispatch, user, isAuthenticated, status, group.groupId]);
+  const fetchData = useCallback(() => {
+    dispatch(fetchGroupPrayers(group.groupId));
+  }, [dispatch, group.groupId]);
+
+  useFocusEffect(fetchData);
 
   const onRefresh = async () => {
-    if (refreshing) return; // Prevent duplicate refresh triggers
+    if (refreshing) return;
     setRefreshing(true);
     try {
       await dispatch(fetchGroupPrayers(group.groupId));
@@ -150,6 +151,7 @@ export default function GroupPrayers() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
+            onActionComplete={fetchData}
           />
         )}
         <TouchableOpacity

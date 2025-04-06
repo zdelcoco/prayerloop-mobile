@@ -12,6 +12,7 @@ interface PrayerCardsProps {
   refreshing: boolean;
   onRefresh: () => void;
   flatListRef: React.RefObject<FlatList<any>>;
+  onActionComplete: () => void;
 }
 
 export default function PrayerCards({
@@ -21,6 +22,7 @@ export default function PrayerCards({
   refreshing,
   onRefresh,
   flatListRef,
+  onActionComplete,
 }: PrayerCardsProps) {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
@@ -48,6 +50,7 @@ export default function PrayerCards({
             setDetailModalVisible(false);
             setSelectedPrayer(null);
           }}
+          onActionComplete={onActionComplete}
         />
       )}
       <FlatList

@@ -60,7 +60,7 @@ export default function Cards() {
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   const onRefresh = async () => {
-    if (refreshing) return; // Prevent duplicate refresh triggers
+    if (refreshing) return;
     setRefreshing(true);
     try {
       await dispatch(fetchUserPrayers());
@@ -107,10 +107,10 @@ export default function Cards() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
+            onActionComplete={fetchData}
           />
         )}
       </View>
-
       <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
