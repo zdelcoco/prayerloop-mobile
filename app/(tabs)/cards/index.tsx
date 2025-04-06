@@ -13,7 +13,7 @@ import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
-import { RootState } from '../../../store/store';
+import { RootState } from '@/store/store';
 
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
@@ -107,7 +107,9 @@ export default function Cards() {
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
-            onActionComplete={fetchData}
+            onActionComplete={() => {
+              dispatch(fetchUserPrayers());
+            }}
           />
         )}
       </View>

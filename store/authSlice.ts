@@ -1,9 +1,9 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
+import { User } from '../util/shared.types';
 import { loginUser } from '../util/login';
-
-import { LoginResponse, User } from '../util/login.types';
+import { LoginResponse } from '../util/login.types';
 import { clearUserPrayers } from './userPrayersSlice';
 import { clearUserGroups } from './groupsSlice';
 
