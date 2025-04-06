@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import Modal from 'react-native-modal';
 
 interface LoadingModalProps {
   visible: boolean;
@@ -14,30 +15,26 @@ const LoadingModal: React.FC<LoadingModalProps> = ({
 }) => {
   return (
     <Modal
-      animationType='fade'
-      transparent
-      visible={visible}
-      onRequestClose={onClose}
+      isVisible={visible}
+      animationIn="fadeIn"
+      animationOut="fadeOut"
+      backdropOpacity={0.75}
+      onBackdropPress={onClose}
+      onBackButtonPress={onClose}
+      swipeDirection={undefined}
+      statusBarTranslucent={false}
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.extraLargeSpinner}>
-            <ActivityIndicator size='large' color='#b2d8b2' />
-          </View>
-          {message && <Text style={styles.text}>{message}</Text>}
+      <View style={styles.container}>
+        <View style={styles.extraLargeSpinner}>
+          <ActivityIndicator size="large" color="#b2d8b2" />
         </View>
+        {message && <Text style={styles.text}>{message}</Text>}
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-  },
   extraLargeSpinner: {
     transform: [{ scale: 2 }],
   },
@@ -47,6 +44,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 60,
     borderRadius: 8,
     alignItems: 'center',
+    alignSelf: 'center',
   },
   text: {
     marginTop: 48,

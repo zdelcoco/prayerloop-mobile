@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -20,6 +21,7 @@ import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import AddButton from '@/components/ui/AddButton';
 
 import type { Prayer } from '@/util/shared.types';
+import { ReactReduxContext } from 'react-redux';
 
 type RootStackParamList = {
   PrayerModal: { mode: string };
@@ -75,14 +77,6 @@ export default function Cards() {
     }
   };
 
-  useEffect(() => {
-    if (loading) {
-      setLoadingModalVisible(true);
-    } else {
-      setLoadingModalVisible(false);
-    }
-  }, [loading]);
-
   return (
     <LinearGradient
       colors={['#90c590', '#ffffff']}
@@ -91,7 +85,7 @@ export default function Cards() {
       end={{ x: 0, y: 1 }}
     >
       <LoadingModal
-        visible={status === 'loading' || loadingModalVisible}
+        visible={status === 'loading'}
         message='Loading prayers...'
         onClose={toggleLoadingModal}
       />
@@ -108,7 +102,7 @@ export default function Cards() {
             onRefresh={onRefresh}
             flatListRef={flatListRef}
             onActionComplete={() => {
-              dispatch(fetchUserPrayers());
+              onRefresh();
             }}
           />
         )}
@@ -127,5 +121,16 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
     marginTop: 20,
+  },
+  inlineLoadingIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    zIndex: 1,
   },
 });
