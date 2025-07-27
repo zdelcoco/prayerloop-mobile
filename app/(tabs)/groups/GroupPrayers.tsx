@@ -16,7 +16,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
 import { RootState } from '../../../store/store';
 
-import { Group } from '@/util/getUserGroups.types';
+import { Group } from '@/util/shared.types';
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import { Prayer } from '@/util/shared.types';

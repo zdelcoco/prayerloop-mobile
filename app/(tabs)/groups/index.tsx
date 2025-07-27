@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
 import { fetchUserGroups } from '@/store/groupsSlice';
 
-import type { Group } from '@/util/getUserGroups.types';
+import type { Group } from '@/util/shared.types';
 
 import GroupCard from '@/components/Groups/GroupCard';
 import LoadingModal from '@/components/ui/LoadingModal';
@@ -58,8 +58,7 @@ export default function Groups() {
   useFocusEffect(fetchData);
 
   const onAddPressHandler = () => {
-    console.log('Add group pressed');
-    router.push({ pathname: '/groups/GroupModal' });
+    router.push({ pathname: '/groups/ActionSelection' });
   };
 
   const onRefresh = async () => {
