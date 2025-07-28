@@ -1,14 +1,16 @@
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { useAppDispatch } from '@/hooks/redux';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { logout } from '@/store/authSlice';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet, View, Pressable } from 'react-native';
+import { RootState } from '@/store/store';
 
 import Colors from '@/constants/Colors';
 
 export default function TabsLayout() {
   const dispatch = useAppDispatch();
+  const { prayers } = useAppSelector((state: RootState) => state.userPrayers);
 
   const logoutHandler = () => {
     dispatch(logout());
@@ -64,6 +66,31 @@ export default function TabsLayout() {
             tabBarIcon: ({ focused, color, size }) => (
               <FontAwesome name='vcard' size={size} color={color} />
             ),
+            headerRight: () => (
+              <View style={styles.headerRight}>
+                <Pressable 
+                  style={styles.headerButton} 
+                  onPress={() => {
+                    if ((global as any).cardsSetPrayerSessionVisible) {
+                      (global as any).cardsSetPrayerSessionVisible(true);
+                    }
+                  }}
+                  disabled={!prayers || prayers.length === 0}
+                >
+                  <FontAwesome 
+                    name="child" 
+                    size={ms(24)} 
+                    color={(!prayers || prayers.length === 0) ? "#ccc" : "#000"} 
+                  />
+                </Pressable>
+                <FontAwesome
+                  name='sign-out'
+                  size={ms(24)}
+                  onPress={logoutHandler}
+                  style={{ marginLeft: 16 }}
+                />
+              </View>
+            ),
           }}
         />
         <Tabs.Screen
@@ -93,5 +120,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  headerButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
 });

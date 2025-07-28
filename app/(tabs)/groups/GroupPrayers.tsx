@@ -29,6 +29,7 @@ import { Prayer } from '@/util/shared.types';
 import AddButton from '@/components/ui/AddButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from 'expo-router';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 
 type RootStackParamList = {
   GroupPrayers: { group: string }; // Serialized group as a string
@@ -50,6 +51,7 @@ export default function GroupPrayers() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
   const flatListRef = useRef<FlatList<Prayer>>(null);
 
   const headerHeight = useHeaderHeight();
@@ -83,6 +85,17 @@ export default function GroupPrayers() {
         ),
         headerRight: () => (
           <View style={styles.headerRightContainer}>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={() => setPrayerSessionVisible(true)}
+              disabled={!prayers || prayers.length === 0}
+            >
+              <FontAwesome 
+                name='child' 
+                size={24} 
+                color={(!prayers || prayers.length === 0) ? '#ccc' : '#000'} 
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerIconButton}
               onPress={() => {
@@ -121,7 +134,7 @@ export default function GroupPrayers() {
         });
       }
     };
-  }, [navigation, group, dispatch]);
+  }, [navigation, group, dispatch, prayers]);
 
   const fetchData = useCallback(() => {
     dispatch(fetchGroupPrayers(group.groupId));
@@ -171,6 +184,13 @@ export default function GroupPrayers() {
         visible={status === 'loading' || loading}
         message='Loading group prayers...'
         onClose={toggleLoadingModal}
+      />
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={sanitizedPrayers || []}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => setPrayerSessionVisible(false)}
+        contextTitle={group.groupName}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {error && <Text style={styles.text}>Error: {error}</Text>}
