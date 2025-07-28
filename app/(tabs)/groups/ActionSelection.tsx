@@ -23,8 +23,7 @@ export default function ActionSelection() {
   };
 
   const joinGroupHandler = () => {
-    // TODO: Implement join group functionality
-    router.dismiss();
+    router.push('/groups/JoinGroupModal');
   };
 
   const cancelHandler = () => {

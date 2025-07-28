@@ -35,6 +35,20 @@ export default function GroupsLayout() {
         }}
       />
       <Stack.Screen
+        name="JoinGroupModal"
+        options={{
+          title: "Join a group",
+          headerShown: true,
+          headerTransparent: true,
+          headerTitleAlign: 'left',
+          headerTitleStyle: {
+            fontSize: 18,
+            fontFamily: 'InstrumentSans-Bold',
+          },
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name='PrayerModal'
         options={{
           headerShown: true,

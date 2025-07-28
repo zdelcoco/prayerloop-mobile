@@ -14,7 +14,13 @@ import {
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchGroupUsers } from '@/store/groupUsersSlice';
-import { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
 import {
   useNavigation,
   useFocusEffect,
@@ -65,27 +71,27 @@ export default function UsersModal() {
 
   const fetchData = useCallback(() => {
     const groupId = route.params.groupProfileId;
-    
+
     // Prevent duplicate fetches using refs (no status dependency needed)
     if (isFetchingRef.current || lastFetchedGroupRef.current === groupId) {
       return;
     }
-    
+
     isFetchingRef.current = true;
     lastFetchedGroupRef.current = groupId;
     setLoadingTimeout(false);
-    
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     // Set a timeout to detect stuck loading states
     timeoutRef.current = setTimeout(() => {
       setLoadingTimeout(true);
       isFetchingRef.current = false;
     }, 15000); // 15 second timeout
-    
+
     dispatch(fetchGroupUsers(groupId));
   }, [dispatch, route.params.groupProfileId]);
 
@@ -126,7 +132,6 @@ export default function UsersModal() {
     };
   }, []);
 
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -144,20 +149,23 @@ export default function UsersModal() {
 
   const handleInviteToGroup = useCallback(async () => {
     if (!token || inviteLoading) return;
-    
+
     setInviteLoading(true);
-    
+
     try {
-      const result = await createGroupInvite(token, route.params.groupProfileId);
-      
+      const result = await createGroupInvite(
+        token,
+        route.params.groupProfileId
+      );
+
       if (result.success && result.data?.inviteCode) {
         const groupName = route.params.groupName || 'this group';
-        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop! Use invite code: ${result.data.inviteCode}`;
-        
+        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop!\n\nYour invite code is:\n${result.data.inviteCode}\n\nDownload PrayerLoop and enter this code to join the group.`;
+
         try {
           await Share.share({
             message: inviteMessage,
-            title: 'PrayerLoop Group Invite'
+            title: 'PrayerLoop Group Invite',
           });
         } catch (shareError) {
           console.error('Share error:', shareError);
@@ -185,7 +193,12 @@ export default function UsersModal() {
     } finally {
       setInviteLoading(false);
     }
-  }, [token, route.params.groupProfileId, route.params.groupName, inviteLoading]);
+  }, [
+    token,
+    route.params.groupProfileId,
+    route.params.groupName,
+    inviteLoading,
+  ]);
 
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userItemContainer}>
@@ -212,15 +225,22 @@ export default function UsersModal() {
             </View>
           )}
 
-          {(status === 'loading' && loadingTimeout) && (
+          {status === 'loading' && loadingTimeout && (
             <View style={styles.centeredMessageContainer}>
               <Text style={styles.errorText}>
-                Loading is taking longer than expected. The request may have timed out.
+                Loading is taking longer than expected. The request may have
+                timed out.
               </Text>
               <Pressable onPress={fetchData} style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Try Again</Text>
               </Pressable>
-              <Pressable onPress={handleClose} style={[styles.retryButton, { backgroundColor: '#6c757d', marginTop: 10 }]}>
+              <Pressable
+                onPress={handleClose}
+                style={[
+                  styles.retryButton,
+                  { backgroundColor: '#6c757d', marginTop: 10 },
+                ]}
+              >
                 <Text style={styles.retryButtonText}>Close Modal</Text>
               </Pressable>
             </View>
@@ -256,7 +276,7 @@ export default function UsersModal() {
             />
           )}
         </View>
-        
+
         {/* Invite to Group Button */}
         <TouchableOpacity
           style={styles.inviteButtonContainer}
@@ -267,7 +287,7 @@ export default function UsersModal() {
             {inviteLoading ? 'Generating Invite...' : 'Invite to Group'}
           </Text>
         </TouchableOpacity>
-        
+
         {/* Close Button */}
         <TouchableOpacity
           style={styles.closeButtonContainer}
@@ -285,7 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customHeader: {
-    height: ms(60), 
+    height: ms(60),
   },
   customHeaderTitle: {
     flex: 1, // Allow title to take available space if using space-between
