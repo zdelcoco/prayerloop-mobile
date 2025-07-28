@@ -88,6 +88,7 @@ export default function GroupPrayers() {
               onPress={() => {
                 navigation.navigate('UsersModal', {
                   groupProfileId: group.groupId,
+                  groupName: group.groupName,
                 });
               }}
             >

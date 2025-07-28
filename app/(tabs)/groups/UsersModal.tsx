@@ -8,6 +8,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
+  Share,
+  Alert,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
@@ -21,6 +23,7 @@ import {
 import { RootState } from '@/store/store';
 
 import { User } from '@/util/shared.types';
+import { createGroupInvite } from '@/util/createGroupInvite';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function ms(size: number): number {
@@ -39,14 +42,16 @@ export default function UsersModal() {
   const route = useRoute<{
     key: string;
     name: string;
-    params: { groupProfileId: number };
+    params: { groupProfileId: number; groupName?: string };
   }>();
   const navigation = useNavigation();
 
   const { users, status, error } = useAppSelector(
     (state: RootState) => state.groupUsers
   );
+  const { token } = useAppSelector((state: RootState) => state.auth);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
   const flatListRef = useRef<FlatList<User>>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedGroupRef = useRef<number | null>(null);
@@ -137,6 +142,51 @@ export default function UsersModal() {
     }
   }, [navigation]);
 
+  const handleInviteToGroup = useCallback(async () => {
+    if (!token || inviteLoading) return;
+    
+    setInviteLoading(true);
+    
+    try {
+      const result = await createGroupInvite(token, route.params.groupProfileId);
+      
+      if (result.success && result.data?.inviteCode) {
+        const groupName = route.params.groupName || 'this group';
+        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop! Use invite code: ${result.data.inviteCode}`;
+        
+        try {
+          await Share.share({
+            message: inviteMessage,
+            title: 'PrayerLoop Group Invite'
+          });
+        } catch (shareError) {
+          console.error('Share error:', shareError);
+          // If sharing fails, show the code in an alert
+          Alert.alert(
+            'Invite Code Generated',
+            `Invite code: ${result.data.inviteCode}\n\nShare this code with someone to invite them to ${groupName}`,
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to generate invite code',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Invite error:', error);
+      Alert.alert(
+        'Error',
+        'Failed to generate invite code. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setInviteLoading(false);
+    }
+  }, [token, route.params.groupProfileId, route.params.groupName, inviteLoading]);
+
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userItemContainer}>
       <Text style={styles.userNameText}>
@@ -206,6 +256,17 @@ export default function UsersModal() {
             />
           )}
         </View>
+        
+        {/* Invite to Group Button */}
+        <TouchableOpacity
+          style={styles.inviteButtonContainer}
+          onPress={handleInviteToGroup}
+          disabled={inviteLoading}
+        >
+          <Text style={styles.inviteButtonText}>
+            {inviteLoading ? 'Generating Invite...' : 'Invite to Group'}
+          </Text>
+        </TouchableOpacity>
         
         {/* Close Button */}
         <TouchableOpacity
@@ -295,6 +356,24 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  inviteButtonContainer: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginVertical: 8,
+    marginHorizontal: 16,
+  },
+  inviteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: '#ffffff',
   },
   closeButtonContainer: {
     backgroundColor: '#008000',
