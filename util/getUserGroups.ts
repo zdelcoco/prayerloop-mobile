@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-import { Group } from './getUserGroups.types';
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import { BASE_API_URL, defaultNetworkCatch, Group, Result } from './shared.types';
 
 export const getUserGroups = async (
   token: string,

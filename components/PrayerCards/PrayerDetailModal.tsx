@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
-  Alert
+  Alert,
 } from 'react-native';
 import Card from './PrayerCard';
 import { useNavigation } from 'expo-router';
@@ -27,6 +27,7 @@ interface PrayerDetailModalProps {
   userToken: string;
   prayer: Prayer;
   onClose: () => void;
+  onActionComplete: () => void;
 }
 
 const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
@@ -35,22 +36,22 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   userToken,
   prayer,
   onClose,
+  onActionComplete,
 }) => {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
 
-  const canEditAndDelete = () => userId === prayer.userProfileId;
-
-  console.log('description in PrayerDetailModal:', prayer.prayerDescription);
+  const canEditAndDelete = () => userId === prayer.createdBy;
 
   const onEditHandler = () => {
     onClose();
     navigation.navigate('PrayerModal', { mode: 'edit', prayer });
   };
 
-  const onDeleteHandler = async () => {    
+  const onDeleteHandler = async () => {
     try {
+      console.log('Deleting prayer:', prayer);
       setLoading(true);
       const result = await removePrayerAccess(
         userToken,
@@ -58,15 +59,18 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
         prayer.prayerAccessId
       );
       if (result.success) {
-        dispatch(fetchUserPrayers());
+        onActionComplete();
         Alert.alert('Success', 'Prayer deleted successfully.');
       } else {
-        Alert.alert('Error', result.error?.message || 'Failed to delete prayer.');
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to delete prayer.'
+        );
       }
     } catch (error) {
       console.error('Error deleting prayer:', error);
-      Alert.alert('Error', 'An unknown error occurred.');
-      setLoading(false);      
+      Alert.alert('Error', 'An unknown error occurred.\n');
+      setLoading(false);
       onClose();
     } finally {
       setLoading(false);
@@ -82,10 +86,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
       onRequestClose={onClose}
     >
       <TouchableOpacity style={styles.overlay} onPress={onClose}>
-        <Card
-          prayer={prayer}
-          style={{ width: '100%', padding: 20 }} 
-        >
+        <Card prayer={prayer} style={{ width: '100%', padding: 20 }}>
           <Text style={styles.text}>{prayer.prayerDescription}</Text>
         </Card>
         <View style={styles.buttonRow}>
@@ -94,7 +95,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
               <Pressable
                 style={styles.button}
                 onPress={() => {
-                  onEditHandler(); 
+                  onEditHandler();
                 }}
               >
                 <Text style={styles.buttonText}>Edit</Text>
@@ -109,7 +110,9 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
               </Pressable>
             </>
           ) : (
-            <Text>Prayer can only be edited/deleted by the prayer's creator.</Text>
+            <Text>
+              Prayer can only be edited/deleted by the prayer's creator.
+            </Text>
           )}
         </View>
       </TouchableOpacity>

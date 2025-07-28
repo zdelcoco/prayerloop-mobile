@@ -17,6 +17,19 @@ export interface DefaultAPIResponse {
   error?: string;
 };
 
+export interface User {
+  createdBy: number;
+  datetimeCreate: string;
+  datetimeUpdate: string;
+  deleted: boolean;
+  email: string;
+  firstName: string;
+  lastName: string;
+  updatedBy: number;
+  userProfileId: number;
+  username: string;
+}
+
 export interface Prayer {
   createdBy: number;
   datetimeAnswered: string | null;
@@ -33,6 +46,18 @@ export interface Prayer {
   title: string;
   updatedBy: number;
   userProfileId: number;
+}
+
+export interface Group {
+  createdBy: number;
+  datetimeCreate: string;
+  datetimeUpdate: string;
+  deleted: boolean;
+  groupDescription: string;
+  groupId: number;
+  groupName: string;
+  isActive: boolean;
+  updatedBy: number;
 }
 
 export interface CreatePrayerRequest {

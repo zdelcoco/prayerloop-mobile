@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 
@@ -56,6 +56,7 @@ const groupPrayersSlice = createSlice({
     },
     clearGroupPrayers: (state) => {
       state.status = 'idle';
+      state.groupProfileId = 0;
       state.prayers = null;
       state.error = null;
     },

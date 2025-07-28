@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import userPrayersReducer from './userPrayersSlice';
 import userGroupsReducer from './groupsSlice';
 import groupPrayersReducer from './groupPrayersSlice';
+import groupUsersReducer from './groupUsersSlice';
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     userPrayers: userPrayersReducer,
     userGroups: userGroupsReducer,
     groupPrayers: groupPrayersReducer,
+    groupUsers: groupUsersReducer,
   },
 });
 

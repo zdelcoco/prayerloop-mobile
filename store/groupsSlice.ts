@@ -2,13 +2,15 @@ import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 import { getUserGroups } from '@/util/getUserGroups';
+import { createGroup } from '@/util/createGroup';
+import { CreateGroupRequest } from '@/util/createGroup.types';
 
-import { Group } from '@/util/getUserGroups.types';
+import { Group } from '@/util/shared.types';
 import { clearGroupPrayers } from './groupPrayersSlice';
 
 interface UserGroupsState {
   groups: Group[] | null;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'creating' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -33,6 +35,16 @@ const userGroupsSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    createGroupStart: (state) => {
+      state.status = 'creating';
+    },
+    createGroupSuccess: (state) => {
+      state.status = 'succeeded';
+    },
+    createGroupFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
     clearUserGroups: (state) => {
       state.status = 'idle';
       state.groups = null;
@@ -45,6 +57,9 @@ export const {
   getUserGroupsStart,
   getUserGroupsSuccess,
   getUserGroupsFailure,
+  createGroupStart,
+  createGroupSuccess,
+  createGroupFailure,
 } = userGroupsSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -85,6 +100,35 @@ export const fetchUserGroups = (): AppThunk => async (dispatch, getState) => {
     dispatch(getUserGroupsFailure('An error occurred.'));
   }
 };
+
+export const addGroup =
+  (groupRequest: CreateGroupRequest): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(createGroupFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(createGroupStart());
+
+    try {
+      const result = await createGroup(
+        auth.token,
+        groupRequest
+      );
+      if (result.success) {
+        dispatch(createGroupSuccess());
+        dispatch(fetchUserGroups());
+      } else {
+        dispatch(
+          createGroupFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      dispatch(createGroupFailure('An error occurred.'));
+    }
+  };
 
 export const clearUserGroups = (): AppThunk => async (dispatch) => {
   dispatch(userGroupsSlice.actions.clearUserGroups());

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -7,11 +7,17 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
+  Alert,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { addGroup } from '@/store/groupsSlice';
+import { useAppDispatch } from '@/hooks/redux';
+
+import { CreateGroupRequest } from '@/util/createGroup.types';
 
 export default function GroupModal() {
+  const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const route = useRoute();
   const [groupTitle, setGroupTitle] = useState('');
@@ -22,9 +28,38 @@ export default function GroupModal() {
   const onGroupTitleChange = (text: string) => setGroupTitle(text);
   const onGroupDescriptionChange = (text: string) => setGroupDescription(text);
 
-  const addPressHandler = () => {
-    console.log('Add group');
+  const resetForm = () => {
+    setGroupTitle('');
+    setGroupDescription('');
   };
+
+  const addPressHandler = useCallback(async () => {
+    console.log('Add group');
+
+    if (!groupTitle || !groupDescription) {
+      return Alert.alert('Error', 'Please fill in all fields');
+    }
+
+    console.log('Creating group with title:', groupTitle);
+
+    const newGroup: CreateGroupRequest = {
+      groupName: groupTitle,
+      groupDescription: groupDescription,
+    };
+
+    console.log('New group data:', newGroup);
+
+    try {
+      await dispatch(addGroup(newGroup));
+      resetForm();
+      Alert.alert('Success', 'Group created successfully!');
+      // todo: Navigate to the new group 
+      navigation.goBack(); // Close the modal/screen
+    } catch (error) {
+      console.error('Error adding group:', error);
+      Alert.alert('Error', 'Something went wrong while adding the group.');
+    }
+  }, [dispatch, groupDescription, groupTitle]);
 
   return (
     <KeyboardAvoidingView

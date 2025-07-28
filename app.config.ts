@@ -41,7 +41,10 @@ const config: ExpoConfig = {
         projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
       }
  
-  }
+  },
+  plugins: [
+    "expo-router"
+  ]
 };
 
 export default config;

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { StatusBar, Text } from 'react-native';
-import { Slot, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Provider, useSelector } from 'react-redux';
 import { useFonts } from 'expo-font';
 import store from '../store/store';
@@ -19,7 +19,12 @@ function RootLayoutNav() {
     }
   }, [isAuthenticated]);
 
-  return <Slot />;
+  return (
+    <Stack>
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    </Stack>
+  );
 }
 
 export default function RootLayout() {
