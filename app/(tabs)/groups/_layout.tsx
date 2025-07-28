@@ -43,13 +43,21 @@ export default function GroupsLayout() {
         options={{
           title: 'Group Members',
           headerShown: false,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
           presentation: 'modal',
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
+        }}
+      />
+      <Stack.Screen
+        name='UsersModalSimple'
+        options={{
+          title: 'Group Members (Simple)',
+          headerShown: false,
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
         }}
       />
     </Stack>

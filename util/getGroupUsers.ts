@@ -23,6 +23,7 @@ export const getGroupUsers = async (
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      timeout: 10000, // 10 second timeout
     });
 
     const groupUsersResponse: User[] = response.data

@@ -1,5 +1,10 @@
-// GroupPrayers.tsx
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -14,6 +19,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import { logout } from '@/store/authSlice';
 import { RootState } from '../../../store/store';
 
 import { Group } from '@/util/shared.types';
@@ -54,9 +60,7 @@ export default function GroupPrayers() {
   const { prayers, status, error } = useAppSelector(
     (state: RootState) => state.groupPrayers
   );
-  const { user, token } = useAppSelector(
-    (state: RootState) => state.auth
-  );
+  const { user, token } = useAppSelector((state: RootState) => state.auth);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
@@ -77,6 +81,26 @@ export default function GroupPrayers() {
             <FontAwesome name='angle-left' size={28} color='#000' />
           </TouchableOpacity>
         ),
+        headerRight: () => (
+          <View style={styles.headerRightContainer}>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={() => {
+                navigation.navigate('UsersModal', {
+                  groupProfileId: group.groupId,
+                });
+              }}
+            >
+              <FontAwesome name='group' size={24} color='#000' />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerIconButton}
+              onPress={() => dispatch(logout())}
+            >
+              <FontAwesome name='sign-out' size={24} color='#000' />
+            </TouchableOpacity>
+          </View>
+        ),
       });
     }
 
@@ -85,10 +109,18 @@ export default function GroupPrayers() {
         parentNavigation.setOptions({
           headerTitle: 'Groups',
           headerLeft: null,
+          headerRight: () => (
+            <FontAwesome
+              name='sign-out'
+              size={24}
+              onPress={() => dispatch(logout())}
+              style={{ marginRight: 16 }}
+            />
+          ),
         });
       }
     };
-  }, [navigation, group]);
+  }, [navigation, group, dispatch]);
 
   const fetchData = useCallback(() => {
     dispatch(fetchGroupPrayers(group.groupId));
@@ -154,21 +186,6 @@ export default function GroupPrayers() {
             onActionComplete={fetchData}
           />
         )}
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('UsersModal', {
-              groupProfileId: group.groupId,
-            });
-          }}
-          style={{
-            justifyContent: 'center',
-            paddingBottom: 18,
-            borderColor: '#ccc',
-            borderWidth: 1,
-          }}
-        >
-          <Text style={styles.text}>Show Group Members</Text>
-        </TouchableOpacity>
       </View>
       <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
@@ -189,6 +206,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  headerIconButton: {
+    paddingHorizontal: 8,
     paddingVertical: 5,
   },
 });

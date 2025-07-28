@@ -75,7 +75,6 @@ export const fetchGroupUsers =
       dispatch(getGroupUsersFailure('Unauthorized access. Please log in.'));
       return;
     }
-    dispatch(clearGroupUsers());
     dispatch(getGroupUsersStart());
 
     try {
@@ -100,11 +99,11 @@ export const fetchGroupUsers =
   };
 
 export const selectGroupUsers = (state: RootState) =>
-  state.groupPrayers.prayers;
+  state.groupUsers.users;
 export const selectGroupUsersStatus = (state: RootState) =>
-  state.groupPrayers.status;
+  state.groupUsers.status;
 export const selectGroupUsersError = (state: RootState) =>
-  state.groupPrayers.error;
+  state.groupUsers.error;
 
 export const clearGroupUsers = (): AppThunk => async (dispatch) => {
   dispatch(groupUsersSlice.actions.clearGroupUsers());

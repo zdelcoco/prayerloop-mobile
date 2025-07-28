@@ -7,11 +7,12 @@ import {
   Pressable,
   SafeAreaView,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchGroupUsers } from '@/store/groupUsersSlice';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
 import {
   useNavigation,
   useFocusEffect,
@@ -45,8 +46,11 @@ export default function UsersModal() {
   const { users, status, error } = useAppSelector(
     (state: RootState) => state.groupUsers
   );
-  const [refreshing, setRefreshing] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const flatListRef = useRef<FlatList<User>>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchedGroupRef = useRef<number | null>(null);
+  const isFetchingRef = useRef(false);
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -55,25 +59,68 @@ export default function UsersModal() {
   const gradientStartPoint = 0; // Example: Start gradient from the top
 
   const fetchData = useCallback(() => {
-    dispatch(fetchGroupUsers(route.params.groupProfileId));
+    const groupId = route.params.groupProfileId;
+    
+    // Prevent duplicate fetches using refs (no status dependency needed)
+    if (isFetchingRef.current || lastFetchedGroupRef.current === groupId) {
+      return;
+    }
+    
+    isFetchingRef.current = true;
+    lastFetchedGroupRef.current = groupId;
+    setLoadingTimeout(false);
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Set a timeout to detect stuck loading states
+    timeoutRef.current = setTimeout(() => {
+      setLoadingTimeout(true);
+      isFetchingRef.current = false;
+    }, 15000); // 15 second timeout
+    
+    dispatch(fetchGroupUsers(groupId));
   }, [dispatch, route.params.groupProfileId]);
 
-  useFocusEffect(fetchData);
-
-  const onRefresh = useCallback(async () => {
-    if (refreshing || status === 'loading') return;
-    setRefreshing(true);
-    try {
-      await dispatch(fetchGroupUsers(route.params.groupProfileId));
-    } catch (err) {
-      console.error('Failed to refresh users:', err);
-    } finally {
-      setRefreshing(false);
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }, 100);
+  // Reset fetch state when group changes
+  useEffect(() => {
+    const groupId = route.params.groupProfileId;
+    if (lastFetchedGroupRef.current !== groupId) {
+      isFetchingRef.current = false;
+      lastFetchedGroupRef.current = null;
     }
-  }, [dispatch, refreshing, route.params.groupProfileId, status]);
+  }, [route.params.groupProfileId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  // Cleanup timeout on success/failure
+  useEffect(() => {
+    // Clear timeout and fetching flag when loading completes
+    if (status === 'succeeded' || status === 'failed') {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      setLoadingTimeout(false);
+      isFetchingRef.current = false;
+    }
+  }, [status]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -81,9 +128,14 @@ export default function UsersModal() {
     });
   }, [navigation]);
 
-  const handleClose = () => {
-    navigation.goBack();
-  };
+  const handleClose = useCallback(() => {
+    try {
+      navigation.goBack();
+    } catch (error) {
+      // Force navigation even if there's an error
+      navigation.goBack();
+    }
+  }, [navigation]);
 
   const renderUserItem = ({ item }: { item: User }) => (
     <View style={styles.userItemContainer}>
@@ -103,10 +155,24 @@ export default function UsersModal() {
       <SafeAreaView style={styles.safeArea}>
         <CustomModalHeader title='Group Members' />
         <View style={styles.contentContainer}>
-          {status === 'loading' && !refreshing && (
+          {status === 'loading' && !loadingTimeout && (
             <View style={styles.centeredMessageContainer}>
               <ActivityIndicator size='large' color='#007AFF' />
               <Text style={styles.loadingText}>Loading users...</Text>
+            </View>
+          )}
+
+          {(status === 'loading' && loadingTimeout) && (
+            <View style={styles.centeredMessageContainer}>
+              <Text style={styles.errorText}>
+                Loading is taking longer than expected. The request may have timed out.
+              </Text>
+              <Pressable onPress={fetchData} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </Pressable>
+              <Pressable onPress={handleClose} style={[styles.retryButton, { backgroundColor: '#6c757d', marginTop: 10 }]}>
+                <Text style={styles.retryButtonText}>Close Modal</Text>
+              </Pressable>
             </View>
           )}
 
@@ -136,12 +202,18 @@ export default function UsersModal() {
               renderItem={renderUserItem}
               keyExtractor={(item) => item.userProfileId.toString()}
               contentContainerStyle={styles.listContentContainer}
-              refreshing={refreshing}
-              onRefresh={onRefresh}
               style={styles.listStyle}
             />
           )}
         </View>
+        
+        {/* Close Button */}
+        <TouchableOpacity
+          style={styles.closeButtonContainer}
+          onPress={handleClose}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -223,5 +295,24 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  closeButtonContainer: {
+    backgroundColor: '#008000',
+    borderRadius: 10,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: '#ffffff',
   },
 });
