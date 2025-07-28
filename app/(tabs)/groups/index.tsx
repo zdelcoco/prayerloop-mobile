@@ -8,7 +8,9 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
 import { fetchUserGroups } from '@/store/groupsSlice';
 
-import type { Group } from '@/util/shared.types';
+import type { Group, User } from '@/util/shared.types';
+import { getGroupUsers } from '@/util/getGroupUsers';
+import { formatGroupMembersString } from '@/util/formatGroupMembers';
 
 import GroupCard from '@/components/Groups/GroupCard';
 import LoadingModal from '@/components/ui/LoadingModal';
@@ -38,11 +40,12 @@ export default function Groups() {
   const { groups, status, error } = useAppSelector(
     (state: RootState) => state.userGroups
   );
-  const { user, isAuthenticated } = useAppSelector(
+  const { user, isAuthenticated, token } = useAppSelector(
     (state: RootState) => state.auth
   );
 
   const [loading, setLoading] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<{ [groupId: number]: User[] }>({});
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
@@ -50,12 +53,36 @@ export default function Groups() {
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
+  const fetchGroupMembers = useCallback(async (groupId: number) => {
+    if (!token || groupMembers[groupId]) return;
+    
+    try {
+      const result = await getGroupUsers(token, groupId);
+      if (result.success && result.data) {
+        setGroupMembers(prev => ({
+          ...prev,
+          [groupId]: result.data as User[]
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch group members:', error);
+    }
+  }, [token, groupMembers]);
+
   const fetchData = useCallback(() => {
     dispatch(clearGroupPrayers());
     dispatch(fetchUserGroups());
   }, [route, navigation]);
 
   useFocusEffect(fetchData);
+
+  useEffect(() => {
+    if (groups && token) {
+      groups.forEach(group => {
+        fetchGroupMembers(group.groupId);
+      });
+    }
+  }, [groups, token, fetchGroupMembers]);
 
   const onAddPressHandler = () => {
     router.push({ pathname: '/groups/ActionSelection' });
@@ -107,14 +134,19 @@ export default function Groups() {
           ref={flatListRef}
           data={groups}
           keyExtractor={(item) => item.groupId.toString()}
-          renderItem={({ item }) => (
-            <GroupCard
-              title={item.groupName}
-              description={item.groupDescription}
-              members={'render group members here'}
-              onPress={() => onPressHandler(item.groupId)}
-            />
-          )}
+          renderItem={({ item }) => {
+            const members = groupMembers[item.groupId];
+            const membersText = members ? formatGroupMembersString(members) : 'Loading members...';
+            
+            return (
+              <GroupCard
+                title={item.groupName}
+                description={item.groupDescription}
+                members={membersText}
+                onPress={() => onPressHandler(item.groupId)}
+              />
+            );
+          }}
           initialNumToRender={10}
           windowSize={5}
           removeClippedSubviews={true}
