@@ -9,7 +9,8 @@ import {
   Switch,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MainButton from '../ui/MainButton';
 
@@ -24,6 +25,46 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
   const [showError, setShowError] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  useEffect(() => {
+    loadSavedCredentials();
+  }, []);
+
+  const loadSavedCredentials = async () => {
+    try {
+      const savedUsername = await AsyncStorage.getItem('rememberedUsername');
+      const savedPassword = await AsyncStorage.getItem('rememberedPassword');
+      const shouldRemember = await AsyncStorage.getItem('rememberMe');
+      
+      if (shouldRemember === 'true' && savedUsername && savedPassword) {
+        setUsername(savedUsername);
+        setPassword(savedPassword);
+        setRememberMe(true);
+      }
+    } catch (error) {
+      console.error('Error loading saved credentials:', error);
+    }
+  };
+
+  const saveCredentials = async (username: string, password: string) => {
+    try {
+      await AsyncStorage.setItem('rememberedUsername', username);
+      await AsyncStorage.setItem('rememberedPassword', password);
+      await AsyncStorage.setItem('rememberMe', 'true');
+    } catch (error) {
+      console.error('Error saving credentials:', error);
+    }
+  };
+
+  const clearSavedCredentials = async () => {
+    try {
+      await AsyncStorage.removeItem('rememberedUsername');
+      await AsyncStorage.removeItem('rememberedPassword');
+      await AsyncStorage.removeItem('rememberMe');
+    } catch (error) {
+      console.error('Error clearing credentials:', error);
+    }
+  };
+
   const onUserNameChange = (text: string) => {
     setShowError(false);
     setUsername(text);
@@ -34,8 +75,15 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
     setPassword(text);
   };
 
-  const onSignIn = () => {
+  const onSignIn = async () => {
     setShowError(true);
+    
+    if (rememberMe) {
+      await saveCredentials(username, password);
+    } else {
+      await clearSavedCredentials();
+    }
+    
     onPress(username, password);
   };
 
@@ -86,7 +134,12 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
             </View>
             <Switch
               value={rememberMe}
-              onValueChange={(value) => setRememberMe(value)}
+              onValueChange={async (value) => {
+                setRememberMe(value);
+                if (!value) {
+                  await clearSavedCredentials();
+                }
+              }}
               thumbColor={rememberMe ? '#white' : 'white'}
               trackColor={{ false: '#ccc', true: '#008000' }}
             />
