@@ -5,13 +5,17 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 
-import { Prayer } from '@/util/shared.types';
+import { Prayer, User } from '@/util/shared.types';
+import { formatPrayerDateTime } from '@/util/dateFormat';
 interface CardProps {
   prayer: Prayer;
   children: React.ReactNode;
   onPress?: () => void;
   style?: object;
+  currentUserId?: number;
+  usersLookup?: { [userProfileId: number]: User };
 }
 
 const Card = ({
@@ -19,12 +23,36 @@ const Card = ({
   children,
   onPress,
   style,
+  currentUserId,
+  usersLookup,
 }: CardProps) => {
+  
+  const getCreatorText = () => {
+    if (currentUserId && prayer.createdBy === currentUserId) {
+      return 'you';
+    }
+    
+    if (usersLookup && usersLookup[prayer.createdBy]) {
+      return usersLookup[prayer.createdBy].firstName;
+    }
+    
+    return 'someone';
+  };
 
   return (
     <Pressable onPress={onPress} style={[styles.cardContainer, style]}>
       <View style={styles.card}>
-        <Text style={styles.title}>{prayer.title}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>{prayer.title}</Text>
+          {prayer.isPrivate && (
+            <FontAwesome 
+              name="eye-slash" 
+              size={16} 
+              color="#666" 
+              style={styles.privateIcon}
+            />
+          )}
+        </View>
         <View style={styles.content}>
           {children}
         </View>
@@ -32,7 +60,7 @@ const Card = ({
           <Text style={styles.status}>
             {prayer.isAnswered ? 'Answered?' : ''}
           </Text>
-          <Text style={styles.date}>Created {prayer.datetimeCreate}</Text>
+          <Text style={styles.date}>Created by {getCreatorText()} on {formatPrayerDateTime(prayer.datetimeCreate)}</Text>
         </View>
       </View>
     </Pressable>
@@ -54,10 +82,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    flex: 1,
+  },
+  privateIcon: {
+    marginLeft: 8,
   },
   content: {
     marginBottom: 12,

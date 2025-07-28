@@ -25,7 +25,9 @@ const GroupCard = ({ title, description, members, onPress, style }: GroupCardPro
       <Animated.View style={[styles.card]}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
-        <Text style={styles.members}>Members: {members}</Text>
+        <Text style={styles.members} numberOfLines={1} ellipsizeMode="tail">
+          Members: {members}
+        </Text>
       </Animated.View>
     </Pressable>
   );

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Text, FlatList, ListRenderItem, StyleSheet } from 'react-native';
-import type { Prayer } from '@/util/shared.types';
+import type { Prayer, User } from '@/util/shared.types';
 
 import Card from '@/components/PrayerCards/PrayerCard';
 import PrayerDetailModal from './PrayerDetailModal';
+import { useAppSelector } from '@/hooks/redux';
+import { RootState } from '@/store/store';
+import { getGroupUsers } from '@/util/getGroupUsers';
 
 interface PrayerCardsProps {
   userId: number;
@@ -26,14 +29,55 @@ export default function PrayerCards({
 }: PrayerCardsProps) {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
+  const [usersLookup, setUsersLookup] = useState<{ [userProfileId: number]: User }>({});
+
+  const { groups } = useAppSelector((state: RootState) => state.userGroups);
+
+  const fetchAllGroupUsers = useCallback(async () => {
+    if (!groups || !token) return;
+
+    const allUsers: { [userProfileId: number]: User } = {};
+
+    try {
+      // Fetch users from all groups in parallel
+      const userPromises = groups.map(async (group) => {
+        const result = await getGroupUsers(token, group.groupId);
+        if (result.success && result.data) {
+          const users = result.data as User[];
+          users.forEach((user) => {
+            allUsers[user.userProfileId] = user;
+          });
+        }
+      });
+
+      await Promise.all(userPromises);
+      setUsersLookup(allUsers);
+    } catch (error) {
+      console.error('Error fetching group users for prayer cards:', error);
+    }
+  }, [groups, token]);
+
+  useEffect(() => {
+    fetchAllGroupUsers();
+  }, [fetchAllGroupUsers]);
 
   const onPressHandler = (prayer: Prayer) => {
     setSelectedPrayer(prayer);
     setDetailModalVisible(true);
   };
 
+  const closeModal = () => {
+    setDetailModalVisible(false);
+    setSelectedPrayer(null);
+  };
+
   const renderItem: ListRenderItem<Prayer> = ({ item }) => (
-    <Card prayer={item} onPress={() => onPressHandler(item)}>
+    <Card 
+      prayer={item} 
+      onPress={() => onPressHandler(item)} 
+      currentUserId={userId}
+      usersLookup={usersLookup}
+    >
       <Text>{item.prayerDescription}</Text>
     </Card>
   );
@@ -46,11 +90,10 @@ export default function PrayerCards({
           userId={userId}
           userToken={token}
           prayer={selectedPrayer}
-          onClose={() => {
-            setDetailModalVisible(false);
-            setSelectedPrayer(null);
-          }}
+          onClose={closeModal}
           onActionComplete={onActionComplete}
+          onShare={() => {}} // Not needed anymore since sharing is integrated
+          usersLookup={usersLookup}
         />
       )}
       <FlatList
