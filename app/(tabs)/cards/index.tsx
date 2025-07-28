@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import {
   Text,
   FlatList,
@@ -7,18 +7,22 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { FontAwesome } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
+import { logout } from '@/store/authSlice';
 import { RootState } from '@/store/store';
 
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import AddButton from '@/components/ui/AddButton';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 
 import type { Prayer } from '@/util/shared.types';
 import { ReactReduxContext } from 'react-redux';
@@ -39,6 +43,7 @@ export default function Cards() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
@@ -54,6 +59,11 @@ export default function Cards() {
   }, [dispatch]);
 
   useFocusEffect(fetchData);
+
+  // Add this to window for tab layout to access
+  useLayoutEffect(() => {
+    (global as any).cardsSetPrayerSessionVisible = setPrayerSessionVisible;
+  }, [setPrayerSessionVisible]);
 
   const onAddPressHandler = () => {
     navigation.navigate('PrayerModal', { mode: 'add' });
@@ -88,6 +98,13 @@ export default function Cards() {
         visible={status === 'loading'}
         message='Loading prayers...'
         onClose={toggleLoadingModal}
+      />
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={prayers || []}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => setPrayerSessionVisible(false)}
+        contextTitle="Personal Prayers"
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {error && <Text style={styles.text}>Error: {error}</Text>}
