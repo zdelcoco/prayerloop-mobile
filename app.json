@@ -14,7 +14,10 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "capabilities": {
+          "pushNotifications": true
+        }
     },
     "android": {
       "adaptiveIcon": {
@@ -29,10 +32,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fc5504a0-2a5e-4124-a0b0-1a91636e0ff6"
+      }
     }
   }
 }
