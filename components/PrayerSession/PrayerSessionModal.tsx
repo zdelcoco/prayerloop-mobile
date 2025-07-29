@@ -68,12 +68,12 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
       visible={visible}
       onRequestClose={handleClose}
     >
-      <TouchableOpacity style={styles.overlay} onPress={handleClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1}>
         <View style={styles.sessionContainer}>
           <View style={styles.header}>
             <Text style={styles.sessionTitle}>{sessionTitle}</Text>
             <Pressable style={styles.closeButton} onPress={handleClose}>
-              <FontAwesome name='times' size={20} color='#fff' />
+              <FontAwesome name='times' size={24} color='#fff' />
             </Pressable>
           </View>
 

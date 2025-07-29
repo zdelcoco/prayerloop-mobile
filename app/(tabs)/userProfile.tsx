@@ -7,6 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Dimensions } from 'react-native';
 
 import UserCard from '@/components/Home/UserCard';
+import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
+import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
+import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
 
 export default function UserProfile() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -31,6 +34,10 @@ export default function UserProfile() {
             lastName={user.lastName}
           />
         )}
+        
+        <StartPrayerSessionCard />
+        <PrayerReminderCard />
+        <UserPreferencesCard />
       </ScrollView>
     </LinearGradient>
   );
