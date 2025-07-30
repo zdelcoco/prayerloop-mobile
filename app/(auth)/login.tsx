@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { login, memoizedAuthSelector } from '../../store/authSlice';
 import LoginView from '@/components/login/LoginView';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
@@ -7,11 +8,16 @@ import LoadingModal from '@/components/ui/LoadingModal';
 
 export default function LoginScreen() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const { error, status } = useAppSelector(memoizedAuthSelector);
 
   const handleLogin = (username: string, password: string) => {
     dispatch(login(username, password));
+  };
+
+  const handleSignupPress = () => {
+    router.push('/signup');
   };
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
@@ -35,6 +41,7 @@ export default function LoginScreen() {
         onPress={(username: string, password: string) =>
           handleLogin(username, password)
         }
+        onSignupPress={handleSignupPress}
         errorMessage={status === 'failed' && error ? error : undefined}
       />
     </>

@@ -19,8 +19,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
-import { logout } from '@/store/authSlice';
 import { RootState } from '../../../store/store';
+import ContextMenuButton from '@/components/ui/ContextMenuButton';
 
 import { Group } from '@/util/shared.types';
 import LoadingModal from '@/components/ui/LoadingModal';
@@ -84,36 +84,13 @@ export default function GroupPrayers() {
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity
-              style={styles.headerIconButton}
-              onPress={() => setPrayerSessionVisible(true)}
-              disabled={!prayers || prayers.length === 0}
-            >
-              <FontAwesome 
-                name='child' 
-                size={24} 
-                color={(!prayers || prayers.length === 0) ? '#ccc' : '#000'} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerIconButton}
-              onPress={() => {
-                navigation.navigate('UsersModal', {
-                  groupProfileId: group.groupId,
-                  groupName: group.groupName,
-                });
-              }}
-            >
-              <FontAwesome name='group' size={24} color='#000' />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerIconButton}
-              onPress={() => dispatch(logout())}
-            >
-              <FontAwesome name='sign-out' size={24} color='#000' />
-            </TouchableOpacity>
-          </View>
+          <ContextMenuButton 
+            type="groupDetail" 
+            groupId={group.groupId} 
+            groupName={group.groupName}
+            prayerCount={sanitizedPrayers?.length || 0}
+            iconSize={24} 
+          />
         ),
       });
     }
@@ -124,12 +101,7 @@ export default function GroupPrayers() {
           headerTitle: 'Groups',
           headerLeft: null,
           headerRight: () => (
-            <FontAwesome
-              name='sign-out'
-              size={24}
-              onPress={() => dispatch(logout())}
-              style={{ marginRight: 16 }}
-            />
+            <ContextMenuButton type="groups" iconSize={24} />
           ),
         });
       }
@@ -141,6 +113,11 @@ export default function GroupPrayers() {
   }, [dispatch, group.groupId]);
 
   useFocusEffect(fetchData);
+
+  // Add this to window for context menu to access
+  useLayoutEffect(() => {
+    (global as any).groupSetPrayerSessionVisible = setPrayerSessionVisible;
+  }, [setPrayerSessionVisible]);
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -195,7 +172,14 @@ export default function GroupPrayers() {
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!user || !sanitizedPrayers || sanitizedPrayers.length === 0 ? (
-          <Text style={styles.text}>No prayers found</Text>
+          status !== 'loading' ? (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
+              <Text style={styles.emptyStateText}>
+                This group doesn't have any prayers yet. Tap the + button below to add the first prayer to share with your group!
+              </Text>
+            </View>
+          ) : null
         ) : (
           <PrayerCards
             userId={user!.userProfileId}
@@ -205,6 +189,7 @@ export default function GroupPrayers() {
             onRefresh={onRefresh}
             flatListRef={flatListRef}
             onActionComplete={fetchData}
+            context="groups"
           />
         )}
       </View>
@@ -229,13 +214,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  headerRightContainer: {
-    flexDirection: 'row',
+  emptyStateContainer: {
+    flex: 1,
     alignItems: 'center',
-    marginRight: 16,
+    paddingHorizontal: 32,
+    paddingTop: 100,
   },
-  headerIconButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

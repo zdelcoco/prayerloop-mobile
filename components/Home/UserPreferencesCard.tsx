@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
-import { getUserPreferences, updateUserPreference } from '../../util/userPreferences';
-import { UserPreference } from '../../util/userPreferences.types';
+import { getUserPreferencesWithDefaults, updateUserPreference } from '../../util/userPreferences';
+import { PreferenceWithDefault, UserPreferencesWithDefaultsResponse } from '../../util/userPreferences.types';
 
 const UserPreferencesCard = () => {
   const { user, token } = useSelector((state: RootState) => state.auth);
-  const [preferences, setPreferences] = useState<UserPreference[]>([]);
+  const [preferences, setPreferences] = useState<PreferenceWithDefault[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,12 +21,11 @@ const UserPreferencesCard = () => {
 
     try {
       setLoading(true);
-      const result = await getUserPreferences(token, user.userProfileId);
+      const result = await getUserPreferencesWithDefaults(token, user.userProfileId);
       
       if (result.success) {
-        // Handle the API response structure - data.preferences contains the array
-        const preferencesArray = result.data?.preferences || result.data || [];
-        setPreferences(preferencesArray);
+        const response = result.data as UserPreferencesWithDefaultsResponse;
+        setPreferences(response.preferences || []);
       } else {
         Alert.alert('Error', 'Failed to load preferences');
       }
@@ -37,26 +36,27 @@ const UserPreferencesCard = () => {
     }
   };
 
-  const updatePreference = async (preference: UserPreference, newValue: string) => {
+  const updatePreference = async (preference: PreferenceWithDefault, newValue: string) => {
     if (!user || !token) return;
 
     try {
       const result = await updateUserPreference(
         token,
         user.userProfileId,
-        preference.userPreferenceId,
+        preference.preferenceId,
         {
-          preferenceKey: preference.preferenceKey,
+          preferenceKey: preference.key,
           preferenceValue: newValue,
-          isActive: preference.isActive,
+          isActive: true, // Always set to active when user changes it
         }
       );
 
       if (result.success) {
+        // Update the local state with the new value
         setPreferences(prev =>
           prev.map(p =>
-            p.userPreferenceId === preference.userPreferenceId
-              ? { ...p, preferenceValue: newValue }
+            p.preferenceId === preference.preferenceId
+              ? { ...p, value: newValue, isDefault: false }
               : p
           )
         );
@@ -68,53 +68,72 @@ const UserPreferencesCard = () => {
     }
   };
 
-  const getPreferenceDisplay = (key: string) => {
-    switch (key) {
-      case 'theme':
-        return 'Dark Theme';
-      case 'notifications':
-        return 'Push Notifications';
-      default:
-        return key.charAt(0).toUpperCase() + key.slice(1);
+  const getPreferenceDisplay = (preference: PreferenceWithDefault) => {
+    // Use the description from the backend if available, otherwise format the key
+    if (preference.description) {
+      return preference.description;
     }
+    
+    if (!preference.key || typeof preference.key !== 'string') {
+      return 'Unknown Preference';
+    }
+    
+    // Fallback to formatting the key name
+    return preference.key.charAt(0).toUpperCase() + preference.key.slice(1);
   };
 
-  const renderPreference = (preference: UserPreference) => {
-    const displayName = getPreferenceDisplay(preference.preferenceKey);
+  const renderPreference = (preference: PreferenceWithDefault) => {
+    const displayName = getPreferenceDisplay(preference);
     
-    if (preference.preferenceKey === 'theme') {
+    // Handle boolean preferences (theme, notifications, etc.)
+    if (preference.valueType === 'boolean') {
+      const boolValue = preference.value === 'true';
+      
       return (
-        <View key={preference.userPreferenceId} style={styles.preferenceRow}>
+        <View key={preference.key} style={styles.preferenceRow}>
           <Text style={styles.preferenceLabel}>{displayName}</Text>
-          <Switch
-            value={preference.preferenceValue === 'dark'}
-            onValueChange={(value) => 
-              updatePreference(preference, value ? 'dark' : 'light')
-            }
-            thumbColor={preference.preferenceValue === 'dark' ? '#white' : 'white'}
-            trackColor={{ false: '#ccc', true: '#008000' }}
-          />
+          <View style={styles.switchContainer}>
+            <Switch
+              value={boolValue}
+              onValueChange={(value) => 
+                updatePreference(preference, value ? 'true' : 'false')
+              }
+              thumbColor={boolValue ? '#white' : 'white'}
+              trackColor={{ false: '#ccc', true: '#008000' }}
+            />
+          </View>
         </View>
       );
     }
     
-    if (preference.preferenceKey === 'notifications') {
+    // Handle string preferences that have specific options (like theme with light/dark)
+    if (preference.key === 'theme' && preference.valueType === 'string') {
+      const isDark = preference.value === 'dark';
+      
       return (
-        <View key={preference.userPreferenceId} style={styles.preferenceRow}>
-          <Text style={styles.preferenceLabel}>{displayName}</Text>
-          <Switch
-            value={preference.preferenceValue === 'true'}
-            onValueChange={(value) => 
-              updatePreference(preference, value ? 'true' : 'false')
-            }
-            thumbColor={preference.preferenceValue === 'true' ? '#white' : 'white'}
-            trackColor={{ false: '#ccc', true: '#008000' }}
-          />
+        <View key={preference.key} style={styles.preferenceRow}>
+          <Text style={styles.preferenceLabel}>Dark Theme</Text>
+          <View style={styles.switchContainer}>
+            <Switch
+              value={isDark}
+              onValueChange={(value) => 
+                updatePreference(preference, value ? 'dark' : 'light')
+              }
+              thumbColor={isDark ? '#white' : 'white'}
+              trackColor={{ false: '#ccc', true: '#008000' }}
+            />
+          </View>
         </View>
       );
     }
-
-    return null;
+    
+    // For other preference types, just show the value (could add more UI types later)
+    return (
+      <View key={preference.key} style={styles.preferenceRow}>
+        <Text style={styles.preferenceLabel}>{displayName}</Text>
+        <Text style={styles.preferenceValue}>{preference.value}</Text>
+      </View>
+    );
   };
 
   if (loading) {
@@ -159,13 +178,25 @@ const styles = StyleSheet.create({
   },
   preferenceRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
+    minHeight: 40,
   },
   preferenceLabel: {
     fontSize: 16,
     color: '#333',
+    flex: 1,
+    marginRight: 16,
+    lineHeight: 22,
+  },
+  switchContainer: {
+    minWidth: 50,
+    alignItems: 'flex-end',
+  },
+  preferenceValue: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
   },
   loadingText: {
     fontSize: 14,

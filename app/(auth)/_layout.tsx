@@ -15,6 +15,14 @@ export default function AuthLayout() {
           animation: 'fade_from_bottom',
         }}
       />
+      <Stack.Screen
+        name='signup'
+        options={{
+          title: 'Sign Up',
+          headerShown: false,
+          animation: 'fade_from_bottom',
+        }}
+      />
     </Stack>
   );
 }

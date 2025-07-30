@@ -6,10 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { Prayer, User } from '@/util/shared.types';
-import Card from '@/components/PrayerCards/PrayerCard';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 interface PrayerSessionModalProps {
   visible: boolean;
@@ -68,65 +71,84 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
       visible={visible}
       onRequestClose={handleClose}
     >
-      <TouchableOpacity style={styles.overlay} activeOpacity={1}>
-        <View style={styles.sessionContainer}>
+      <View style={styles.overlay}>
+        <View style={styles.container}>
+          {/* Header - Top 1/4 */}
           <View style={styles.header}>
-            <Text style={styles.sessionTitle}>{sessionTitle}</Text>
+            <Text style={styles.title}>{sessionTitle}</Text>
             <Pressable style={styles.closeButton} onPress={handleClose}>
-              <FontAwesome name='times' size={24} color='#fff' />
+              <FontAwesome name='times' size={28} color='#fff' />
             </Pressable>
           </View>
 
+          {/* Card Container - Center 1/2 */}
           <View style={styles.cardContainer}>
-            <Card
-              prayer={currentPrayer}
-              style={styles.prayerCard}
-              currentUserId={currentUserId}
-              usersLookup={usersLookup}
-            >
-              <Text style={styles.prayerText}>
-                {currentPrayer.prayerDescription}
+            <View style={styles.prayerCard}>
+              <Text style={styles.prayerTitle}>
+                {currentPrayer.title}
               </Text>
-            </Card>
+              <ScrollView 
+                style={styles.prayerTextContainer}
+                showsVerticalScrollIndicator={true}
+                persistentScrollbar={true}
+              >
+                <Text style={styles.prayerText}>
+                  {currentPrayer.prayerDescription}
+                </Text>
+              </ScrollView>
+            </View>
           </View>
 
-          <View style={styles.navigationRow}>
-            <Pressable
-              style={[
-                styles.navButton,
-                isFirstPrayer && styles.navButtonDisabled,
-              ]}
-              onPress={goToPrevious}
-              disabled={isFirstPrayer}
-            >
-              <FontAwesome
-                name='chevron-left'
-                size={20}
-                color={isFirstPrayer ? '#ccc' : '#008000'}
-              />
-            </Pressable>
+          {/* Footer - Bottom 1/4 */}
+          <View style={styles.footer}>
+            <View style={styles.navigationContainer}>
+              <Pressable
+                style={[
+                  styles.navButton,
+                  isFirstPrayer && styles.navButtonDisabled,
+                ]}
+                onPress={goToPrevious}
+                disabled={isFirstPrayer}
+              >
+                <FontAwesome
+                  name='chevron-left'
+                  size={24}
+                  color={isFirstPrayer ? '#ccc' : '#fff'}
+                />
+              </Pressable>
 
-            <Text style={styles.counter}>
-              {currentIndex + 1} of {prayers.length}
-            </Text>
+              <View style={styles.progressContainer}>
+                <Text style={styles.progressText}>
+                  {currentIndex + 1} of {prayers.length}
+                </Text>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${((currentIndex + 1) / prayers.length) * 100}%` }
+                    ]} 
+                  />
+                </View>
+              </View>
 
-            <Pressable
-              style={[
-                styles.navButton,
-                isLastPrayer && styles.navButtonDisabled,
-              ]}
-              onPress={goToNext}
-              disabled={isLastPrayer}
-            >
-              <FontAwesome
-                name='chevron-right'
-                size={20}
-                color={isLastPrayer ? '#ccc' : '#008000'}
-              />
-            </Pressable>
+              <Pressable
+                style={[
+                  styles.navButton,
+                  isLastPrayer && styles.navButtonDisabled,
+                ]}
+                onPress={goToNext}
+                disabled={isLastPrayer}
+              >
+                <FontAwesome
+                  name='chevron-right'
+                  size={24}
+                  color={isLastPrayer ? '#ccc' : '#fff'}
+                />
+              </Pressable>
+            </View>
           </View>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
@@ -134,72 +156,113 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(50, 70, 55, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(20, 40, 25, 0.95)',
   },
-  sessionContainer: {
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 30,
-  },
-  sessionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+  container: {
     flex: 1,
   },
-  closeButton: {
-    padding: 8,
-  },
-  cardContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  prayerCard: {
-    width: '100%',
-  },
-  prayerText: {
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  navigationRow: {
+  header: {
+    height: screenHeight * 0.25, // Top 1/4 of screen
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-    gap: 40,
+    paddingHorizontal: 20,
+    paddingTop: 60, // Account for status bar
+    position: 'relative',
   },
-  navButton: {
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
+  title: {
+    fontSize: 22, // One notch larger
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.46)',
+    textAlign: 'center',
+  },
+  closeButton: {
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 22,
+    position: 'absolute',
+    right: 20,
+    top: 60,
+  },
+  cardContainer: {
+    height: screenHeight * 0.5, // Center 1/2 of screen
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  prayerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    width: '100%',
+    height: '80%', // Consistent height regardless of content
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 12,
+    justifyContent: 'flex-start',
+  },
+  prayerTitle: {
+    fontSize: 22, // One notch larger
+    fontWeight: 'bold',
+    color: '#333', // Dark text on white card background
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  prayerTextContainer: {
+    flex: 1, // Take remaining space in card
+  },
+  prayerText: {
+    fontSize: 18, // One notch larger
+    color: '#666',
+    lineHeight: 28,
+    textAlign: 'left',
+  },
+  footer: {
+    height: screenHeight * 0.25, // Bottom 1/4 of screen
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  navButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   navButtonDisabled: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  counter: {
-    fontSize: 16,
+  progressContainer: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 24,
+  },
+  progressText: {
     color: '#fff',
+    fontSize: 16,
+    marginBottom: 12,
     fontWeight: '600',
-    minWidth: 80,
-    textAlign: 'center',
+  },
+  progressBar: {
+    width: '100%',
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#90c590',
+    borderRadius: 3,
   },
 });
 

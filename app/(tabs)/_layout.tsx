@@ -1,20 +1,15 @@
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { logout } from '@/store/authSlice';
+import { useAppSelector } from '@/hooks/redux';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Dimensions, StyleSheet, View, Pressable } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 import { RootState } from '@/store/store';
+import ContextMenuButton from '@/components/ui/ContextMenuButton';
 
 import Colors from '@/constants/Colors';
 
 export default function TabsLayout() {
-  const dispatch = useAppDispatch();
   const { prayers } = useAppSelector((state: RootState) => state.userPrayers);
-
-  const logoutHandler = () => {
-    dispatch(logout());
-  };
 
   function ms(size: number): number {
     const scale = 1.2;
@@ -46,14 +41,6 @@ export default function TabsLayout() {
             fontSize: ms(18),
             fontFamily: 'InstrumentSans-Bold',
           },
-          headerRight: () => (
-            <FontAwesome
-              name='sign-out'
-              size={ms(24)}
-              onPress={logoutHandler}
-              style={{ marginRight: 16 }}
-            />
-          ),
           tabBarInactiveTintColor: Colors.light.tabIconDefault,
           tabBarActiveTintColor: Colors.light.tabIconSelected,
         }}
@@ -67,29 +54,7 @@ export default function TabsLayout() {
               <FontAwesome name='vcard' size={size} color={color} />
             ),
             headerRight: () => (
-              <View style={styles.headerRight}>
-                <Pressable 
-                  style={styles.headerButton} 
-                  onPress={() => {
-                    if ((global as any).cardsSetPrayerSessionVisible) {
-                      (global as any).cardsSetPrayerSessionVisible(true);
-                    }
-                  }}
-                  disabled={!prayers || prayers.length === 0}
-                >
-                  <FontAwesome 
-                    name="child" 
-                    size={ms(24)} 
-                    color={(!prayers || prayers.length === 0) ? "#ccc" : "#000"} 
-                  />
-                </Pressable>
-                <FontAwesome
-                  name='sign-out'
-                  size={ms(24)}
-                  onPress={logoutHandler}
-                  style={{ marginLeft: 16 }}
-                />
-              </View>
+              <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={ms(20)} />
             ),
           }}
         />
@@ -100,6 +65,9 @@ export default function TabsLayout() {
             tabBarIcon: ({ focused, color, size }) => (
               <FontAwesome name='home' size={size} color={color} />
             ),
+            headerRight: () => (
+              <ContextMenuButton type="home" iconSize={ms(20)} />
+            ),
           }}
         />
         <Tabs.Screen
@@ -108,6 +76,9 @@ export default function TabsLayout() {
             title: 'Groups',
             tabBarIcon: ({ focused, color, size }) => (
               <FontAwesome name='users' size={size} color={color} />
+            ),
+            headerRight: () => (
+              <ContextMenuButton type="groups" iconSize={ms(20)} />
             ),
           }}
         />
@@ -120,14 +91,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  headerButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
   },
 });

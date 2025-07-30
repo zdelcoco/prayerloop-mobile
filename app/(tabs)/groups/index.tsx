@@ -77,7 +77,7 @@ export default function Groups() {
   useFocusEffect(fetchData);
 
   useEffect(() => {
-    if (groups && token) {
+    if (groups && Array.isArray(groups) && token) {
       groups.forEach(group => {
         fetchGroupMembers(group.groupId);
       });
@@ -105,7 +105,9 @@ export default function Groups() {
   };
 
   const onPressHandler = (groupId: number) => {
-    const group = groups!.find((g) => g.groupId === groupId);
+    if (!groups || !Array.isArray(groups)) return;
+    
+    const group = groups.find((g) => g.groupId === groupId);
 
     if (group) {
       router.push({
@@ -132,7 +134,7 @@ export default function Groups() {
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         <FlatList
           ref={flatListRef}
-          data={groups}
+          data={groups || []}
           keyExtractor={(item) => item.groupId.toString()}
           renderItem={({ item }) => {
             const members = groupMembers[item.groupId];
@@ -147,6 +149,16 @@ export default function Groups() {
               />
             );
           }}
+          ListEmptyComponent={() => 
+            status !== 'loading' ? (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateTitle}>No Groups Yet</Text>
+                <Text style={styles.emptyStateText}>
+                  You haven't joined any groups yet. Create a new group or join an existing one to get started!
+                </Text>
+              </View>
+            ) : null
+          }
           initialNumToRender={10}
           windowSize={5}
           removeClippedSubviews={true}
@@ -169,5 +181,25 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
     marginTop: 20,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 100,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

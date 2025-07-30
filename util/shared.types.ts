@@ -25,6 +25,10 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  admin: boolean;
   updatedBy: number;
   userProfileId: number;
   username: string;
