@@ -16,6 +16,7 @@ interface PrayerCardsProps {
   onRefresh: () => void;
   flatListRef: React.RefObject<FlatList<any>>;
   onActionComplete: () => void;
+  context?: 'cards' | 'groups'; // Add context prop
 }
 
 export default function PrayerCards({
@@ -26,6 +27,7 @@ export default function PrayerCards({
   onRefresh,
   flatListRef,
   onActionComplete,
+  context = 'cards', // Default to 'cards' for backward compatibility
 }: PrayerCardsProps) {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
@@ -34,7 +36,7 @@ export default function PrayerCards({
   const { groups } = useAppSelector((state: RootState) => state.userGroups);
 
   const fetchAllGroupUsers = useCallback(async () => {
-    if (!groups || !token) return;
+    if (!groups || !Array.isArray(groups) || !token) return;
 
     const allUsers: { [userProfileId: number]: User } = {};
 
@@ -94,6 +96,7 @@ export default function PrayerCards({
           onActionComplete={onActionComplete}
           onShare={() => {}} // Not needed anymore since sharing is integrated
           usersLookup={usersLookup}
+          context={context}
         />
       )}
       <FlatList

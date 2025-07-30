@@ -14,6 +14,20 @@ export interface UserPreferenceUpdate {
   isActive: boolean;
 }
 
+export interface PreferenceWithDefault {
+  preferenceId: number;
+  key: string;
+  value: string;
+  description: string;
+  valueType: string;
+  isDefault: boolean;
+}
+
+export interface UserPreferencesWithDefaultsResponse {
+  message: string;
+  preferences: PreferenceWithDefault[];
+}
+
 export interface PrayerReminder {
   id: string;
   isEnabled: boolean;

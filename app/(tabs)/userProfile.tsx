@@ -28,10 +28,11 @@ export default function UserProfile() {
       <ScrollView style={{ paddingTop: headerHeight }}>
         {user && (
           <UserCard
-            username={user.username}
-            email={user.email}
-            firstName={user.firstName}
-            lastName={user.lastName}
+            user={user}
+            onUserUpdate={(updatedUser) => {
+              // TODO: Implement user update functionality
+              console.log('User update:', updatedUser);
+            }}
           />
         )}
         

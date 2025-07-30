@@ -4,6 +4,8 @@ import { RootState } from './store';
 import { User } from '../util/shared.types';
 import { loginUser } from '../util/login';
 import { LoginResponse } from '../util/login.types';
+import { signupUser } from '../util/signup';
+import { SignupRequest, SignupResponse } from '../util/signup.types';
 import { clearUserPrayers } from './userPrayersSlice';
 import { clearUserGroups } from './groupsSlice';
 
@@ -40,6 +42,17 @@ const authSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    signupStart: (state) => {
+      state.status = 'loading';
+    },
+    signupSuccess: (state, action: PayloadAction<SignupResponse>) => {
+      state.status = 'succeeded';
+      state.error = null;
+    },
+    signupFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
     logoutSuccess: (state) => {
       state.user = null;
       state.status = 'idle';
@@ -48,7 +61,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logoutSuccess } =
+export const { loginStart, loginSuccess, loginFailure, signupStart, signupSuccess, signupFailure, logoutSuccess } =
   authSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -73,6 +86,24 @@ export const login =
       }
     } catch (error) {
       dispatch(loginFailure('An unknown error occurred'));
+    }
+  };
+
+export const signup =
+  (signupData: SignupRequest): AppThunk =>
+  async (dispatch) => {
+    dispatch(signupStart());
+    try {
+      const result = await signupUser(signupData);
+      if (result.success) {
+        dispatch(signupSuccess(result.data));
+      } else {
+        dispatch(
+          signupFailure(result.error?.message || 'An unknown error occurred')
+        );
+      }
+    } catch (error) {
+      dispatch(signupFailure('An unknown error occurred'));
     }
   };
 

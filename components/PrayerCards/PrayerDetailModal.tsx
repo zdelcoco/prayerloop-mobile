@@ -12,6 +12,7 @@ import {
   ScrollView,
   Share,
 } from 'react-native';
+import { FontAwesome } from '@expo/vector-icons';
 import Card from './PrayerCard';
 import { useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,6 +36,7 @@ interface PrayerDetailModalProps {
   onActionComplete: () => void;
   onShare: () => void;
   usersLookup?: { [userProfileId: number]: User };
+  context?: 'cards' | 'groups'; // Add context to distinguish between Cards and Groups tabs
 }
 
 const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
@@ -46,6 +48,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   onActionComplete,
   onShare,
   usersLookup,
+  context = 'cards', // Default to 'cards' for backward compatibility
 }) => {
   const [loading, setLoading] = useState(false);
   const [modalMode, setModalMode] = useState<'detail' | 'share' | 'groupSelection'>('detail');
@@ -77,32 +80,58 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   };
 
   const onDeleteHandler = async () => {
-    try {
-      console.log('Deleting prayer:', prayer);
-      setLoading(true);
-      const result = await removePrayerAccess(
-        userToken,
-        prayer.prayerId,
-        prayer.prayerAccessId
-      );
-      if (result.success) {
-        onActionComplete();
-        Alert.alert('Success', 'Prayer deleted successfully.');
-      } else {
-        Alert.alert(
-          'Error',
-          result.error?.message || 'Failed to delete prayer.'
-        );
-      }
-    } catch (error) {
-      console.error('Error deleting prayer:', error);
-      Alert.alert('Error', 'An unknown error occurred.\n');
-      setLoading(false);
-      onClose();
-    } finally {
-      setLoading(false);
-      onClose();
-    }
+    // Show different confirmation alerts based on context
+    const isCardsTab = context === 'cards';
+    const confirmationTitle = 'Delete Prayer';
+    const confirmationMessage = isCardsTab
+      ? 'This will permanently delete the prayer from everywhere it has been shared. This action cannot be undone.\n\nAre you sure you want to continue?'
+      : 'This will remove the prayer from this group only. If you shared this prayer from your personal prayers, it will remain in your personal prayer cards.\n\nAre you sure you want to continue?';
+
+    Alert.alert(
+      confirmationTitle,
+      confirmationMessage,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('Deleting prayer:', prayer);
+              setLoading(true);
+              const result = await removePrayerAccess(
+                userToken,
+                prayer.prayerId,
+                prayer.prayerAccessId
+              );
+              if (result.success) {
+                onActionComplete();
+                const successMessage = isCardsTab
+                  ? 'Prayer deleted successfully from everywhere.'
+                  : 'Prayer removed from group successfully.';
+                Alert.alert('Success', successMessage);
+              } else {
+                Alert.alert(
+                  'Error',
+                  result.error?.message || 'Failed to delete prayer.'
+                );
+              }
+            } catch (error) {
+              console.error('Error deleting prayer:', error);
+              Alert.alert('Error', 'An unknown error occurred.\n');
+              setLoading(false);
+              onClose();
+            } finally {
+              setLoading(false);
+              onClose();
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleShareWithGroup = useCallback(async (group: Group) => {
@@ -203,20 +232,54 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   );
 
   const renderShareView = () => (
-    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('detail')}>
-      <View style={styles.shareModalContainer}>
+    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('detail')} activeOpacity={1}>
+      <TouchableOpacity style={styles.shareModalContainer} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
         <Text style={styles.shareTitle}>Share Prayer</Text>
         <Text style={styles.shareSubtitle}>How would you like to share this prayer?</Text>
         
         <View style={styles.shareOptionsContainer}>
           <Pressable
-            style={styles.shareOptionButton}
-            onPress={() => setModalMode('groupSelection')}
+            style={[
+              styles.shareOptionButton,
+              (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionButton
+            ]}
+            onPress={() => {
+              if (groups && Array.isArray(groups) && groups.length > 0) {
+                setModalMode('groupSelection');
+              }
+            }}
+            disabled={!groups || !Array.isArray(groups) || groups.length === 0}
           >
-            <Text style={styles.shareOptionTitle}>Share with Group</Text>
-            <Text style={styles.shareOptionDescription}>
-              Share privately with members of your prayer groups
+            <View style={styles.shareOptionHeader}>
+              <Text style={[
+                styles.shareOptionTitle,
+                (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionText
+              ]}>
+                Share with Group
+              </Text>
+              {(!groups || !Array.isArray(groups) || groups.length === 0) && (
+                <View style={styles.disabledIndicator}>
+                  <FontAwesome name="lock" size={16} color="#999" />
+                </View>
+              )}
+            </View>
+            <Text style={[
+              styles.shareOptionDescription,
+              (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionText
+            ]}>
+              {(!groups || !Array.isArray(groups) || groups.length === 0)
+                ? "You need to join a group first to share prayers with groups"
+                : "Share privately with members of your prayer groups"
+              }
             </Text>
+            {(!groups || !Array.isArray(groups) || groups.length === 0) && (
+              <View style={styles.disabledBanner}>
+                <FontAwesome name="info-circle" size={14} color="#666" />
+                <Text style={styles.disabledBannerText}>
+                  Not available - Join a group to enable this feature
+                </Text>
+              </View>
+            )}
           </Pressable>
           
           <Pressable
@@ -238,13 +301,13 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
             <Text style={styles.buttonText}>Back</Text>
           </Pressable>
         </View>
-      </View>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
   const renderGroupSelectionView = () => (
-    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('share')}>
-      <View style={styles.shareModalContainer}>
+    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('share')} activeOpacity={1}>
+      <TouchableOpacity style={styles.shareModalContainer} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
         <Text style={styles.shareTitle}>Share with Group</Text>
         <Text style={styles.shareSubtitle}>Select a group to share this prayer with:</Text>
         
@@ -253,7 +316,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
             <ActivityIndicator size="large" color="#008000" />
             <Text style={styles.loadingText}>Loading your groups...</Text>
           </View>
-        ) : !groups || groups.length === 0 ? (
+        ) : !groups || !Array.isArray(groups) || groups.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>You don't belong to any groups yet.</Text>
             <Text style={styles.emptySubtext}>Join a group to share prayers with others!</Text>
@@ -289,7 +352,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
             <Text style={styles.buttonText}>Back</Text>
           </Pressable>
         </View>
-      </View>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -386,6 +449,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  disabledOptionButton: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#d0d0d0',
+    opacity: 0.6,
+  },
+  disabledOptionText: {
+    color: '#999',
+  },
+  shareOptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  disabledIndicator: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  disabledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  disabledBannerText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 6,
+    fontStyle: 'italic',
   },
   loadingContainer: {
     alignItems: 'center',

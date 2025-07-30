@@ -46,9 +46,7 @@ const StartPrayerSessionCard = () => {
     try {
       setLoading(true);
       
-      // Load user groups
-      const groupsResult = await getUserGroups(token, user.userProfileId);
-      
+      // Always start with personal prayers
       const prayerSources: PrayerSource[] = [
         {
           id: 'personal',
@@ -58,22 +56,41 @@ const StartPrayerSessionCard = () => {
         },
       ];
 
-      if (groupsResult.success && groupsResult.data) {
-        const groups: Group[] = groupsResult.data;
-        groups.forEach(group => {
-          prayerSources.push({
-            id: `group-${group.groupId}`,
-            name: group.groupName,
-            type: 'group',
-            groupId: group.groupId,
-            selected: false,
+      // Try to load user groups
+      const groupsResult = await getUserGroups(token, user.userProfileId);
+      
+      if (groupsResult.success) {
+        // Success - check if we have groups data
+        if (groupsResult.data && Array.isArray(groupsResult.data)) {
+          const groups: Group[] = groupsResult.data;
+          groups.forEach(group => {
+            prayerSources.push({
+              id: `group-${group.groupId}`,
+              name: group.groupName,
+              type: 'group',
+              groupId: group.groupId,
+              selected: false,
+            });
           });
-        });
+        }
+        // If groupsResult.data is null/undefined/empty array, user just has no groups - not an error
+      } else {
+        // Only show error for actual API failures (network, auth, etc.), not "no groups found"
+        console.log('Failed to load groups, but continuing with personal prayers only:', groupsResult.error);
       }
 
       setSources(prayerSources);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load prayer sources');
+      // Only catch unexpected errors here - still continue with personal prayers
+      console.log('Unexpected error loading groups, continuing with personal prayers:', error);
+      setSources([
+        {
+          id: 'personal',
+          name: 'Personal Prayers',
+          type: 'personal',
+          selected: true,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -109,15 +126,23 @@ const StartPrayerSessionCard = () => {
         try {
           if (source.type === 'personal') {
             const result = await getUserPrayers(token, user.userProfileId);
-            if (result.success && result.data?.prayers) {
-              allPrayers.push(...result.data.prayers);
+            if (result.success) {
+              // If prayers is undefined, it means user has no prayers yet (not an error)
+              if (result.data?.prayers) {
+                allPrayers.push(...result.data.prayers);
+              }
+              // No error when prayers is undefined - user just has no prayers yet
             } else {
               errors.push(`Failed to load ${source.name}`);
             }
           } else if (source.type === 'group' && source.groupId) {
             const result = await getGroupPrayers(token, source.groupId);
-            if (result.success && result.data?.prayers) {
-              allPrayers.push(...result.data.prayers);
+            if (result.success) {
+              // If prayers is undefined, it means group has no prayers yet (not an error)
+              if (result.data?.prayers) {
+                allPrayers.push(...result.data.prayers);
+              }
+              // No error when prayers is undefined - group just has no prayers yet
             } else {
               errors.push(`Failed to load prayers from ${source.name}`);
             }
@@ -154,7 +179,10 @@ const StartPrayerSessionCard = () => {
       }
 
       if (allPrayers.length === 0) {
-        Alert.alert('No Prayers', 'No prayers found in the selected sources');
+        Alert.alert(
+          'No Prayers Yet', 
+          'You haven\'t created any prayers yet. Add some prayers to your personal collection or join groups with shared prayers to get started!'
+        );
         return;
       }
 

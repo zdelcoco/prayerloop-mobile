@@ -16,10 +16,11 @@ import MainButton from '../ui/MainButton';
 
 interface LoginViewProps {
   onPress: (username: string, password: string) => void;
+  onSignupPress: () => void;
   errorMessage?: string;
 }
 
-function LoginView({ onPress, errorMessage }: LoginViewProps) {
+function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
@@ -117,6 +118,8 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
             value={username}
             onChangeText={onUserNameChange}
             autoCapitalize='none'
+            textContentType="username"
+            autoComplete="username"
           />
 
           <TextInput
@@ -126,6 +129,8 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
             value={password}
             onChangeText={onPasswordChange}
             secureTextEntry
+            textContentType="password"
+            autoComplete="current-password"
           />
 
           <View style={styles.optionsRow}>
@@ -150,6 +155,12 @@ function LoginView({ onPress, errorMessage }: LoginViewProps) {
             accessibilityLabel='Sign In to your account'
             buttonStyle={styles.signInButton}
           />
+          
+          <Pressable onPress={onSignupPress} style={styles.signupContainer}>
+            <Text style={styles.signupText}>
+              Don't have an account? Sign Up
+            </Text>
+          </Pressable>
         </View>
       </LinearGradient>
     </KeyboardAvoidingView>
@@ -222,6 +233,15 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     paddingBottom: 18,
+  },
+  signupContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  signupText: {
+    color: '#008000',
+    fontSize: 16,
+    fontFamily: 'InstrumentSans-Regular',
   },
 });
 

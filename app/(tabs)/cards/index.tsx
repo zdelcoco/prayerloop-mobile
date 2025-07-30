@@ -109,7 +109,14 @@ export default function Cards() {
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!user || !prayers || prayers.length === 0 ? (
-          <Text style={styles.text}>No prayers found</Text>
+          status !== 'loading' ? (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
+              <Text style={styles.emptyStateText}>
+                You haven't created any prayers yet. Tap the + button below to add your first prayer!
+              </Text>
+            </View>
+          ) : null
         ) : (
           <PrayerCards
             userId={user!.userProfileId}
@@ -138,6 +145,25 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
     marginTop: 20,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 100,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   inlineLoadingIndicator: {
     position: 'absolute',
