@@ -21,7 +21,7 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0 }: Us
 
   const handleLogout = () => {
     dispatch(logout());
-    router.replace('/auth/LoginScreen');
+    router.replace('/(auth)/login');
   };
 
   const handleViewCards = () => {

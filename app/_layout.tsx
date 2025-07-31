@@ -5,21 +5,10 @@ import { Provider, useSelector } from 'react-redux';
 import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import store from '../store/store';
-import IntroView from '@/components/ui/IntroView';
 
 // Custom Splash Screen Component
 function SplashScreen() {
   return (
-    // <LinearGradient
-    //   colors={['#90c590', '#ffffff']}
-    //   style={styles.splashContainer}
-    //   start={{ x: 0, y: 0 }}
-    //   end={{ x: 0, y: 1 }}
-    // >
-    //   <View style={styles.splashContent}>
-    //     <Text style={styles.appName}>prayerloop</Text>
-    //   </View>
-    // </LinearGradient>
     <LinearGradient
       colors={['#90C590', '#F6EDD9']}
       style={styles.gradient}
@@ -35,43 +24,24 @@ function RootLayoutNav() {
     (state: any) => state.auth.isAuthenticated
   );
   const router = useRouter();
-  const [showSplash, setShowSplash] = useState(true);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Set ready after component mounts
-    setIsReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isReady) return;
-
-    // Show splash for 2 seconds, then hide splash and let navigation work naturally
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [isReady]);
-
-  // Handle navigation after splash is hidden
-  useEffect(() => {
-    if (!isReady || showSplash) return;
-
-    // Navigate based on auth status
+    // Navigate immediately when auth state changes
     if (!isAuthenticated) {
       router.replace('/(auth)/login');
     } else {
       router.replace('/(tabs)/cards');
     }
-  }, [isAuthenticated, isReady, showSplash]);
-
-  if (!isReady || showSplash) {
-    return <SplashScreen />;
-  }
+  }, [isAuthenticated]);
 
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+        animationDuration: 300,
+      }}
+    >
       <Stack.Screen name='(auth)' options={{ headerShown: false }} />
       <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
     </Stack>
