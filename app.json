@@ -1,29 +1,27 @@
 {
   "expo": {
-    "name": "prayerloop-mobile",
-    "slug": "prayerloop-mobile",
+    "name": "prayerloop",
+    "slug": "prayerloop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "prayerloop",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "capabilities": {
-          "pushNotifications": true
-        }
+      "bundleIdentifier": "com.prayerloop.app",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#90c590"
+      },
+      "package": "com.prayerloop.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -32,13 +30,25 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
-      "expo-notifications"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "newArchEnabled": false
+          },
+          "android": {
+            "newArchEnabled": false
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
+      "router": {
+        "origin": false
+      },
       "eas": {
         "projectId": "fc5504a0-2a5e-4124-a0b0-1a91636e0ff6"
       }

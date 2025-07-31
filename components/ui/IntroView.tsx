@@ -10,7 +10,7 @@ function IntroView({ onPress }: { onPress: () => void }) {
         end={{x: 1, y: .6
         }}
       >
-        <Text style={styles.text}>prayerloop.</Text>
+        <Text style={styles.text}>prayerloop</Text>
       </LinearGradient>
     </Pressable>
   );
