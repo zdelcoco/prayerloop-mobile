@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';

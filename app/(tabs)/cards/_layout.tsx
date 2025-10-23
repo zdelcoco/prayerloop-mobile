@@ -1,4 +1,4 @@
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Stack } from 'expo-router';
 
 export default function CardsLayout() {

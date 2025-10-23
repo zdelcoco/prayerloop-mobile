@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import MainButton from '../ui/MainButton';
 import { formatPhoneNumberInput } from '../../util/phoneFormatter';
 import { User } from '../../util/shared.types';

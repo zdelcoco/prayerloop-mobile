@@ -8,7 +8,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useState, useEffect } from 'react';
 import MainButton from '../ui/MainButton';
 import { SignupRequest } from '../../util/signup.types';

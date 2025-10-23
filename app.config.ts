@@ -1,14 +1,14 @@
 import { ExpoConfig } from 'expo/config';
 
 const config: ExpoConfig = {
-  name: "My App",
+  name: "prayerloop",
   owner: "delsuckahh",
   slug: "prayerloop",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "prayerloop",
-  newArchEnabled: true,
+  sdkVersion: "53.0.0",
   splash: {
     image: "./assets/images/splash-icon.png",
     resizeMode: "contain",
@@ -22,14 +22,18 @@ const config: ExpoConfig = {
   ],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.yourname.prayerloop.test"
+    bundleIdentifier: "com.prayerloop.app",
+    googleServicesFile: "./GoogleService-Info.plist",
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false
+    }
   },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#FFFFFF"
     },
-    package: "com.yourname.prayerloop.test",
+    package: "com.prayerloop.app",
   },
   web: {
     favicon: "./assets/favicon.png"
@@ -38,12 +42,37 @@ const config: ExpoConfig = {
     apiUrl: process.env.EXPO_PUBLIC_API_URL,
     apiPort: process.env.EXPO_PUBLIC_API_PORT,
     eas: {
-        projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+        //projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+        projectId: "fc5504a0-2a5e-4124-a0b0-1a91636e0ff6"
       }
  
   },
   plugins: [
-    "expo-router"
+    "expo-router",
+    [
+      "expo-build-properties",
+      {
+        ios: {
+          useFrameworks: "dynamic"
+        }
+      }
+    ],
+    "@react-native-firebase/app",
+    [
+      "@react-native-firebase/messaging",
+      {
+
+      }
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/images/notification-icon.png",
+        color: "#90c590",
+        defaultChannel: "default",
+        iosDisplayInForeground: true
+      }
+    ]
   ]
 };
 

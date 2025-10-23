@@ -1,5 +1,5 @@
 import { Text, Pressable, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 
 function IntroView({ onPress }: { onPress: () => void }) {
   return (

@@ -3,19 +3,16 @@ import { StatusBar, View, Text, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Provider, useSelector } from 'react-redux';
 import { useFonts } from 'expo-font';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import store from '../store/store';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 // Custom Splash Screen Component
 function SplashScreen() {
   return (
-    <LinearGradient
-      colors={['#90C590', '#F6EDD9']}
-      style={styles.gradient}
-      end={{ x: 1, y: 0.6 }}
-    >
+    <View style={styles.gradient}>
       <Text style={styles.text}>prayerloop</Text>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -24,6 +21,9 @@ function RootLayoutNav() {
     (state: any) => state.auth.isAuthenticated
   );
   const router = useRouter();
+
+  // Initialize push notifications for authenticated users
+  usePushNotifications();
 
   useEffect(() => {
     // Navigate immediately when auth state changes
@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
   gradient: {
     flex: 1,
     width: '100%',
+    backgroundColor: '#90C590',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -81,5 +82,6 @@ const styles = StyleSheet.create({
     fontSize: 48,
     marginBottom: 20,    
     fontFamily: 'InstrumentSans-SemiBold',
+    color: '#FFFFFF',
   }
 });

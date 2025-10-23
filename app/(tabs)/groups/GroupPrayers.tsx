@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Dimensions } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';

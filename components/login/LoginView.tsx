@@ -8,7 +8,7 @@ import {
   Platform,
   Switch,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '../ui/LinearGradientCompat';
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 

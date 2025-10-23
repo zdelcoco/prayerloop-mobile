@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups } from '@/store/groupsSlice';
 import { router } from 'expo-router';

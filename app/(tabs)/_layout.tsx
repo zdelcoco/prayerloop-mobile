@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions, StyleSheet } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';

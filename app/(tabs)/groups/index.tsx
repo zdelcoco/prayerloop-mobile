@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Text, View, StyleSheet, FlatList } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';

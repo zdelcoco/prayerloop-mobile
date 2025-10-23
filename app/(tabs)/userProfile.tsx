@@ -3,13 +3,14 @@ import { Text, ScrollView, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions } from 'react-native';
 
 import UserCard from '@/components/Home/UserCard';
 import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
 import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
 import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
+import TestNotifications from '@/components/TestNotifications';
 
 export default function UserProfile() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -39,6 +40,7 @@ export default function UserProfile() {
         <StartPrayerSessionCard />
         <PrayerReminderCard />
         <UserPreferencesCard />
+        <TestNotifications />
       </ScrollView>
     </LinearGradient>
   );

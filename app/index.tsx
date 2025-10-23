@@ -1,25 +1,20 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, StyleSheet } from 'react-native';
 
 // Simple fallback screen - no navigation logic to prevent conflicts
 export default function IndexScreen() {
   return (
-    <LinearGradient
-      colors={['#90C590', '#F6EDD9']}
-      style={styles.splashContainer}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0.6 }}
-    >
+    <View style={styles.splashContainer}>
       <View style={styles.splashContent}>
         <Text style={styles.appName}>prayerloop</Text>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
+    backgroundColor: '#90C590',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -30,5 +25,6 @@ const styles = StyleSheet.create({
     fontSize: 48,
     marginBottom: 20,    
     fontFamily: 'InstrumentSans-SemiBold',
+    color: '#FFFFFF',
   },
 });

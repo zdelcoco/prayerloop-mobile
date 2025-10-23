@@ -30,7 +30,7 @@ import { RootState } from '@/store/store';
 
 import { User } from '@/util/shared.types';
 import { createGroupInvite } from '@/util/createGroupInvite';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 
 function ms(size: number): number {
   const scale = 1.2;

@@ -13,7 +13,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.prayerloop.app",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+      "ITSAppUsesNonExemptEncryption": false
+    }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +33,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-firebase-core",
       [
         "expo-build-properties",
         {
@@ -39,6 +43,16 @@
           "android": {
             "newArchEnabled": false
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#90c590",
+          "defaultChannel": "default",
+          "iosDisplayInForeground": true,
+          "mode": "development"
         }
       ]
     ],
