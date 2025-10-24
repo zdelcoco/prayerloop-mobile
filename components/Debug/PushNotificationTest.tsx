@@ -49,7 +49,7 @@ export default function PushNotificationTest() {
           body: 'This is a test push notification from your prayer app!',
           data: {
             type: 'test',
-            timestamp: Date.now(),
+            timestamp: Date.now().toString(),
           },
           priority: 'high',
           sound: 'default',

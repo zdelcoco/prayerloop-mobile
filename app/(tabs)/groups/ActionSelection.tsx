@@ -6,17 +6,14 @@ import {
   Pressable,
   Dimensions,
   TouchableWithoutFeedback,
-  SafeAreaView,
   PanResponder,
   Animated,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
 import { router } from 'expo-router';
 
 export default function ActionSelection() {
-  const navigation = useNavigation();
-  const route = useRoute();
   const translateY = useRef(new Animated.Value(0)).current;
+  const currentOffset = useRef(0);
 
   const createGroupHandler = () => {
     router.push('/groups/GroupModal');
@@ -42,7 +39,7 @@ export default function ActionSelection() {
       },
       onPanResponderGrant: () => {
         // Set offset to current value when gesture starts
-        translateY.setOffset(translateY._value);
+        translateY.setOffset(currentOffset.current);
         translateY.setValue(0);
       },
       onPanResponderMove: (evt, gestureState) => {
@@ -53,7 +50,7 @@ export default function ActionSelection() {
       },
       onPanResponderRelease: (evt, gestureState) => {
         translateY.flattenOffset();
-        
+
         // If dragged down more than 100px or with high velocity, dismiss
         if (gestureState.dy > 100 || gestureState.vy > 0.5) {
           router.dismiss();
@@ -64,7 +61,9 @@ export default function ActionSelection() {
             useNativeDriver: true,
             tension: 100,
             friction: 8,
-          }).start();
+          }).start(() => {
+            currentOffset.current = 0;
+          });
         }
       },
     })
@@ -87,23 +86,21 @@ export default function ActionSelection() {
         <View style={styles.handleContainer} {...panResponder.panHandlers}>
           <View style={styles.handle} />
         </View>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.content}>
-            <Text style={styles.title}>Group Actions</Text>
-            
-            <Pressable onPress={createGroupHandler} style={styles.createButton}>
-              <Text style={styles.buttonText}>Create Group</Text>
-            </Pressable>
-            
-            <Pressable onPress={joinGroupHandler} style={styles.createButton}>
-              <Text style={styles.buttonText}>Join Group</Text>
-            </Pressable>
-            
-            <Pressable onPress={cancelHandler} style={styles.cancelButton}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
+        <View style={styles.content}>
+          <Text style={styles.title}>Group Actions</Text>
+
+          <Pressable onPress={createGroupHandler} style={styles.createButton}>
+            <Text style={styles.buttonText}>Create Group</Text>
+          </Pressable>
+
+          <Pressable onPress={joinGroupHandler} style={styles.createButton}>
+            <Text style={styles.buttonText}>Join Group</Text>
+          </Pressable>
+
+          <Pressable onPress={cancelHandler} style={styles.cancelButton}>
+            <Text style={styles.buttonText}>Cancel</Text>
+          </Pressable>
+        </View>
       </Animated.View>
     </View>
   );
@@ -148,12 +145,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     borderRadius: 2,
   },
-  safeArea: {
-    paddingBottom: 20,
-  },
   content: {
     padding: 20,
     paddingTop: 10,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 20,

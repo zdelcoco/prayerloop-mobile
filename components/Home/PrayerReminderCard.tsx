@@ -114,11 +114,10 @@ const PrayerReminderCard = () => {
             body: reminderConfig.message,
           },
           trigger: {
-            type: 'calendar',
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any,
         });
       } else if (reminderConfig.frequency === 'weekly') {
         // Schedule for Sunday (weekday: 1)
@@ -129,12 +128,11 @@ const PrayerReminderCard = () => {
             body: reminderConfig.message,
           },
           trigger: {
-            type: 'calendar',
             weekday: 1,
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any,
         });
       } else if (reminderConfig.frequency === 'monthly') {
         // Schedule for first day of each month
@@ -145,12 +143,11 @@ const PrayerReminderCard = () => {
             body: reminderConfig.message,
           },
           trigger: {
-            type: 'calendar',
             day: 1,
             hour: hours,
             minute: minutes,
             repeats: true,
-          },
+          } as any,
         });
       } else if (
         reminderConfig.frequency === 'specific' &&
@@ -169,12 +166,11 @@ const PrayerReminderCard = () => {
               body: reminderConfig.message,
             },
             trigger: {
-              type: 'calendar',
               weekday: day === 0 ? 1 : day + 1, // Expo uses 1=Sunday, 2=Monday
               hour: hours,
               minute: minutes,
               repeats: true,
-            },
+            } as any,
           });
         }
       }
@@ -675,42 +671,6 @@ const styles = StyleSheet.create({
   },
   timePicker: {
     backgroundColor: '#fff',
-  },
-  timePickerOverlay: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'flex-end',
-  },
-  timePickerContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 34, // Safe area padding for iPhone
-  },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  timePickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  timePickerCancel: {
-    color: '#999',
-    fontSize: 16,
-  },
-  timePickerDone: {
-    color: '#008000',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 

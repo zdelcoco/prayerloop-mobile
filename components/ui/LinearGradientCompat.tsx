@@ -1,20 +1,23 @@
-import React from 'react';
-import { View, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface LinearGradientCompatProps {
-  colors: string[];
+  colors: readonly [string, string, ...string[]];
   style?: ViewStyle;
   start?: { x: number; y: number };
   end?: { x: number; y: number };
   children?: React.ReactNode;
 }
 
-// Temporary compatibility wrapper for LinearGradient
-// Uses the first color as solid background until SDK 53 gradient issues are resolved
-export function LinearGradientCompat({ colors, style, children }: LinearGradientCompatProps) {
+export function LinearGradientCompat({ colors, style, start, end, children }: LinearGradientCompatProps) {
   return (
-    <View style={[style, { backgroundColor: colors[0] || '#90C590' }]}>
+    <LinearGradient
+      colors={colors}
+      style={style}
+      start={start}
+      end={end}
+    >
       {children}
-    </View>
+    </LinearGradient>
   );
 }
