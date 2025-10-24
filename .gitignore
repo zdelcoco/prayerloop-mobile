@@ -35,9 +35,5 @@ yarn-error.*
 .env*
 .env*.local
 
-# Firebase config files (regenerate with expo prebuild or download from Firebase Console)
-GoogleService-Info.plist
-google-services.json
-
 # typescript
 *.tsbuildinfo
