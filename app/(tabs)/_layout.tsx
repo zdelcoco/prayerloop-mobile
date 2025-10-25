@@ -2,11 +2,59 @@ import { Tabs } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet, View, Text, Animated } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
+import { useEffect, useRef } from 'react';
 
 import Colors from '@/constants/Colors';
+
+// Custom tab button with animated bubble effect
+function TabButton({ focused, icon, label }: { focused: boolean; icon: string; label: string }) {
+  const fadeAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.9)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: focused ? 1 : 0.9,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 8,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: focused ? 1 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [focused]);
+
+  return (
+    <View style={styles.tabButton}>
+      {/* Animated background pill */}
+      <Animated.View
+        style={[
+          styles.tabButtonBackground,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          }
+        ]}
+      />
+      {/* Icon and label on top */}
+      <FontAwesome
+        name={icon as any}
+        size={22}
+        color={focused ? '#E8F5E8' : '#666'}
+        style={styles.tabIcon}
+      />
+      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const { prayers } = useAppSelector((state: RootState) => state.userPrayers);
@@ -41,17 +89,27 @@ export default function TabsLayout() {
             fontSize: ms(18),
             fontFamily: 'InstrumentSans-Bold',
           },
-          tabBarInactiveTintColor: Colors.light.tabIconDefault,
-          tabBarActiveTintColor: Colors.light.tabIconSelected,
+          tabBarStyle: {
+            backgroundColor: '#ffffff',
+            borderTopWidth: 1,
+            borderTopColor: '#e0e0e0',
+            height: 90,
+            paddingBottom: 10,
+            paddingTop: 10,
+          },
+          tabBarIconStyle: {
+            width: 80,
+            height: 40,
+          },
+          tabBarShowLabel: false, // Hide default labels since we're using custom component
         }}
       >
         <Tabs.Screen
           name='cards'
           options={{
             title: 'Prayer Cards',
-            tabBarLabel: 'Cards',
-            tabBarIcon: ({ focused, color, size }) => (
-              <FontAwesome name='vcard' size={size} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabButton focused={focused} icon="vcard" label="Cards" />
             ),
             headerRight: () => (
               <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={ms(20)} />
@@ -62,8 +120,8 @@ export default function TabsLayout() {
           name='userProfile'
           options={{
             title: 'Home',
-            tabBarIcon: ({ focused, color, size }) => (
-              <FontAwesome name='home' size={size} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabButton focused={focused} icon="home" label="Home" />
             ),
             headerRight: () => (
               <ContextMenuButton type="home" iconSize={ms(20)} />
@@ -74,8 +132,8 @@ export default function TabsLayout() {
           name='groups'
           options={{
             title: 'Groups',
-            tabBarIcon: ({ focused, color, size }) => (
-              <FontAwesome name='users' size={size} color={color} />
+            tabBarIcon: ({ focused }) => (
+              <TabButton focused={focused} icon="users" label="Groups" />
             ),
             headerRight: () => (
               <ContextMenuButton type="groups" iconSize={ms(20)} />
@@ -91,5 +149,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  tabButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    minWidth: 75,
+    position: 'relative',
+  },
+  tabButtonBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#008000',
+    borderRadius: 24,
+  },
+  tabIcon: {
+    zIndex: 1,
+  },
+  tabLabel: {
+    fontSize: 14,
+    marginTop: 2,
+    color: '#666', // Darker gray for better readability
+    fontWeight: '500',
+    zIndex: 1,
+  },
+  tabLabelActive: {
+    color: '#E8F5E8', // Green for active state
+    fontWeight: '600',
   },
 });
