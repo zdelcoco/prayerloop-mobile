@@ -33,7 +33,7 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0 }: Us
   };
 
   const handleUserPreferences = () => {
-    router.push('/(tabs)/');
+    router.push('/(tabs)/userProfile');
   };
 
   const handleAddPrayer = () => {
