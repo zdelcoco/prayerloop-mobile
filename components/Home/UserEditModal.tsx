@@ -10,10 +10,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSelector } from 'react-redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import MainButton from '../ui/MainButton';
 import { formatPhoneNumberInput } from '../../util/phoneFormatter';
 import { User } from '../../util/shared.types';
+import { changeUserPassword } from '../../util/changeUserPassword';
+import { RootState } from '../../store/store';
+import ChangePasswordModal from './ChangePasswordModal';
 
 interface UserEditModalProps {
   visible: boolean;
@@ -29,9 +33,6 @@ interface EditableUserData {
   lastName: string;
   email: string;
   phoneNumber: string;
-  currentPassword: string;
-  newPassword: string;
-  confirmNewPassword: string;
 }
 
 const UserEditModal: React.FC<UserEditModalProps> = ({
@@ -47,11 +48,10 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
     lastName: user.lastName || '',
     email: user.email || '',
     phoneNumber: user.phoneNumber || '',
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: '',
   });
-  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const token = useSelector((state: RootState) => state.auth.token);
 
   useEffect(() => {
     if (visible) {
@@ -61,11 +61,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         lastName: user.lastName || '',
         email: user.email || '',
         phoneNumber: user.phoneNumber || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: '',
       });
-      setShowPasswordFields(false);
     }
   }, [visible, user]);
 
@@ -104,30 +100,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       return;
     }
 
-    // If password fields are shown, validate them
-    if (showPasswordFields) {
-      if (!formData.currentPassword) {
-        Alert.alert('Validation Error', 'Current password is required to change your password.');
-        return;
-      }
-      if (!formData.newPassword) {
-        Alert.alert('Validation Error', 'New password is required.');
-        return;
-      }
-      if (formData.newPassword !== formData.confirmNewPassword) {
-        Alert.alert('Validation Error', 'New passwords do not match.');
-        return;
-      }
-      if (formData.newPassword.length < 6) {
-        Alert.alert('Validation Error', 'Password must be at least 6 characters long.');
-        return;
-      }
-
-      // Password change is not yet implemented
-      Alert.alert('Not Implemented', 'Password change functionality is coming soon!');
-      return;
-    }
-
     // Call the parent save handler with the updated data
     onSave({
       username: formData.username,
@@ -139,14 +111,66 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      'Discard Changes',
-      'Are you sure you want to discard your changes?',
-      [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: onClose },
-      ]
-    );
+    // Check if any changes have been made
+    const hasChanges =
+      formData.username !== (user.username || '') ||
+      formData.firstName !== (user.firstName || '') ||
+      formData.lastName !== (user.lastName || '') ||
+      formData.email !== (user.email || '') ||
+      formData.phoneNumber !== (user.phoneNumber || '');
+
+    if (hasChanges) {
+      Alert.alert(
+        'Discard Changes',
+        'Are you sure you want to discard your changes?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: onClose },
+        ]
+      );
+    } else {
+      // No changes made, just close the modal
+      onClose();
+    }
+  };
+
+  const handleChangePasswordPress = () => {
+    setChangePasswordModalVisible(true);
+  };
+
+  const handleChangePasswordSave = async (currentPassword: string, newPassword: string) => {
+    if (!token) {
+      Alert.alert('Error', 'You must be logged in to change your password.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const result = await changeUserPassword(token, user.userProfileId, {
+        oldPassword: currentPassword,
+        newPassword: newPassword,
+      });
+
+      if (result.success) {
+        Alert.alert('Success', 'Your password has been changed successfully!');
+        setChangePasswordModalVisible(false);
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to change password. Please try again.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error changing password:', error);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleChangePasswordClose = () => {
+    setChangePasswordModalVisible(false);
   };
 
   return (
@@ -221,44 +245,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 onChangeText={onPhoneNumberChange}
                 keyboardType="phone-pad"
                 maxLength={14}
-              />              
-
-              {showPasswordFields && (
-                <>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Current Password *"
-                    placeholderTextColor="#666"
-                    value={formData.currentPassword}
-                    onChangeText={(text) => updateField('currentPassword', text)}
-                    secureTextEntry
-                    textContentType="password"
-                    autoComplete="current-password"
-                  />
-
-                  <TextInput
-                    style={styles.input}
-                    placeholder="New Password *"
-                    placeholderTextColor="#666"
-                    value={formData.newPassword}
-                    onChangeText={(text) => updateField('newPassword', text)}
-                    secureTextEntry
-                    textContentType="newPassword"
-                    autoComplete="password-new"
-                  />
-
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Confirm New Password *"
-                    placeholderTextColor="#666"
-                    value={formData.confirmNewPassword}
-                    onChangeText={(text) => updateField('confirmNewPassword', text)}
-                    secureTextEntry
-                    textContentType="newPassword"
-                    autoComplete="password-new"
-                  />
-                </>
-              )}
+              />
 
               <Text style={styles.requiredText}>* Required fields</Text>
 
@@ -278,14 +265,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               </View>
 
               <MainButton
-                title={showPasswordFields ? "Hide Password Fields" : "Change Password"}
-                onPress={() => {
-                  if (!showPasswordFields) {
-                    Alert.alert('Change Password', 'Functionality coming soon!');
-                  } else {
-                    setShowPasswordFields(false);
-                  }
-                }}
+                title="Change Password"
+                onPress={handleChangePasswordPress}
                 buttonStyle={styles.togglePasswordButton}
                 textStyle={styles.togglePasswordText}
               />
@@ -293,6 +274,13 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
+
+      <ChangePasswordModal
+        visible={changePasswordModalVisible}
+        onClose={handleChangePasswordClose}
+        onSave={handleChangePasswordSave}
+        isSaving={isChangingPassword}
+      />
     </Modal>
   );
 };
