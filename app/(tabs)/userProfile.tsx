@@ -31,8 +31,7 @@ export default function UserProfile() {
           <UserCard
             user={user}
             onUserUpdate={(updatedUser) => {
-              // TODO: Implement user update functionality
-              console.log('User update:', updatedUser);
+              console.log('User updated successfully:', updatedUser);
             }}
           />
         )}

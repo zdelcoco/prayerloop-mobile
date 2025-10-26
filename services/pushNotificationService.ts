@@ -196,7 +196,7 @@ class PushNotificationService {
     return () => {
       tokenRefreshUnsubscribe();
       foregroundUnsubscribe();
-      Notifications.removeNotificationSubscription(responseListener);
+      responseListener.remove();
     };
   }
 

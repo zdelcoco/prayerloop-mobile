@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch, useSelector } from 'react-redux';
 import { formatPhoneNumber } from '../../util/phoneFormatter';
 import { User } from '../../util/shared.types';
+import { updateUserProfile, UpdateUserProfileRequest } from '../../util/updateUserProfile';
+import { updateUserProfileSuccess } from '../../store/authSlice';
+import { RootState } from '../../store/store';
 import UserEditModal from './UserEditModal';
 
 interface UserCardProps {
@@ -12,33 +16,85 @@ interface UserCardProps {
 
 const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
   const [editModalVisible, setEditModalVisible] = useState(false);
-  
+  const [isSaving, setIsSaving] = useState(false);
+  const dispatch = useDispatch();
+  const token = useSelector((state: RootState) => state.auth.token);
+
   if (!user) {
     return null;
   }
-  
+
   const { username, email, phoneNumber, firstName, lastName } = user;
   const userIcon = `${firstName?.[0]?.toUpperCase() || ''}${lastName?.[0]?.toUpperCase() || ''}`;
   const formattedPhone = formatPhoneNumber(phoneNumber);
 
   const handleEditPress = () => {
-    Alert.alert(
-      'Edit Profile',
-      'The edit screen is available to view, but you cannot actually save any changes yet. This functionality is coming soon!',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', onPress: () => setEditModalVisible(true) },
-      ]
-    );
+    setEditModalVisible(true);
   };
 
   const handleCloseEdit = () => {
     setEditModalVisible(false);
   };
 
-  const handleSaveEdit = (updatedData: Partial<User>) => {
-    onUserUpdate(updatedData);
-    setEditModalVisible(false);
+  const handleSaveEdit = async (updatedData: Partial<User>) => {
+    if (!token) {
+      Alert.alert('Error', 'You must be logged in to update your profile.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Build the update request - only include changed fields
+      const updateRequest: UpdateUserProfileRequest = {};
+
+      if (updatedData.username !== undefined && updatedData.username !== user.username) {
+        updateRequest.username = updatedData.username;
+      }
+      if (updatedData.firstName !== undefined && updatedData.firstName !== user.firstName) {
+        updateRequest.firstName = updatedData.firstName;
+      }
+      if (updatedData.lastName !== undefined && updatedData.lastName !== user.lastName) {
+        updateRequest.lastName = updatedData.lastName;
+      }
+      if (updatedData.email !== undefined && updatedData.email !== user.email) {
+        updateRequest.email = updatedData.email;
+      }
+      if (updatedData.phoneNumber !== user.phoneNumber) {
+        updateRequest.phoneNumber = updatedData.phoneNumber || '';
+      }
+
+      // Check if there are any changes
+      if (Object.keys(updateRequest).length === 0) {
+        Alert.alert('No Changes', 'No changes were made to your profile.');
+        setEditModalVisible(false);
+        setIsSaving(false);
+        return;
+      }
+
+      const result = await updateUserProfile(token, user.userProfileId, updateRequest);
+
+      if (result.success && result.data) {
+        // Update Redux store with new user data
+        dispatch(updateUserProfileSuccess(result.data.user));
+
+        Alert.alert('Success', 'Your profile has been updated successfully!');
+        setEditModalVisible(false);
+
+        // Call the parent callback if provided
+        onUserUpdate(result.data.user);
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to update profile. Please try again.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error updating profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -79,6 +135,7 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
         user={user}
         onClose={handleCloseEdit}
         onSave={handleSaveEdit}
+        isSaving={isSaving}
       />
     </>
   );

@@ -58,10 +58,13 @@ const authSlice = createSlice({
       state.status = 'idle';
       state.isAuthenticated = false;
     },
+    updateUserProfileSuccess: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+    },
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, signupStart, signupSuccess, signupFailure, logoutSuccess } =
+export const { loginStart, loginSuccess, loginFailure, signupStart, signupSuccess, signupFailure, logoutSuccess, updateUserProfileSuccess } =
   authSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<

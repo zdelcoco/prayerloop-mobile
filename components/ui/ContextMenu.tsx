@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   defaultText: {
-    color: '#fff',
+    color: '#333',
   },
   primaryText: {
     color: '#fff',

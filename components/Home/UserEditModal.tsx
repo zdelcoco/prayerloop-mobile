@@ -20,6 +20,7 @@ interface UserEditModalProps {
   user: User;
   onClose: () => void;
   onSave: (updatedUser: Partial<User>) => void;
+  isSaving?: boolean;
 }
 
 interface EditableUserData {
@@ -38,6 +39,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   user,
   onClose,
   onSave,
+  isSaving = false,
 }) => {
   const [formData, setFormData] = useState<EditableUserData>({
     username: user.username || '',
@@ -77,11 +79,63 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   };
 
   const handleSave = () => {
-    Alert.alert(
-      'Save Changes',
-      'Save functionality is coming soon! Your changes cannot be saved at this time.',
-      [{ text: 'OK' }]
-    );
+    // Validate required fields
+    if (!formData.username.trim()) {
+      Alert.alert('Validation Error', 'Username is required.');
+      return;
+    }
+    if (!formData.firstName.trim()) {
+      Alert.alert('Validation Error', 'First name is required.');
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      Alert.alert('Validation Error', 'Last name is required.');
+      return;
+    }
+    if (!formData.email.trim()) {
+      Alert.alert('Validation Error', 'Email is required.');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address.');
+      return;
+    }
+
+    // If password fields are shown, validate them
+    if (showPasswordFields) {
+      if (!formData.currentPassword) {
+        Alert.alert('Validation Error', 'Current password is required to change your password.');
+        return;
+      }
+      if (!formData.newPassword) {
+        Alert.alert('Validation Error', 'New password is required.');
+        return;
+      }
+      if (formData.newPassword !== formData.confirmNewPassword) {
+        Alert.alert('Validation Error', 'New passwords do not match.');
+        return;
+      }
+      if (formData.newPassword.length < 6) {
+        Alert.alert('Validation Error', 'Password must be at least 6 characters long.');
+        return;
+      }
+
+      // Password change is not yet implemented
+      Alert.alert('Not Implemented', 'Password change functionality is coming soon!');
+      return;
+    }
+
+    // Call the parent save handler with the updated data
+    onSave({
+      username: formData.username,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+    });
   };
 
   const handleCancel = () => {
@@ -167,19 +221,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 onChangeText={onPhoneNumberChange}
                 keyboardType="phone-pad"
                 maxLength={14}
-              />
-
-              <MainButton
-                title={showPasswordFields ? "Hide Password Fields" : "Change Password"}
-                onPress={() => {
-                  if (!showPasswordFields) {
-                    Alert.alert('Change Password', 'Functionality coming soon!');
-                  } else {
-                    setShowPasswordFields(false);
-                  }
-                }}
-                buttonStyle={styles.togglePasswordButton}
-              />
+              />              
 
               {showPasswordFields && (
                 <>
@@ -225,13 +267,28 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                   title="Cancel"
                   onPress={handleCancel}
                   buttonStyle={{ ...styles.cancelButton, ...styles.halfWidth }}
+                  disabled={isSaving}
                 />
                 <MainButton
-                  title="Save Changes"
+                  title={isSaving ? "Saving..." : "Save Changes"}
                   onPress={handleSave}
                   buttonStyle={{ ...styles.saveButton, ...styles.halfWidth }}
+                  disabled={isSaving}
                 />
               </View>
+
+              <MainButton
+                title={showPasswordFields ? "Hide Password Fields" : "Change Password"}
+                onPress={() => {
+                  if (!showPasswordFields) {
+                    Alert.alert('Change Password', 'Functionality coming soon!');
+                  } else {
+                    setShowPasswordFields(false);
+                  }
+                }}
+                buttonStyle={styles.togglePasswordButton}
+                textStyle={styles.togglePasswordText}
+              />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -285,8 +342,11 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
   },
   togglePasswordButton: {
-    backgroundColor: '#666',
+    backgroundColor: '#90c590',
     marginBottom: 12,
+  },
+  togglePasswordText: {
+    color: '#333',
   },
   requiredText: {
     color: '#666',
@@ -298,6 +358,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    marginBottom: 16,
   },
   halfWidth: {
     flex: 1,
