@@ -6,8 +6,8 @@ export interface ResponseError {
   message: string;
 }
 
-export interface Result {
-  data?: any;
+export interface Result<T = any> {
+  data?: T;
   error?: ResponseError;
   success: boolean;
 }

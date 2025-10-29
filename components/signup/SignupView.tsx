@@ -397,6 +397,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#008000',
     marginBottom: 20,
   },
+  backToLoginContainer: {
+    alignItems: 'center',
+  },
+  backToLoginText: {
+    color: '#008000',
+    fontSize: 16,
+    fontFamily: 'InstrumentSans-Regular',
+  },
   signUpButton: {
     backgroundColor: '#008000',
   },
@@ -411,14 +419,6 @@ const styles = StyleSheet.create({
   },
   halfWidth: {
     flex: 1,
-  },
-  backToLoginContainer: {
-    alignItems: 'center',
-  },
-  backToLoginText: {
-    color: '#008000',
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
   },
   errorText: {
     color: 'red',

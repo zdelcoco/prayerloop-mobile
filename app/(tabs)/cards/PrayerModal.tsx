@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useAppDispatch } from '@/hooks/redux';
 import { addUserPrayer } from '@/store/userPrayersSlice';
@@ -51,6 +52,7 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
     }
     return false;
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const headerHeight = useHeaderHeight();
 
@@ -88,6 +90,10 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
       return;
     }
 
+    if (isSaving) {
+      return; // Prevent multiple submissions
+    }
+
     const prayerData: CreateUserPrayerRequest = {
       title: prayerTitle.trim(),
       prayerDescription: prayerDescription.trim(),
@@ -95,18 +101,26 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
       prayerType: 'general',
     };
 
+    setIsSaving(true);
+
     try {
+      // Simulate network delay for testing (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       await dispatch(addUserPrayer(prayerData));
       resetForm();
+      setIsSaving(false);
       navigation.goBack(); // Close the modal/screen
     } catch (error) {
       console.error('Error adding prayer:', error);
+      setIsSaving(false);
       Alert.alert('Error', 'Something went wrong while adding the prayer.');
     }
   }, [
     prayerTitle,
     prayerDescription,
     isPrivate,
+    isSaving,
     dispatch,
     resetForm,
     navigation,
@@ -123,6 +137,10 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
       return;
     }
 
+    if (isSaving) {
+      return; // Prevent multiple submissions
+    }
+
     const prayerData: CreateUserPrayerRequest = {
       title: prayerTitle.trim(),
       prayerDescription: prayerDescription.trim(),
@@ -130,18 +148,26 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
       prayerType: 'general',
     };
 
+    setIsSaving(true);
+
     try {
+      // Simulate network delay for testing (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       await dispatch(putUserPrayer(route.params.prayer!.prayerId, prayerData));
       resetForm();
+      setIsSaving(false);
       navigation.goBack(); // Close the modal/screen
     } catch (error) {
       console.error('Error editing prayer:', error);
+      setIsSaving(false);
       Alert.alert('Error', 'Something went wrong while editing the prayer.');
     }
   }, [
     prayerTitle,
     prayerDescription,
     isPrivate,
+    isSaving,
     dispatch,
     resetForm,
     navigation,
@@ -187,17 +213,35 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
           <Text style={styles.buttonText}>Cancel</Text>
         </Pressable>
         <Pressable
-          style={[styles.button, styles.addButton]}
+          style={[
+            styles.button,
+            styles.addButton,
+            (isSaving || !prayerTitle || !prayerDescription) && styles.disabledButton
+          ]}
           onPress={
             route.params.mode === 'add' ? handleAddPrayer : handleEditPrayer
           }
-          disabled={!prayerTitle || !prayerDescription}
+          disabled={isSaving || !prayerTitle || !prayerDescription}
         >
           <Text style={styles.buttonText}>
             {route.params.mode === 'add' ? 'Add' : 'Save'}
           </Text>
         </Pressable>
       </View>
+
+      {/* Loading Overlay */}
+      {isSaving && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <View style={styles.extraLargeSpinner}>
+              <ActivityIndicator size="large" color="#b2d8b2" />
+            </View>
+            <Text style={styles.loadingText}>
+              {route.params.mode === 'add' ? 'Saving...' : 'Updating...'}
+            </Text>
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -266,9 +310,40 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: '#008000',
   },
+  disabledButton: {
+    backgroundColor: '#aaa',
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContainer: {
+    paddingTop: 48,
+    paddingBottom: 30,
+    paddingHorizontal: 60,
+    borderRadius: 8,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  extraLargeSpinner: {
+    transform: [{ scale: 2 }],
+  },
+  loadingText: {
+    marginTop: 48,
+    fontSize: 24,
+    color: '#b2d8b2',
+    fontFamily: 'InstrumentSans-SemiBold',
   },
 });

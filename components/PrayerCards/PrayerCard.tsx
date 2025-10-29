@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -16,6 +17,8 @@ interface CardProps {
   style?: object;
   currentUserId?: number;
   usersLookup?: { [userProfileId: number]: User };
+  showReadMore?: boolean;
+  isDetailView?: boolean;
 }
 
 const Card = ({
@@ -25,42 +28,61 @@ const Card = ({
   style,
   currentUserId,
   usersLookup,
+  showReadMore = false,
+  isDetailView = false,
 }: CardProps) => {
-  
+
   const getCreatorText = () => {
     if (currentUserId && prayer.createdBy === currentUserId) {
       return 'you';
     }
-    
+
     if (usersLookup && usersLookup[prayer.createdBy]) {
       return usersLookup[prayer.createdBy].firstName;
     }
-    
+
     return 'someone';
   };
 
+  const screenHeight = Dimensions.get('window').height;
+  const maxCardHeight = screenHeight * 0.5;
+
   return (
-    <Pressable onPress={onPress} style={[styles.cardContainer, style]}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.cardContainer,
+        style,
+        !isDetailView && { maxHeight: maxCardHeight }
+      ]}
+    >
       <View style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.title}>{prayer.title}</Text>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+            {prayer.title}
+          </Text>
           {prayer.isPrivate && (
-            <FontAwesome 
-              name="eye-slash" 
-              size={16} 
-              color="#666" 
+            <FontAwesome
+              name="eye-slash"
+              size={16}
+              color="#666"
               style={styles.privateIcon}
             />
           )}
         </View>
         <View style={styles.content}>
           {children}
+          {showReadMore && (
+            <Text style={styles.readMoreText}>Tap to read more...</Text>
+          )}
         </View>
         <View style={styles.footer}>
           <Text style={styles.status}>
             {prayer.isAnswered ? 'Answered?' : ''}
           </Text>
-          <Text style={styles.date}>Created by {getCreatorText()} on {formatPrayerDateTime(prayer.datetimeCreate)}</Text>
+          <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
+            Created by {getCreatorText()} on {formatPrayerDateTime(prayer.datetimeCreate)}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -112,7 +134,13 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
   },
-  
+  readMoreText: {
+    color: '#008000',
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
+    fontWeight: '600',
+  },
 });
 
 export default Card;

@@ -10,6 +10,7 @@ import {
   Platform,
   Switch,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
 import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
@@ -28,6 +29,7 @@ export default function AddPrayerModal({
   const [prayerTitle, setPrayerTitle] = useState('');
   const [prayerDescription, setPrayerDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const onPrayerTitleChange = useCallback((text: string) => setPrayerTitle(text), []);
   const onPrayerDescriptionChange = useCallback(
@@ -42,28 +44,35 @@ export default function AddPrayerModal({
     setIsPrivate(false);
   }, []);
 
-  const addPrayer = useCallback(() => {
+  const addPrayer = useCallback(async () => {
     if (!prayerTitle.trim() || !prayerDescription.trim()) {
       Alert.alert('Validation Error', 'Please fill in all required fields.');
       return;
     }
 
+    if (isSaving) {
+      return; // Prevent multiple submissions
+    }
+
     try {
+      setIsSaving(true);
       const prayerData: CreateUserPrayerRequest = {
         title: prayerTitle.trim(),
         prayerDescription: prayerDescription.trim(),
         isPrivate,
         prayerType: 'general',
       };
-      onAddPrayer(prayerData);
+      await onAddPrayer(prayerData);
       console.log('Prayer added:', prayerData);
       resetForm();
       onClose();
     } catch (error) {
       console.error('Error adding prayer:', error);
       Alert.alert('Error', 'Something went wrong while adding the prayer.');
-    } 
-  }, [prayerTitle, prayerDescription, isPrivate, onAddPrayer, onClose, resetForm]);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [prayerTitle, prayerDescription, isPrivate, isSaving, onAddPrayer, onClose, resetForm]);
 
   const cancelAddPrayer = useCallback(() => {
     resetForm();
@@ -115,16 +124,26 @@ export default function AddPrayerModal({
               style={[
                 styles.button,
                 styles.addButton,
-                // (!prayerTitle || !prayerDescription) && styles.disabledButton,
+                (isSaving || !prayerTitle || !prayerDescription) && styles.disabledButton,
               ]}
               onPress={addPrayer}
-              disabled={!prayerTitle || !prayerDescription}
+              disabled={isSaving || !prayerTitle || !prayerDescription}
             >
               <Text style={styles.buttonText}>Add</Text>
             </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Loading Overlay */}
+      {isSaving && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#008000" />
+            <Text style={styles.loadingText}>Saving...</Text>
+          </View>
+        </View>
+      )}
     </Modal>
   );
 }
@@ -200,5 +219,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
   },
 });

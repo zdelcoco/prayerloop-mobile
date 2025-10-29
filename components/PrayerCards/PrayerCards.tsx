@@ -73,16 +73,22 @@ export default function PrayerCards({
     setSelectedPrayer(null);
   };
 
-  const renderItem: ListRenderItem<Prayer> = ({ item }) => (
-    <Card 
-      prayer={item} 
-      onPress={() => onPressHandler(item)} 
-      currentUserId={userId}
-      usersLookup={usersLookup}
-    >
-      <Text>{item.prayerDescription}</Text>
-    </Card>
-  );
+  const renderItem: ListRenderItem<Prayer> = ({ item }) => {
+    // Check if prayer description is long enough to be truncated
+    const isLongPrayer = item.prayerDescription.length > 200 || item.prayerDescription.split('\n').length > 8;
+
+    return (
+      <Card
+        prayer={item}
+        onPress={() => onPressHandler(item)}
+        currentUserId={userId}
+        usersLookup={usersLookup}
+        showReadMore={isLongPrayer}
+      >
+        <Text numberOfLines={8} ellipsizeMode="tail">{item.prayerDescription}</Text>
+      </Card>
+    );
+  };
 
   return (
     <>

@@ -13,33 +13,49 @@ import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import MainButton from '../ui/MainButton';
+import ForgotPasswordModal from '../auth/ForgotPasswordModal';
+import VerifyCodeModal from '../auth/VerifyCodeModal';
+import ResetPasswordModal from '../auth/ResetPasswordModal';
+import { forgotPassword } from '@/util/forgotPassword';
 
 interface LoginViewProps {
   onPress: (username: string, password: string) => void;
   onSignupPress: () => void;
   errorMessage?: string;
+  onAutoLogin?: (username: string, password: string) => void;
 }
 
-function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
+function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
+
+  // Password reset modal states
+  const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
+  const [verifyCodeVisible, setVerifyCodeVisible] = useState(false);
+  const [resetPasswordVisible, setResetPasswordVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
 
   useEffect(() => {
-    loadSavedCredentials();
+    loadSavedCredentialsAndAutoLogin();
   }, []);
 
-  const loadSavedCredentials = async () => {
+  const loadSavedCredentialsAndAutoLogin = async () => {
     try {
       const savedUsername = await AsyncStorage.getItem('rememberedUsername');
       const savedPassword = await AsyncStorage.getItem('rememberedPassword');
-      const shouldRemember = await AsyncStorage.getItem('rememberMe');
-      
-      if (shouldRemember === 'true' && savedUsername && savedPassword) {
+
+      if (savedUsername && savedPassword) {
         setUsername(savedUsername);
         setPassword(savedPassword);
-        setRememberMe(true);
+
+        // Auto-login if credentials exist and we haven't tried yet
+        if (!hasAttemptedAutoLogin && onAutoLogin) {
+          setHasAttemptedAutoLogin(true);
+          onAutoLogin(savedUsername, savedPassword);
+        }
       }
     } catch (error) {
       console.error('Error loading saved credentials:', error);
@@ -50,19 +66,8 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
     try {
       await AsyncStorage.setItem('rememberedUsername', username);
       await AsyncStorage.setItem('rememberedPassword', password);
-      await AsyncStorage.setItem('rememberMe', 'true');
     } catch (error) {
       console.error('Error saving credentials:', error);
-    }
-  };
-
-  const clearSavedCredentials = async () => {
-    try {
-      await AsyncStorage.removeItem('rememberedUsername');
-      await AsyncStorage.removeItem('rememberedPassword');
-      await AsyncStorage.removeItem('rememberMe');
-    } catch (error) {
-      console.error('Error clearing credentials:', error);
     }
   };
 
@@ -78,14 +83,53 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
 
   const onSignIn = async () => {
     setShowError(true);
-    
-    if (rememberMe) {
-      await saveCredentials(username, password);
-    } else {
-      await clearSavedCredentials();
-    }
-    
+
+    // Always save credentials for auto-login next time
+    await saveCredentials(username, password);
+
     onPress(username, password);
+  };
+
+  // Password reset handlers
+  const handleForgotPassword = () => {
+    setForgotPasswordVisible(true);
+  };
+
+  const handleForgotPasswordSuccess = (email: string) => {
+    setResetEmail(email);
+    setForgotPasswordVisible(false);
+    setVerifyCodeVisible(true);
+  };
+
+  const handleVerifyCodeSuccess = (token: string) => {
+    setResetToken(token);
+    setVerifyCodeVisible(false);
+    setResetPasswordVisible(true);
+  };
+
+  const handleResendCode = async () => {
+    // Close verify modal and reopen forgot password modal
+    setVerifyCodeVisible(false);
+    const result = await forgotPassword(resetEmail);
+    if (result.success) {
+      setVerifyCodeVisible(true);
+    } else {
+      setForgotPasswordVisible(true);
+    }
+  };
+
+  const handleResetPasswordSuccess = () => {
+    setResetPasswordVisible(false);
+    setResetEmail('');
+    setResetToken('');
+  };
+
+  const handleCloseAllModals = () => {
+    setForgotPasswordVisible(false);
+    setVerifyCodeVisible(false);
+    setResetPasswordVisible(false);
+    setResetEmail('');
+    setResetToken('');
   };
 
   return (
@@ -134,20 +178,9 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
           />
 
           <View style={styles.optionsRow}>
-            <View style={styles.rememberMe}>
-              <Text style={styles.rememberText}>Remember Me</Text>
-            </View>
-            <Switch
-              value={rememberMe}
-              onValueChange={async (value) => {
-                setRememberMe(value);
-                if (!value) {
-                  await clearSavedCredentials();
-                }
-              }}
-              thumbColor={rememberMe ? '#white' : 'white'}
-              trackColor={{ false: '#ccc', true: '#008000' }}
-            />
+            <Pressable onPress={handleForgotPassword}>
+              <Text style={styles.forgotPassword}>Forgot Password?</Text>
+            </Pressable>
           </View>
           <MainButton
             title='Sign In'
@@ -155,13 +188,35 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
             accessibilityLabel='Sign In to your account'
             buttonStyle={styles.signInButton}
           />
-          
+
           <Pressable onPress={onSignupPress} style={styles.signupContainer}>
             <Text style={styles.signupText}>
               Don't have an account? Sign Up
             </Text>
           </Pressable>
         </View>
+
+        {/* Password Reset Modals */}
+        <ForgotPasswordModal
+          visible={forgotPasswordVisible}
+          onClose={() => setForgotPasswordVisible(false)}
+          onSuccess={handleForgotPasswordSuccess}
+        />
+
+        <VerifyCodeModal
+          visible={verifyCodeVisible}
+          email={resetEmail}
+          onClose={handleCloseAllModals}
+          onSuccess={handleVerifyCodeSuccess}
+          onResendCode={handleResendCode}
+        />
+
+        <ResetPasswordModal
+          visible={resetPasswordVisible}
+          token={resetToken}
+          onClose={handleCloseAllModals}
+          onSuccess={handleResetPasswordSuccess}
+        />
       </LinearGradient>
     </KeyboardAvoidingView>
   );
@@ -207,32 +262,18 @@ const styles = StyleSheet.create({
   optionsRow: {
     paddingTop: 8,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: 8,
   },
-  rememberMe: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rememberText: {
-    color: '#666',
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    marginLeft: 8,
-  },
   forgotPassword: {
     color: '#008000',
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
   },
   signInButton: {
     backgroundColor: '#008000',
     marginTop: 20,
-  },
-  errorText: {
-    color: 'red',
-    paddingBottom: 18,
   },
   signupContainer: {
     alignItems: 'center',
@@ -242,6 +283,10 @@ const styles = StyleSheet.create({
     color: '#008000',
     fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+  },
+  errorText: {
+    color: 'red',
+    paddingBottom: 18,
   },
 });
 

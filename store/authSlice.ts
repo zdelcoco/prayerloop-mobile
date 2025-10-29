@@ -8,6 +8,7 @@ import { signupUser } from '../util/signup';
 import { SignupRequest, SignupResponse } from '../util/signup.types';
 import { clearUserPrayers } from './userPrayersSlice';
 import { clearUserGroups } from './groupsSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthState {
   user: User | null;
@@ -110,7 +111,15 @@ export const signup =
     }
   };
 
-export const logout = (): AppThunk => (dispatch) => {
+export const logout = (): AppThunk => async (dispatch) => {
+  // Clear saved credentials from AsyncStorage
+  try {
+    await AsyncStorage.removeItem('rememberedUsername');
+    await AsyncStorage.removeItem('rememberedPassword');
+  } catch (error) {
+    console.error('Error clearing saved credentials on logout:', error);
+  }
+
   dispatch(logoutSuccess());
   dispatch(clearUserPrayers());
   dispatch(clearUserGroups());

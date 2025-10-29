@@ -11,6 +11,7 @@ import {
   Alert,
   ScrollView,
   Share,
+  Dimensions,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import Card from './PrayerCard';
@@ -189,47 +190,66 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     setModalMode('share');
   };
 
-  const renderDetailView = () => (
-    <TouchableOpacity style={styles.overlay} onPress={onClose}>
-      <Card prayer={prayer} style={{ width: '100%', padding: 20 }} currentUserId={userId} usersLookup={usersLookup}>
-        <Text style={styles.text}>{prayer.prayerDescription}</Text>
-      </Card>
-      <View style={styles.buttonRow}>
-        {canShare() && (
-          <Pressable
-            style={[styles.button, styles.shareButton]}
-            onPress={onShareHandler}
+  const renderDetailView = () => {
+    const screenHeight = Dimensions.get('window').height;
+    const maxContentHeight = screenHeight * 0.6;
+    const buttonRowHeight = 60;
+    const scrollViewMaxHeight = maxContentHeight - buttonRowHeight;
+
+    return (
+      <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1}>
+        <View style={[styles.detailContainer, { maxHeight: maxContentHeight }]}>
+          <ScrollView
+            style={[styles.scrollableContent, { maxHeight: scrollViewMaxHeight }]}
+            contentContainerStyle={styles.scrollableContentContainer}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
+            nestedScrollEnabled={true}
           >
-            <Text style={styles.buttonText}>Share</Text>
-          </Pressable>
-        )}
-        {canEditAndDelete() ? (
-          <>
-            <Pressable
-              style={styles.button}
-              onPress={() => {
-                onEditHandler();
-              }}
-            >
-              <Text style={styles.buttonText}>Edit</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.button, styles.deleteButton]}
-              onPress={() => {
-                onDeleteHandler();
-              }}
-            >
-              <Text style={styles.buttonText}>Delete</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            {!canShare() && <View style={styles.spacer} />}
-          </>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+            <View style={styles.cardWrapper}>
+              <Card prayer={prayer} style={styles.cardStyle} currentUserId={userId} usersLookup={usersLookup} isDetailView={true}>
+                <Text style={styles.text}>{prayer.prayerDescription}</Text>
+              </Card>
+            </View>
+          </ScrollView>
+          <View style={styles.buttonRow}>
+            {canShare() && (
+              <Pressable
+                style={[styles.button, styles.shareButton]}
+                onPress={onShareHandler}
+              >
+                <Text style={styles.buttonText}>Share</Text>
+              </Pressable>
+            )}
+            {canEditAndDelete() ? (
+              <>
+                <Pressable
+                  style={styles.button}
+                  onPress={() => {
+                    onEditHandler();
+                  }}
+                >
+                  <Text style={styles.buttonText}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.button, styles.deleteButton]}
+                  onPress={() => {
+                    onDeleteHandler();
+                  }}
+                >
+                  <Text style={styles.buttonText}>Delete</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                {!canShare() && <View style={styles.spacer} />}
+              </>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderShareView = () => (
     <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('detail')} activeOpacity={1}>
@@ -377,13 +397,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(50, 70, 55, 0.9)',
   },
+  detailContainer: {
+    width: '90%',
+    backgroundColor: 'transparent',
+  },
+  scrollableContent: {
+    flexShrink: 0,
+  },
+  scrollableContentContainer: {
+    flexGrow: 1,
+  },
+  cardWrapper: {
+    flex: 1,
+  },
+  cardStyle: {
+    marginVertical: 0,
+    marginHorizontal: 0,
+    width: '100%',
+  },
   text: {
     fontSize: 16,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '90%',
+    width: '100%',
+    marginTop: 8,
   },
   button: {
     padding: 10,

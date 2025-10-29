@@ -16,6 +16,11 @@ export default function LoginScreen() {
     dispatch(login(username, password));
   };
 
+  const handleAutoLogin = (username: string, password: string) => {
+    // Auto-login with saved credentials
+    dispatch(login(username, password));
+  };
+
   const handleSignupPress = () => {
     router.push('/signup');
   };
@@ -40,6 +45,9 @@ export default function LoginScreen() {
       <LoginView
         onPress={(username: string, password: string) =>
           handleLogin(username, password)
+        }
+        onAutoLogin={(username: string, password: string) =>
+          handleAutoLogin(username, password)
         }
         onSignupPress={handleSignupPress}
         errorMessage={status === 'failed' && error ? error : undefined}
