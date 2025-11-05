@@ -39,7 +39,6 @@ export default function UserProfile() {
         <StartPrayerSessionCard />
         <PrayerReminderCard />
         <UserPreferencesCard />
-        <TestNotifications />
       </ScrollView>
     </LinearGradient>
   );

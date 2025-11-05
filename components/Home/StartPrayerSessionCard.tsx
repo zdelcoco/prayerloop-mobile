@@ -223,7 +223,7 @@ const StartPrayerSessionCard = () => {
           style={styles.startButton}
           onPress={() => setShowSelection(true)}
         >
-          <Text style={styles.startButtonText}>Choose Prayer Sources</Text>
+          <Text style={styles.startButtonText}>Start Praying!</Text>
         </TouchableOpacity>
       </View>
 

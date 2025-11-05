@@ -84,53 +84,62 @@ const UserPreferencesCard = () => {
 
   const renderPreference = (preference: PreferenceWithDefault) => {
     const displayName = getPreferenceDisplay(preference);
-    
+    const isComingSoon = true; // All preferences are coming soon for now
+
     // Handle boolean preferences (theme, notifications, etc.)
     if (preference.valueType === 'boolean') {
       const boolValue = preference.value === 'true';
-      
+
       return (
         <View key={preference.key} style={styles.preferenceRow}>
-          <Text style={styles.preferenceLabel}>{displayName}</Text>
+          <Text style={[styles.preferenceLabel, isComingSoon && styles.comingSoonLabel]}>
+            {displayName}
+          </Text>
           <View style={styles.switchContainer}>
             <Switch
               value={boolValue}
-              onValueChange={(value) => 
+              onValueChange={isComingSoon ? undefined : (value) =>
                 updatePreference(preference, value ? 'true' : 'false')
               }
+              disabled={isComingSoon}
               thumbColor={boolValue ? '#white' : 'white'}
-              trackColor={{ false: '#ccc', true: '#008000' }}
+              trackColor={{ false: '#ddd', true: '#ccc' }}
             />
           </View>
         </View>
       );
     }
-    
+
     // Handle string preferences that have specific options (like theme with light/dark)
     if (preference.key === 'theme' && preference.valueType === 'string') {
       const isDark = preference.value === 'dark';
-      
+
       return (
         <View key={preference.key} style={styles.preferenceRow}>
-          <Text style={styles.preferenceLabel}>Dark Theme</Text>
+          <Text style={[styles.preferenceLabel, isComingSoon && styles.comingSoonLabel]}>
+            Dark Theme
+          </Text>
           <View style={styles.switchContainer}>
             <Switch
               value={isDark}
-              onValueChange={(value) => 
+              onValueChange={isComingSoon ? undefined : (value) =>
                 updatePreference(preference, value ? 'dark' : 'light')
               }
+              disabled={isComingSoon}
               thumbColor={isDark ? '#white' : 'white'}
-              trackColor={{ false: '#ccc', true: '#008000' }}
+              trackColor={{ false: '#ddd', true: '#ccc' }}
             />
           </View>
         </View>
       );
     }
-    
+
     // For other preference types, just show the value (could add more UI types later)
     return (
       <View key={preference.key} style={styles.preferenceRow}>
-        <Text style={styles.preferenceLabel}>{displayName}</Text>
+        <Text style={[styles.preferenceLabel, isComingSoon && styles.comingSoonLabel]}>
+          {displayName}
+        </Text>
         <Text style={styles.preferenceValue}>{preference.value}</Text>
       </View>
     );
@@ -147,7 +156,10 @@ const UserPreferencesCard = () => {
 
   return (
     <View style={styles.cardContainer}>
-      <Text style={styles.title}>User Preferences</Text>
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>User Preferences</Text>       
+      </View>
+      <Text style={styles.comingSoonBadge}>Coming Soon</Text>
       {!Array.isArray(preferences) || preferences.length === 0 ? (
         <Text style={styles.emptyText}>No preferences found</Text>
       ) : (
@@ -170,11 +182,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 16,
     color: '#333',
+  },
+  comingSoonBadge: {
+    fontSize: 14,
+    color: '#008000',
+    fontStyle: 'italic',
+    fontWeight: '500',
+
   },
   preferenceRow: {
     flexDirection: 'row',
@@ -185,9 +209,13 @@ const styles = StyleSheet.create({
   preferenceLabel: {
     fontSize: 16,
     color: '#333',
+    lineHeight: 22,
     flex: 1,
     marginRight: 16,
-    lineHeight: 22,
+  },
+  comingSoonLabel: {
+    color: '#999',
+    fontStyle: 'italic',
   },
   switchContainer: {
     minWidth: 50,

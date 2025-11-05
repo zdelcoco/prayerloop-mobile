@@ -46,6 +46,25 @@ const PrayerReminderCard = () => {
   useEffect(() => {
     loadReminder();
     checkNotificationPermissions();
+
+    // Set up notification listener to reschedule daily reminders
+    const subscription = Notifications.addNotificationReceivedListener(
+      async (notification) => {
+        const data = notification.request.content.data;
+        if (data?.scheduledFor) {
+          const storedReminder = await AsyncStorage.getItem('prayerReminder');
+          if (storedReminder) {
+            const parsed = JSON.parse(storedReminder);
+            if (parsed.isEnabled && parsed.frequency === 'daily') {
+              // Pass false to suppress permission alert during auto-rescheduling
+              await scheduleNotifications(parsed, false);
+            }
+          }
+        }
+      }
+    );
+
+    return () => subscription.remove();
   }, []);
 
   const checkNotificationPermissions = async () => {
@@ -93,61 +112,78 @@ const PrayerReminderCard = () => {
     }
   };
 
-  const scheduleNotifications = async (reminderConfig: PrayerReminder) => {
+  const scheduleNotifications = async (reminderConfig: PrayerReminder, showPermissionAlert = true) => {
     // Cancel existing notifications
     await Notifications.cancelAllScheduledNotificationsAsync();
 
     if (!notificationPermission) {
-      Alert.alert(
-        'Permission Required',
-        'Please enable notifications to use prayer reminders'
-      );
+      if (showPermissionAlert) {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications to use prayer reminders'
+        );
+      }
       return;
     }
 
     try {
       if (reminderConfig.frequency === 'daily') {
         const [hours, minutes] = reminderConfig.time.split(':').map(Number);
+
+        // Calculate the next occurrence
+        const now = new Date();
+        const scheduledTime = new Date();
+        scheduledTime.setHours(hours, minutes, 0, 0);
+
+        // If the scheduled time has already passed today, schedule for tomorrow
+        if (scheduledTime <= now) {
+          scheduledTime.setDate(scheduledTime.getDate() + 1);
+        }
+
+        // Use date-based trigger for the first notification
+        // Calendar triggers with repeats=true don't wait for next occurrence
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Prayer Time',
             body: reminderConfig.message,
+            data: { scheduledFor: scheduledTime.toISOString() },
           },
           trigger: {
-            hour: hours,
-            minute: minutes,
-            repeats: true,
-          } as any,
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: scheduledTime,
+          },
         });
       } else if (reminderConfig.frequency === 'weekly') {
         // Schedule for Sunday (weekday: 1)
         const [hours, minutes] = reminderConfig.time.split(':').map(Number);
+
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Prayer Time',
             body: reminderConfig.message,
           },
           trigger: {
-            weekday: 1,
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            weekday: 1, // Sunday
             hour: hours,
             minute: minutes,
-            repeats: true,
-          } as any,
+          },
         });
       } else if (reminderConfig.frequency === 'monthly') {
         // Schedule for first day of each month
         const [hours, minutes] = reminderConfig.time.split(':').map(Number);
+
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Prayer Time',
             body: reminderConfig.message,
           },
           trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.MONTHLY,
             day: 1,
             hour: hours,
             minute: minutes,
-            repeats: true,
-          } as any,
+          },
         });
       } else if (
         reminderConfig.frequency === 'specific' &&
@@ -166,11 +202,11 @@ const PrayerReminderCard = () => {
               body: reminderConfig.message,
             },
             trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
               weekday: day === 0 ? 1 : day + 1, // Expo uses 1=Sunday, 2=Monday
               hour: hours,
               minute: minutes,
-              repeats: true,
-            } as any,
+            },
           });
         }
       }

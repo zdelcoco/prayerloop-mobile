@@ -9,11 +9,10 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 // Configure how notifications are displayed when the app is in foreground
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
   }),
 });
 

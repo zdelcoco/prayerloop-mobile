@@ -7,6 +7,8 @@ import {
   TextInput,
   Platform,
   Switch,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '../ui/LinearGradientCompat';
 import { useState, useEffect } from 'react';
@@ -138,11 +140,12 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <LinearGradient
-        colors={['#90C590', '#F6EDD9']}
-        style={styles.gradient}
-        end={{ x: 1, y: 0.6 }}
-      >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <LinearGradient
+          colors={['#90C590', '#F6EDD9']}
+          style={styles.gradient}
+          end={{ x: 1, y: 0.6 }}
+        >
         <View style={styles.formContainer}>
           <Text style={styles.title}>Welcome!</Text>
           {errorMessage && showError ? (
@@ -164,6 +167,10 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
             autoCapitalize='none'
             textContentType="username"
             autoComplete="username"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              // Focus password field when pressing "next" on keyboard
+            }}
           />
 
           <TextInput
@@ -175,6 +182,8 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
             secureTextEntry
             textContentType="password"
             autoComplete="current-password"
+            returnKeyType="done"
+            onSubmitEditing={onSignIn}
           />
 
           <View style={styles.optionsRow}>
@@ -218,6 +227,7 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
           onSuccess={handleResetPasswordSuccess}
         />
       </LinearGradient>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

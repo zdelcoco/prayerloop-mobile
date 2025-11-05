@@ -104,9 +104,6 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
     setIsSaving(true);
 
     try {
-      // Simulate network delay for testing (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       await dispatch(addUserPrayer(prayerData));
       resetForm();
       setIsSaving(false);
@@ -151,9 +148,6 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
     setIsSaving(true);
 
     try {
-      // Simulate network delay for testing (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       await dispatch(putUserPrayer(route.params.prayer!.prayerId, prayerData));
       resetForm();
       setIsSaving(false);
@@ -187,6 +181,8 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
         placeholderTextColor='#888'
         value={prayerTitle}
         onChangeText={onPrayerTitleChange}
+        autoCorrect={true}
+        autoCapitalize="sentences"
       />
       <TextInput
         style={[styles.input, styles.textArea]}
@@ -195,6 +191,8 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
         value={prayerDescription}
         onChangeText={onPrayerDescriptionChange}
         multiline
+        autoCorrect={true}
+        autoCapitalize="sentences"
       />
       <View style={styles.checkboxContainer}>
         <Text style={styles.checkboxLabel}>Mark as Private</Text>
