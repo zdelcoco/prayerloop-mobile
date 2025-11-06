@@ -13,9 +13,10 @@ interface UseContextMenuProps {
   groupId?: number;
   groupName?: string;
   prayerCount?: number;
+  groupCreatorId?: number;
 }
 
-export function useContextMenu({ type, groupId, groupName, prayerCount = 0 }: UseContextMenuProps) {
+export function useContextMenu({ type, groupId, groupName, prayerCount = 0, groupCreatorId }: UseContextMenuProps) {
   const dispatch = useAppDispatch();
   const { token } = useAppSelector((state: RootState) => state.auth);
 
@@ -71,9 +72,10 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0 }: Us
     if (groupId && groupName) {
       router.push({
         pathname: '/(tabs)/groups/UsersModal',
-        params: { 
+        params: {
           groupProfileId: groupId,
-          groupName: groupName
+          groupName: groupName,
+          groupCreatorId: groupCreatorId
         }
       });
     }
@@ -152,7 +154,7 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0 }: Us
           // Only show Start Prayer Session if there are prayers - should be first and primary
           ...(prayerCount > 0 ? [{ title: 'Start Prayer Session', action: handleStartPrayerSession, style: 'primary' as const }] : []),
           { title: 'Add Prayer', action: handleAddPrayer, style: 'default' as const },
-          { title: 'View Group Members', action: handleViewGroupMembers, style: 'default' as const },
+          { title: 'Manage Group', action: handleViewGroupMembers, style: 'default' as const },
           { title: 'Invite to Group', action: handleInviteToGroup, style: 'blue' as const },
           { title: 'Logout', action: handleLogout, style: 'destructive' as const },
         ];

@@ -4,6 +4,8 @@ import { RootState } from './store';
 import { getUserGroups } from '@/util/getUserGroups';
 import { createGroup } from '@/util/createGroup';
 import { CreateGroupRequest } from '@/util/createGroup.types';
+import { leaveGroup } from '@/util/leaveGroup';
+import { deleteGroup } from '@/util/deleteGroup';
 
 import { Group } from '@/util/shared.types';
 import { clearGroupPrayers } from './groupPrayersSlice';
@@ -50,6 +52,38 @@ const userGroupsSlice = createSlice({
       state.groups = null;
       state.error = null;
     },
+    leaveGroupStart: (state) => {
+      state.status = 'loading';
+    },
+    leaveGroupSuccess: (state, action: PayloadAction<number>) => {
+      state.status = 'succeeded';
+      // Remove the group from the local state
+      if (state.groups) {
+        state.groups = state.groups.filter(
+          (group) => group.groupId !== action.payload
+        );
+      }
+    },
+    leaveGroupFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
+    deleteGroupStart: (state) => {
+      state.status = 'loading';
+    },
+    deleteGroupSuccess: (state, action: PayloadAction<number>) => {
+      state.status = 'succeeded';
+      // Remove the group from the local state
+      if (state.groups) {
+        state.groups = state.groups.filter(
+          (group) => group.groupId !== action.payload
+        );
+      }
+    },
+    deleteGroupFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
   },
 });
 
@@ -60,6 +94,12 @@ export const {
   createGroupStart,
   createGroupSuccess,
   createGroupFailure,
+  leaveGroupStart,
+  leaveGroupSuccess,
+  leaveGroupFailure,
+  deleteGroupStart,
+  deleteGroupSuccess,
+  deleteGroupFailure,
 } = userGroupsSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -133,5 +173,73 @@ export const addGroup =
 export const clearUserGroups = (): AppThunk => async (dispatch) => {
   dispatch(userGroupsSlice.actions.clearUserGroups());
 };
+
+export const removeUserFromGroup =
+  (groupId: number, userId?: number): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(leaveGroupFailure('User not authenticated'));
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // If no userId provided, use current user (leave group)
+    const targetUserId = userId || auth.user.userProfileId;
+
+    dispatch(leaveGroupStart());
+
+    try {
+      const result = await leaveGroup(
+        auth.token,
+        groupId,
+        targetUserId
+      );
+      if (result.success) {
+        // Only remove from local state if current user left
+        if (targetUserId === auth.user.userProfileId) {
+          dispatch(leaveGroupSuccess(groupId));
+        }
+        return { success: true };
+      } else {
+        dispatch(
+          leaveGroupFailure(result.error?.message || 'An error occurred.')
+        );
+        return { success: false, error: result.error?.message };
+      }
+    } catch (error) {
+      dispatch(leaveGroupFailure('An error occurred.'));
+      return { success: false, error: 'An error occurred.' };
+    }
+  };
+
+export const deleteGroupById =
+  (groupId: number): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(deleteGroupFailure('User not authenticated'));
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    dispatch(deleteGroupStart());
+
+    try {
+      const result = await deleteGroup(auth.token, groupId);
+      if (result.success) {
+        dispatch(deleteGroupSuccess(groupId));
+        // Clear group prayers to prevent fetching data for deleted group
+        dispatch(clearGroupPrayers());
+        return { success: true };
+      } else {
+        dispatch(
+          deleteGroupFailure(result.error?.message || 'An error occurred.')
+        );
+        return { success: false, error: result.error?.message };
+      }
+    } catch (error) {
+      dispatch(deleteGroupFailure('An error occurred.'));
+      return { success: false, error: 'An error occurred.' };
+    }
+  };
 
 export default userGroupsSlice.reducer;

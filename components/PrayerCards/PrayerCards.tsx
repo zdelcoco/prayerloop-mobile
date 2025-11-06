@@ -44,7 +44,7 @@ export default function PrayerCards({
       // Fetch users from all groups in parallel
       const userPromises = groups.map(async (group) => {
         const result = await getGroupUsers(token, group.groupId);
-        if (result.success && result.data) {
+        if (result.success && result.data && Array.isArray(result.data)) {
           const users = result.data as User[];
           users.forEach((user) => {
             allUsers[user.userProfileId] = user;

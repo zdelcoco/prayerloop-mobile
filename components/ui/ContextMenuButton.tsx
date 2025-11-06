@@ -9,20 +9,22 @@ interface ContextMenuButtonProps {
   groupId?: number;
   groupName?: string;
   prayerCount?: number;
+  groupCreatorId?: number;
   iconColor?: string;
   iconSize?: number;
 }
 
-export default function ContextMenuButton({ 
-  type, 
-  groupId, 
+export default function ContextMenuButton({
+  type,
+  groupId,
   groupName,
   prayerCount = 0,
+  groupCreatorId,
   iconColor = '#333',
-  iconSize = 24 
+  iconSize = 24
 }: ContextMenuButtonProps) {
   const [menuVisible, setMenuVisible] = useState(false);
-  const menuConfig = useContextMenu({ type, groupId, groupName, prayerCount });
+  const menuConfig = useContextMenu({ type, groupId, groupName, prayerCount, groupCreatorId });
 
   const handleMenuPress = () => {
     setMenuVisible(true);

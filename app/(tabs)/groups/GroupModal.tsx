@@ -52,9 +52,15 @@ export default function GroupModal() {
     try {
       await dispatch(addGroup(newGroup));
       resetForm();
-      Alert.alert('Success', 'Group created successfully!');
-      // todo: Navigate to the new group 
-      navigation.goBack(); // Close the modal/screen
+      // Close both modals (GroupModal and ActionSelection)
+      navigation.goBack(); // Close GroupModal
+      setTimeout(() => {
+        navigation.goBack(); // Close ActionSelection
+        // Show alert after modals are closed
+        setTimeout(() => {
+          Alert.alert('Success', 'Group created successfully!');
+        }, 100);
+      }, 100);
     } catch (error) {
       console.error('Error adding group:', error);
       Alert.alert('Error', 'Something went wrong while adding the group.');

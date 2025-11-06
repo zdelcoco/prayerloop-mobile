@@ -42,6 +42,11 @@ type GroupPrayersNavigationProp = StackNavigationProp<
   'GroupPrayers'
 >;
 
+function ms(size: number): number {
+  const scale = 1.2;
+  return Math.round(size * scale);
+}
+
 export default function GroupPrayers() {
   const navigation = useNavigation<GroupPrayersNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'GroupPrayers'>>();
@@ -74,7 +79,11 @@ export default function GroupPrayers() {
     const parentNavigation = navigation.getParent();
     if (parentNavigation) {
       parentNavigation.setOptions({
-        headerTitle: `${group.groupName}`,
+        headerTitle: () => (
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.headerTitle}>{group.groupName}</Text>
+          </TouchableOpacity>
+        ),
         headerLeft: () => (
           <TouchableOpacity
             style={styles.backButton}
@@ -84,12 +93,13 @@ export default function GroupPrayers() {
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <ContextMenuButton 
-            type="groupDetail" 
-            groupId={group.groupId} 
+          <ContextMenuButton
+            type='groupDetail'
+            groupId={group.groupId}
             groupName={group.groupName}
+            groupCreatorId={group.createdBy}
             prayerCount={sanitizedPrayers?.length || 0}
-            iconSize={24} 
+            iconSize={24}
           />
         ),
       });
@@ -100,9 +110,7 @@ export default function GroupPrayers() {
         parentNavigation.setOptions({
           headerTitle: 'Groups',
           headerLeft: null,
-          headerRight: () => (
-            <ContextMenuButton type="groups" iconSize={24} />
-          ),
+          headerRight: () => <ContextMenuButton type='groups' iconSize={24} />,
         });
       }
     };
@@ -176,7 +184,8 @@ export default function GroupPrayers() {
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
               <Text style={styles.emptyStateText}>
-                This group doesn't have any prayers yet. Tap the + button below to add the first prayer to share with your group!
+                This group doesn't have any prayers yet. Tap the + button below
+                to add the first prayer to share with your group!
               </Text>
             </View>
           ) : null
@@ -189,7 +198,7 @@ export default function GroupPrayers() {
             onRefresh={onRefresh}
             flatListRef={flatListRef}
             onActionComplete={fetchData}
-            context="groups"
+            context='groups'
           />
         )}
       </View>
@@ -204,7 +213,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   text: {
-    fontSize: 18,
+    fontSize: ms(18),
     fontWeight: '600',
     color: '#333',
     marginTop: 18,
@@ -213,6 +222,12 @@ const styles = StyleSheet.create({
   backButton: {
     paddingHorizontal: 10,
     paddingVertical: 5,
+  },
+  headerTitle: {
+    fontSize: ms(18),
+    fontFamily: 'InstrumentSans-Bold',
+    fontWeight: 'bold',
+    color: '#000',
   },
   emptyStateContainer: {
     flex: 1,
