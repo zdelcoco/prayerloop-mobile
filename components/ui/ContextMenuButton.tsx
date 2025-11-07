@@ -27,7 +27,13 @@ export default function ContextMenuButton({
   const menuConfig = useContextMenu({ type, groupId, groupName, prayerCount, groupCreatorId });
 
   const handleMenuPress = () => {
-    setMenuVisible(true);
+    if (menuVisible) {
+      // If already open, close it
+      setMenuVisible(false);
+    } else {
+      // If closed, open it
+      setMenuVisible(true);
+    }
   };
 
   const handleMenuClose = () => {

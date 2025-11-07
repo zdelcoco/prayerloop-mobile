@@ -31,13 +31,28 @@ interface ContextMenuProps {
 export default function ContextMenu({ visible, onClose, title, options }: ContextMenuProps) {
   const translateY = useRef(new Animated.Value(0)).current;
   const currentValue = useRef(0);
-  
+
+  // Animate in when modal opens
+  React.useEffect(() => {
+    if (visible) {
+      // Start from bottom and slide up
+      translateY.setValue(500);
+      currentValue.current = 0;
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    }
+  }, [visible, translateY]);
+
   // Track the current value
   React.useEffect(() => {
     const listener = translateY.addListener(({ value }) => {
       currentValue.current = value;
     });
-    
+
     return () => {
       translateY.removeListener(listener);
     };
@@ -55,24 +70,28 @@ export default function ContextMenu({ visible, onClose, title, options }: Contex
         return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
-        // Set offset to current value when gesture starts
-        translateY.setOffset(currentValue.current);
-        translateY.setValue(0);
+        // Store the starting position
+        translateY.stopAnimation();
       },
       onPanResponderMove: (evt, gestureState) => {
-        // Only allow dragging down
+        // Only allow dragging down (positive dy values)
         if (gestureState.dy > 0) {
           translateY.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        translateY.flattenOffset();
-        
         // If dragged down more than 100px or with high velocity, dismiss
         if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          onClose();
+          // Animate out and close
+          Animated.timing(translateY, {
+            toValue: 500,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            onClose();
+          });
         } else {
-          // Snap back to position
+          // Snap back to top
           Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
@@ -84,9 +103,14 @@ export default function ContextMenu({ visible, onClose, title, options }: Contex
     })
   ).current;
 
+  // Don't render the modal at all if not visible
+  if (!visible) {
+    return null;
+  }
+
   return (
     <Modal
-      animationType="slide"
+      animationType="none"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
@@ -95,8 +119,8 @@ export default function ContextMenu({ visible, onClose, title, options }: Contex
         <TouchableWithoutFeedback onPress={handleBackdropPress}>
           <View style={styles.backdrop} />
         </TouchableWithoutFeedback>
-        
-        <Animated.View 
+
+        <Animated.View
           style={[
             styles.bottomSheet,
             {
@@ -173,13 +197,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: screenHeight * 0.6,
+    maxHeight: screenHeight * 0.7,
     minHeight: 200,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 10,
+    // Ensure it's always positioned correctly
+    position: 'relative',
   },
   handleContainer: {
     paddingVertical: 10,

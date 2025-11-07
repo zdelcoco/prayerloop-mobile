@@ -58,8 +58,6 @@ export default function Groups() {
   const fetchGroupMembers = useCallback(async (groupId: number) => {
     if (!token) return;
 
-    console.log(`fetchGroupMembers called for group ${groupId}`);
-
     try {
       const users = await groupUsersCache.fetchGroupUsers(token, groupId);
       if (users.length > 0) {
@@ -98,8 +96,6 @@ export default function Groups() {
       const prevGroupIds = previousGroupsRef.current?.map(g => g.groupId).sort().join(',');
 
       const groupsChanged = groupIds !== prevGroupIds;
-
-      console.log('useEffect triggered, groupsChanged:', groupsChanged, 'current:', groupIds, 'previous:', prevGroupIds);
 
       if (groupsChanged) {
         previousGroupsRef.current = groups;

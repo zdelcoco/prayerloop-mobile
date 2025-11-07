@@ -15,19 +15,16 @@ class GroupUsersCache {
     // Check if there's already a request in flight for this group
     const inFlightRequest = this.inFlightRequests.get(groupId);
     if (inFlightRequest) {
-      console.log(`Waiting for in-flight request for group ${groupId}`);
       return inFlightRequest;
     }
 
     // Check cache
     const cached = this.cache.get(groupId);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-      console.log(`Using cached data for group ${groupId}`);
       return cached.users;
     }
 
     // Create new request
-    console.log(`Fetching fresh data for group ${groupId}`);
     const request = this.fetchAndCache(token, groupId);
     this.inFlightRequests.set(groupId, request);
 
@@ -56,10 +53,8 @@ class GroupUsersCache {
 
   invalidate(groupId?: number) {
     if (groupId !== undefined) {
-      console.log(`Invalidating cache for group ${groupId}`);
       this.cache.delete(groupId);
     } else {
-      console.log('Invalidating entire group users cache');
       this.cache.clear();
     }
   }
