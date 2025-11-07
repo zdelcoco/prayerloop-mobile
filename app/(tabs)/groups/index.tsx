@@ -9,7 +9,7 @@ import { RootState } from '@/store/store';
 import { fetchUserGroups } from '@/store/groupsSlice';
 
 import type { Group, User } from '@/util/shared.types';
-import { getGroupUsers } from '@/util/getGroupUsers';
+import { groupUsersCache } from '@/util/groupUsersCache';
 import { formatGroupMembersString } from '@/util/formatGroupMembers';
 
 import GroupCard from '@/components/Groups/GroupCard';
@@ -46,6 +46,8 @@ export default function Groups() {
 
   const [loading, setLoading] = useState(false);
   const [groupMembers, setGroupMembers] = useState<{ [groupId: number]: User[] }>({});
+  const previousGroupsRef = useRef<Group[] | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
@@ -54,33 +56,57 @@ export default function Groups() {
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   const fetchGroupMembers = useCallback(async (groupId: number) => {
-    if (!token || groupMembers[groupId]) return;
-    
+    if (!token) return;
+
+    console.log(`fetchGroupMembers called for group ${groupId}`);
+
     try {
-      const result = await getGroupUsers(token, groupId);
-      if (result.success && result.data) {
+      const users = await groupUsersCache.fetchGroupUsers(token, groupId);
+      if (users.length > 0) {
         setGroupMembers(prev => ({
           ...prev,
-          [groupId]: result.data as User[]
+          [groupId]: users
         }));
       }
     } catch (error) {
       console.error('Failed to fetch group members:', error);
     }
-  }, [token, groupMembers]);
+  }, [token]);
 
   const fetchData = useCallback(() => {
+    // Debounce fetches to prevent duplicate calls within 500ms
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 500) {
+      return;
+    }
+    lastFetchTimeRef.current = now;
+
     dispatch(clearGroupPrayers());
     dispatch(fetchUserGroups());
-  }, [route, navigation]);
+  }, [dispatch]);
 
-  useFocusEffect(fetchData);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   useEffect(() => {
     if (groups && Array.isArray(groups) && token) {
-      groups.forEach(group => {
-        fetchGroupMembers(group.groupId);
-      });
+      // Create a stable string representation of group IDs for comparison
+      const groupIds = groups.map(g => g.groupId).sort().join(',');
+      const prevGroupIds = previousGroupsRef.current?.map(g => g.groupId).sort().join(',');
+
+      const groupsChanged = groupIds !== prevGroupIds;
+
+      console.log('useEffect triggered, groupsChanged:', groupsChanged, 'current:', groupIds, 'previous:', prevGroupIds);
+
+      if (groupsChanged) {
+        previousGroupsRef.current = groups;
+        groups.forEach(group => {
+          fetchGroupMembers(group.groupId);
+        });
+      }
     }
   }, [groups, token, fetchGroupMembers]);
 
@@ -92,6 +118,9 @@ export default function Groups() {
     if (refreshing) return;
     setRefreshing(true);
     try {
+      // Clear cache to allow re-fetching
+      groupUsersCache.clear();
+      setGroupMembers({});
       await dispatch(fetchUserGroups());
     } catch (error) {
       console.error('Failed to refresh groups:', error);

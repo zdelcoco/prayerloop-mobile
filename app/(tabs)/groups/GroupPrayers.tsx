@@ -58,6 +58,7 @@ export default function GroupPrayers() {
   const [loading, setLoading] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
   const flatListRef = useRef<FlatList<Prayer>>(null);
+  const lastFetchTimeRef = useRef<number>(0);
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -117,10 +118,21 @@ export default function GroupPrayers() {
   }, [navigation, group, dispatch, prayers]);
 
   const fetchData = useCallback(() => {
+    // Debounce fetches to prevent duplicate calls within 500ms
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 500) {
+      return;
+    }
+    lastFetchTimeRef.current = now;
+
     dispatch(fetchGroupPrayers(group.groupId));
   }, [dispatch, group.groupId]);
 
-  useFocusEffect(fetchData);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   // Add this to window for context menu to access
   useLayoutEffect(() => {

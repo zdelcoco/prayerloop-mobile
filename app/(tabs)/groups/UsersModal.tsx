@@ -74,6 +74,7 @@ export default function UsersModal() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedGroupRef = useRef<number | null>(null);
   const isFetchingRef = useRef(false);
+  const isDeletingRef = useRef(false);
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -83,6 +84,11 @@ export default function UsersModal() {
 
   const fetchData = useCallback(() => {
     const groupId = route.params.groupProfileId;
+
+    // Don't fetch if we're in the process of deleting or leaving the group
+    if (isDeletingRef.current) {
+      return;
+    }
 
     // Prevent duplicate fetches using refs (no status dependency needed)
     if (isFetchingRef.current || lastFetchedGroupRef.current === groupId) {
@@ -228,6 +234,7 @@ export default function UsersModal() {
           style: 'destructive',
           onPress: async () => {
             setLeaveGroupLoading(true);
+            isDeletingRef.current = true; // Prevent any further data fetches
             try {
               const result: any = await dispatch(
                 removeUserFromGroup(route.params.groupProfileId)
@@ -253,6 +260,7 @@ export default function UsersModal() {
                   );
                 }, 100);
               } else {
+                isDeletingRef.current = false; // Reset flag if leave failed
                 Alert.alert(
                   'Error',
                   result?.error || 'Failed to leave group. Please try again.',
@@ -260,6 +268,7 @@ export default function UsersModal() {
                 );
               }
             } catch (error) {
+              isDeletingRef.current = false; // Reset flag on error
               console.error('Leave group error:', error);
               Alert.alert(
                 'Error',
@@ -291,6 +300,7 @@ export default function UsersModal() {
           style: 'destructive',
           onPress: async () => {
             setDeleteGroupLoading(true);
+            isDeletingRef.current = true; // Prevent any further data fetches
             try {
               const result: any = await dispatch(
                 deleteGroupById(route.params.groupProfileId)
@@ -317,6 +327,7 @@ export default function UsersModal() {
                   );
                 }, 100);
               } else {
+                isDeletingRef.current = false; // Reset flag if delete failed
                 Alert.alert(
                   'Error',
                   result?.error || 'Failed to delete group. Please try again.',
@@ -324,6 +335,7 @@ export default function UsersModal() {
                 );
               }
             } catch (error) {
+              isDeletingRef.current = false; // Reset flag on error
               console.error('Delete group error:', error);
               Alert.alert(
                 'Error',
