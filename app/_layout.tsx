@@ -1,32 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { StatusBar, View, Text, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Provider, useSelector } from 'react-redux';
 import { useFonts } from 'expo-font';
-import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import store from '../store/store';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
-// Custom Splash Screen Component
-function SplashScreen() {
-  return (
-    <View style={styles.gradient}>
-      <Text style={styles.text}>prayerloop</Text>
-    </View>
-  );
-}
-
 function RootLayoutNav() {
-  const isAuthenticated = useSelector(
-    (state: any) => state.auth.isAuthenticated
-  );
+  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
   const router = useRouter();
 
   // Initialize push notifications for authenticated users
   usePushNotifications();
 
   useEffect(() => {
-    // Navigate immediately when auth state changes
+    // Navigate when auth state changes
     if (!isAuthenticated) {
       router.replace('/(auth)/login');
     } else {
@@ -42,6 +30,7 @@ function RootLayoutNav() {
         animationDuration: 300,
       }}
     >
+      <Stack.Screen name='index' options={{ headerShown: false }} />
       <Stack.Screen name='(auth)' options={{ headerShown: false }} />
       <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
     </Stack>
@@ -55,9 +44,9 @@ export default function RootLayout() {
     'InstrumentSans-SemiBold': require('../assets/fonts/InstrumentSans-SemiBold-BF645daa0fdb37c.ttf'),
   });
 
-  // Show splash screen while fonts are loading
+  // Return null while fonts are loading - native splash screen will show
   if (!fontsLoaded) {
-    return <SplashScreen />;
+    return null;
   }
 
   return (
@@ -70,18 +59,3 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#90C590',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    fontSize: 48,
-    marginBottom: 20,    
-    fontFamily: 'InstrumentSans-SemiBold',
-    color: '#FFFFFF',
-  }
-});

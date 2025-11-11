@@ -1,30 +1,25 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 
-// Simple fallback screen - no navigation logic to prevent conflicts
+// Root index redirects immediately based on auth state
+// Renders gradient background to match login screen during transition
 export default function IndexScreen() {
+  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
+
+  // Match login screen gradient to prevent flash
   return (
-    <View style={styles.splashContainer}>
-      <View style={styles.splashContent}>
-        <Text style={styles.appName}>prayerloop</Text>
-      </View>
-    </View>
+    <LinearGradient
+      colors={['#90C590', '#F6EDD9']}
+      style={{ flex: 1 }}
+      end={{ x: 1, y: 0.6 }}
+    >
+      {isAuthenticated ? (
+        <Redirect href="/(tabs)/cards" />
+      ) : (
+        <Redirect href="/(auth)/login" />
+      )}
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  splashContainer: {
-    flex: 1,
-    backgroundColor: '#90C590',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  splashContent: {
-    alignItems: 'center',
-  },
-  appName: {
-    fontSize: 48,
-    marginBottom: 20,    
-    fontFamily: 'InstrumentSans-SemiBold',
-    color: '#FFFFFF',
-  },
-});

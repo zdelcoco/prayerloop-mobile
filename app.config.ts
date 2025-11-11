@@ -10,9 +10,9 @@ const config: ExpoConfig = {
   scheme: "prayerloop",
   sdkVersion: "53.0.0",
   splash: {
-    image: "./assets/images/splash-icon.png",
-    resizeMode: "contain",
-    backgroundColor: "#ffffff"
+    image: "./assets/images/splash.png",
+    resizeMode: "cover",
+    backgroundColor: "#90C590"
   },
   updates: {
     fallbackToCacheTimeout: 0
