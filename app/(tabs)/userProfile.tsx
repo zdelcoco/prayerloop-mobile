@@ -1,16 +1,32 @@
 import React from 'react';
-import { Text, ScrollView, StyleSheet } from 'react-native';
+import { Text, ScrollView, StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions } from 'react-native';
+import Constants from 'expo-constants';
 
 import UserCard from '@/components/Home/UserCard';
 import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
 import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
 import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
 import TestNotifications from '@/components/TestNotifications';
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#666',
+    opacity: 0.6,
+  },
+});
 
 export default function UserProfile() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -26,7 +42,7 @@ export default function UserProfile() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
-      <ScrollView style={{ paddingTop: headerHeight }}>
+      <ScrollView style={{ paddingTop: headerHeight }} contentContainerStyle={styles.scrollContent}>
         {user && (
           <UserCard
             user={user}
@@ -35,10 +51,16 @@ export default function UserProfile() {
             }}
           />
         )}
-        
+
         <StartPrayerSessionCard />
         <PrayerReminderCard />
         <UserPreferencesCard />
+
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>
+            v{Constants.expoConfig?.version}
+          </Text>
+        </View>
       </ScrollView>
     </LinearGradient>
   );

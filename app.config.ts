@@ -4,7 +4,7 @@ const config: ExpoConfig = {
   name: "prayerloop",
   owner: "delsuckahh",
   slug: "prayerloop",
-  version: "1.0.0",
+  version: "0.0.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "prayerloop",
@@ -23,6 +23,7 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.prayerloop.app",
+    buildNumber: "1",
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false
@@ -34,6 +35,7 @@ const config: ExpoConfig = {
       backgroundColor: "#FFFFFF"
     },
     package: "com.prayerloop.app",
+    versionCode: 1
   },
   web: {
     favicon: "./assets/favicon.png"
