@@ -21,9 +21,9 @@ const config: ExpoConfig = {
     "**/*"
   ],
   ios: {
-    supportsTablet: true,
+    supportsTablet: false,
     bundleIdentifier: "com.prayerloop.app",
-    buildNumber: "1",
+    buildNumber: "2",
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false
