@@ -116,6 +116,79 @@ expo start
 
 ---
 
+## Git Workflow
+
+This repository follows a **Git Flow** branching strategy to maintain code quality and manage releases.
+
+### Branch Structure
+
+- **`main`** - Production branch (auto-deploys to production)
+- **`develop`** - Integration branch for ongoing development
+- **`feature/*`** - Feature branches (created from `develop`)
+- **`fix/*`** - Bug fix branches (created from `develop`)
+- **`release/*`** - Release candidate branches (created from `develop`)
+
+### Development Workflow
+
+**1. Working on Features/Fixes:**
+
+```bash
+# Start from develop
+git checkout develop
+git pull origin develop
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Work, commit, push
+git add .
+git commit -m "Add your feature"
+git push -u origin feature/your-feature-name
+
+# Create Pull Request: feature/your-feature-name → develop
+# Merge via GitHub UI after review
+```
+
+**2. Creating a Release:**
+
+```bash
+# Create release branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b release/v0.0.2
+
+# Bump version, final tweaks
+# Update version in app.config.ts and package.json
+git commit -m "Bump version to 0.0.2"
+git push -u origin release/v0.0.2
+
+# Create Pull Request: release/v0.0.2 → main
+# Merge via GitHub UI (triggers production deployment)
+
+# Tag the release
+git checkout main
+git pull origin main
+git tag -a v0.0.2 -m "Release v0.0.2"
+git push origin v0.0.2
+
+# Merge back to develop
+git checkout develop
+git merge main
+git push origin develop
+```
+
+### Branch Protection Rules
+
+- **`main`** - Requires pull request before merging (no direct pushes)
+- **`develop`** - Requires pull request before merging (no direct pushes)
+
+### Deployment
+
+- Merging to **`main`** triggers automatic deployment to production
+- Use release branches to prepare and test before production deployment
+
+---
+
 ## Other Prayerloop Repositories
 
 - **[prayerloop-psql](https://github.com/zdelcoco/prayerloop-psql)**  
