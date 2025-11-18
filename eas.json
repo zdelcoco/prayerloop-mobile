@@ -37,7 +37,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://prayerloop.io"
+        "EXPO_PUBLIC_API_URL": "https://dev.prayerloop.io"
       }
     }
   },
