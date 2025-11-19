@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
 import { RootState } from './store';
 
@@ -6,6 +6,12 @@ import { getGroupPrayers } from '../util/getGroupPrayers';
 import { createGroupPrayer } from '../util/createGroupPrayer';
 import { reorderGroupPrayers, ReorderPrayersRequest } from '../util/reorderGroupPrayers';
 import { Prayer, CreatePrayerRequest } from '../util/shared.types';
+
+export interface GroupPrayerFilterOptions {
+  createdBy?: number | null;
+  dateRange?: 'all' | 'today' | 'week' | 'month' | 'year';
+  isAnswered?: boolean | null;
+}
 
 interface GroupPrayersResponse {
   groupProfileId: number;
@@ -17,6 +23,8 @@ interface GroupPrayersState {
   prayers: Prayer[] | null;
   status: 'idle' | 'loading' | 'creating' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
+  searchQuery: string;
+  filters: GroupPrayerFilterOptions;
 }
 
 const initialState: GroupPrayersState = {
@@ -24,6 +32,12 @@ const initialState: GroupPrayersState = {
   prayers: null,
   status: 'idle',
   error: null,
+  searchQuery: '',
+  filters: {
+    createdBy: null,
+    dateRange: 'all',
+    isAnswered: null,
+  },
 };
 
 const groupPrayersSlice = createSlice({
@@ -72,6 +86,20 @@ const groupPrayersSlice = createSlice({
       state.prayers = null;
       state.error = null;
     },
+    setGroupPrayerSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+    setGroupPrayerFilters: (state, action: PayloadAction<GroupPrayerFilterOptions>) => {
+      state.filters = action.payload;
+    },
+    clearGroupPrayerSearchAndFilters: (state) => {
+      state.searchQuery = '';
+      state.filters = {
+        createdBy: null,
+        dateRange: 'all',
+        isAnswered: null,
+      };
+    },
   },
 });
 
@@ -85,6 +113,9 @@ export const {
   reorderGroupPrayersStart,
   reorderGroupPrayersSuccess,
   reorderGroupPrayersFailure,
+  setGroupPrayerSearchQuery,
+  setGroupPrayerFilters,
+  clearGroupPrayerSearchAndFilters,
 } = groupPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -200,12 +231,86 @@ export const reorderPrayersInGroup =
     }
   };
 
+// Direct selectors
 export const selectGroupPrayers = (state: RootState) =>
   state.groupPrayers.prayers;
 export const selectGroupPrayersStatus = (state: RootState) =>
   state.groupPrayers.status;
 export const selectGroupPrayersError = (state: RootState) =>
   state.groupPrayers.error;
+
+export const selectGroupPrayerSearchQuery = (state: RootState) =>
+  state.groupPrayers.searchQuery;
+
+export const selectGroupPrayerFilters = (state: RootState) =>
+  state.groupPrayers.filters;
+
+// Memoized selector for filtered group prayers
+export const selectFilteredGroupPrayers = createSelector(
+  [
+    (state: RootState) => state.groupPrayers.prayers,
+    (state: RootState) => state.groupPrayers.searchQuery,
+    (state: RootState) => state.groupPrayers.filters,
+  ],
+  (prayers, searchQuery, filters) => {
+    if (!prayers) return null;
+
+    let filtered = [...prayers];
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (prayer) =>
+          prayer.title.toLowerCase().includes(query) ||
+          prayer.prayerDescription.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply filters
+    if (filters.createdBy !== null && filters.createdBy !== undefined) {
+      filtered = filtered.filter((prayer) => prayer.createdBy === filters.createdBy);
+    }
+
+    if (filters.isAnswered !== null && filters.isAnswered !== undefined) {
+      filtered = filtered.filter((prayer) => prayer.isAnswered === filters.isAnswered);
+    }
+
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      let cutoffDate: Date;
+
+      switch (filters.dateRange) {
+        case 'today':
+          cutoffDate = startOfDay;
+          break;
+        case 'week':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+          break;
+        default:
+          cutoffDate = new Date(0);
+      }
+
+      filtered = filtered.filter((prayer) => {
+        const createdDate = new Date(prayer.datetimeCreate);
+        return createdDate >= cutoffDate;
+      });
+    }
+
+    return filtered;
+  }
+);
 
 export const clearGroupPrayers = (): AppThunk => async (dispatch) => {
   dispatch(groupPrayersSlice.actions.clearGroupPrayers());

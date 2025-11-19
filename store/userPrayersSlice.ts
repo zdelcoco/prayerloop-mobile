@@ -13,16 +13,30 @@ import { reorderUserPrayers, ReorderPrayersRequest } from '@/util/reorderUserPra
 
 import { Prayer, CreatePrayerRequest } from '@/util/shared.types';
 
+export interface FilterOptions {
+  createdBy?: number | null;
+  dateRange?: 'all' | 'today' | 'week' | 'month' | 'year';
+  isAnswered?: boolean | null;
+}
+
 interface UserPrayersState {
   prayers: Prayer[] | null;
   status: 'idle' | 'loading' | 'creating' | 'updating' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
+  searchQuery: string;
+  filters: FilterOptions;
 }
 
 const initialState: UserPrayersState = {
   prayers: null,
   status: 'idle',
   error: null,
+  searchQuery: '',
+  filters: {
+    createdBy: null,
+    dateRange: 'all',
+    isAnswered: null,
+  },
 };
 
 const userPrayersSlice = createSlice({
@@ -79,6 +93,20 @@ const userPrayersSlice = createSlice({
       state.prayers = null;
       state.error = null;
     },
+    setSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+    setFilters: (state, action: PayloadAction<FilterOptions>) => {
+      state.filters = action.payload;
+    },
+    clearSearchAndFilters: (state) => {
+      state.searchQuery = '';
+      state.filters = {
+        createdBy: null,
+        dateRange: 'all',
+        isAnswered: null,
+      };
+    },
   },
 });
 
@@ -95,6 +123,9 @@ export const {
   reorderUserPrayersStart,
   reorderUserPrayersSuccess,
   reorderUserPrayersFailure,
+  setSearchQuery,
+  setFilters,
+  clearSearchAndFilters,
 } = userPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -233,11 +264,80 @@ export const clearUserPrayers = (): AppThunk => async (dispatch) => {
   dispatch(userPrayersSlice.actions.clearUserPrayers());
 };
 
-export const selectUserPrayers = createSelector(
-  (state: RootState) => state.userPrayers.prayers,
-  (prayers) => prayers
-);
+// Direct selectors (no memoization needed for simple property access)
+export const selectUserPrayers = (state: RootState) => state.userPrayers.prayers;
 
 export const selectUserPrayersState = (state: RootState) => state.userPrayers;
+
+export const selectSearchQuery = (state: RootState) => state.userPrayers.searchQuery;
+
+export const selectFilters = (state: RootState) => state.userPrayers.filters;
+
+// Memoized selector for filtered prayers (actual transformation logic)
+export const selectFilteredPrayers = createSelector(
+  [
+    (state: RootState) => state.userPrayers.prayers,
+    (state: RootState) => state.userPrayers.searchQuery,
+    (state: RootState) => state.userPrayers.filters,
+  ],
+  (prayers, searchQuery, filters) => {
+    if (!prayers) return null;
+
+    let filtered = [...prayers];
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (prayer) =>
+          prayer.title.toLowerCase().includes(query) ||
+          prayer.prayerDescription.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply filters
+    if (filters.createdBy !== null && filters.createdBy !== undefined) {
+      filtered = filtered.filter((prayer) => prayer.createdBy === filters.createdBy);
+    }
+
+    if (filters.isAnswered !== null && filters.isAnswered !== undefined) {
+      filtered = filtered.filter((prayer) => prayer.isAnswered === filters.isAnswered);
+    }
+
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      let cutoffDate: Date;
+
+      switch (filters.dateRange) {
+        case 'today':
+          cutoffDate = startOfDay;
+          break;
+        case 'week':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+          break;
+        default:
+          cutoffDate = new Date(0); // Beginning of time
+      }
+
+      filtered = filtered.filter((prayer) => {
+        const createdDate = new Date(prayer.datetimeCreate);
+        return createdDate >= cutoffDate;
+      });
+    }
+
+    return filtered;
+  }
+);
 
 export default userPrayersSlice.reducer;

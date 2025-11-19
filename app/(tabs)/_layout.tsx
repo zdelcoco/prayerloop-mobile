@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions, StyleSheet, View, Text, Animated } from 'react-native';
+import { Dimensions, StyleSheet, View, Text, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import { useEffect, useRef } from 'react';
@@ -112,7 +112,23 @@ export default function TabsLayout() {
               <TabButton focused={focused} icon="vcard" label="Cards" />
             ),
             headerRight: () => (
-              <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={ms(20)} />
+              <View style={styles.headerRightContainer}>
+                <Pressable
+                  onPress={() => {
+                    // Call the global search toggle function
+                    if ((global as any).cardsToggleSearch) {
+                      (global as any).cardsToggleSearch();
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    styles.searchButton,
+                    pressed && styles.searchButtonPressed,
+                  ]}
+                >
+                  <Ionicons name="search" size={ms(20)} color="#000" />
+                </Pressable>
+                <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={ms(20)} />
+              </View>
             ),
           }}
         />
@@ -149,6 +165,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 8,
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  searchButtonPressed: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   tabButton: {
     alignItems: 'center',

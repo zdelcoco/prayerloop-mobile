@@ -17,10 +17,12 @@ interface PrayerCardsProps {
   prayers: Prayer[];
   refreshing: boolean;
   onRefresh: () => void;
-  flatListRef: React.RefObject<FlatList<Prayer>>;
+  flatListRef?: any; // Changed to any to avoid type conflicts between different FlatList implementations
   onActionComplete: () => void;
   context?: 'cards' | 'groups'; // Add context prop
   groupId?: number; // Add groupId for group prayers reordering
+  onScroll?: (event: any) => void; // Add onScroll prop
+  onScrollBeginDrag?: () => void; // Add onScrollBeginDrag prop
 }
 
 export default function PrayerCards({
@@ -33,6 +35,8 @@ export default function PrayerCards({
   onActionComplete,
   context = 'cards', // Default to 'cards' for backward compatibility
   groupId, // Add groupId to destructured props
+  onScroll, // Add onScroll to destructured props
+  onScrollBeginDrag, // Add onScrollBeginDrag to destructured props
 }: PrayerCardsProps) {
   const dispatch = useAppDispatch();
   const [detailModalVisible, setDetailModalVisible] = useState(false);
@@ -155,6 +159,9 @@ export default function PrayerCards({
         contentContainerStyle={styles.listContainer}
         refreshing={refreshing}
         onRefresh={onRefresh}
+        onScroll={onScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
+        scrollEventThrottle={16}
       />
     </>
   );

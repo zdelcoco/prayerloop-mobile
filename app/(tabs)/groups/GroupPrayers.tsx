@@ -10,19 +10,27 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Dimensions } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import {
+  fetchGroupPrayers,
+  setGroupPrayerSearchQuery,
+  setGroupPrayerFilters,
+  selectGroupPrayerSearchQuery,
+  selectGroupPrayerFilters,
+  selectFilteredGroupPrayers,
+} from '@/store/groupPrayersSlice';
 import { RootState } from '../../../store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 
-import { Group } from '@/util/shared.types';
+import { Group, User } from '@/util/shared.types';
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import { Prayer } from '@/util/shared.types';
@@ -30,6 +38,9 @@ import AddButton from '@/components/ui/AddButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from 'expo-router';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import SearchBar from '@/components/Search/SearchBar';
+import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
+import { groupUsersCache } from '@/util/groupUsersCache';
 
 type RootStackParamList = {
   GroupPrayers: { group: string }; // Serialized group as a string
@@ -57,6 +68,9 @@ export default function GroupPrayers() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [groupUsers, setGroupUsers] = useState<User[]>([]);
   const flatListRef = useRef<FlatList<Prayer>>(null);
   const lastFetchTimeRef = useRef<number>(0);
 
@@ -70,11 +84,40 @@ export default function GroupPrayers() {
   );
   const { user, token } = useAppSelector((state: RootState) => state.auth);
 
+  const searchQuery = useAppSelector(selectGroupPrayerSearchQuery);
+  const filters = useAppSelector(selectGroupPrayerFilters);
+  const filteredPrayers = useAppSelector(selectFilteredGroupPrayers);
+
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
   );
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
+
+  const handleSearchChange = (text: string) => {
+    dispatch(setGroupPrayerSearchQuery(text));
+  };
+
+  const handleFilterPress = () => {
+    setFilterModalVisible(true);
+  };
+
+  const handleApplyFilters = (newFilters: FilterOptions) => {
+    dispatch(setGroupPrayerFilters(newFilters));
+  };
+
+  // Hide search bar when user starts scrolling (only if no active search/filters)
+  const handleScrollBeginDrag = useCallback(() => {
+    if (
+      searchBarVisible &&
+      !searchQuery &&
+      !filters.createdBy &&
+      filters.dateRange === 'all' &&
+      filters.isAnswered === null
+    ) {
+      setSearchBarVisible(false);
+    }
+  }, [searchBarVisible, searchQuery, filters]);
 
   useLayoutEffect(() => {
     const parentNavigation = navigation.getParent();
@@ -94,14 +137,25 @@ export default function GroupPrayers() {
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <ContextMenuButton
-            type='groupDetail'
-            groupId={group.groupId}
-            groupName={group.groupName}
-            groupCreatorId={group.createdBy}
-            prayerCount={sanitizedPrayers?.length || 0}
-            iconSize={24}
-          />
+          <View style={styles.headerRightContainer}>
+            <Pressable
+              onPress={() => setSearchBarVisible((prev) => !prev)}
+              style={({ pressed }) => [
+                styles.searchButton,
+                pressed && styles.searchButtonPressed,
+              ]}
+            >
+              <Ionicons name="search" size={24} color="#000" />
+            </Pressable>
+            <ContextMenuButton
+              type='groupDetail'
+              groupId={group.groupId}
+              groupName={group.groupName}
+              groupCreatorId={group.createdBy}
+              prayerCount={sanitizedPrayers?.length || 0}
+              iconSize={24}
+            />
+          </View>
         ),
       });
     }
@@ -115,7 +169,7 @@ export default function GroupPrayers() {
         });
       }
     };
-  }, [navigation, group, dispatch, prayers]);
+  }, [navigation, group, dispatch, prayers, searchBarVisible]);
 
   const fetchData = useCallback(() => {
     // Debounce fetches to prevent duplicate calls within 500ms
@@ -127,6 +181,21 @@ export default function GroupPrayers() {
 
     dispatch(fetchGroupPrayers(group.groupId));
   }, [dispatch, group.groupId]);
+
+  // Fetch group users for the Created By filter
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (token) {
+        try {
+          const users = await groupUsersCache.fetchGroupUsers(token, group.groupId);
+          setGroupUsers(users);
+        } catch (error) {
+          console.error('Failed to fetch group users:', error);
+        }
+      }
+    };
+    fetchUsers();
+  }, [token, group.groupId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -161,6 +230,8 @@ export default function GroupPrayers() {
       index === self.findIndex((p) => p.prayerId === prayer.prayerId)
   );
 
+  const displayedPrayers = filteredPrayers || sanitizedPrayers;
+
   const onAddPressHandler = () => {
     console.log('Add button pressed');
     navigation.navigate('PrayerModal', {
@@ -189,7 +260,29 @@ export default function GroupPrayers() {
         onClose={() => setPrayerSessionVisible(false)}
         contextTitle={group.groupName}
       />
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={handleApplyFilters}
+        currentFilters={filters}
+        availableUsers={groupUsers.map((user) => ({
+          id: user.userProfileId,
+          name: `${user.firstName} ${user.lastName}`,
+        }))}
+      />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
+        {/* Search Bar - shown when searchBarVisible is true */}
+        {searchBarVisible && (
+          <View style={styles.searchBarContainer}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              onFilterPress={handleFilterPress}
+              placeholder="Search prayers..."
+            />
+          </View>
+        )}
+
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!user || !sanitizedPrayers || sanitizedPrayers.length === 0 ? (
           status !== 'loading' ? (
@@ -201,17 +294,25 @@ export default function GroupPrayers() {
               </Text>
             </View>
           ) : null
+        ) : displayedPrayers && displayedPrayers.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateTitle}>No Results</Text>
+            <Text style={styles.emptyStateText}>
+              No prayers match your search or filters.
+            </Text>
+          </View>
         ) : (
           <PrayerCards
             userId={user!.userProfileId}
             token={token ?? ''}
-            prayers={sanitizedPrayers}
+            prayers={displayedPrayers || []}
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
             onActionComplete={fetchData}
             context='groups'
             groupId={group.groupId}
+            onScrollBeginDrag={handleScrollBeginDrag}
           />
         )}
       </View>
@@ -224,6 +325,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  searchBarContainer: {
+    backgroundColor: 'transparent',
+  },
+  headerRightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 8,
+  },
+  searchButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  searchButtonPressed: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   text: {
     fontSize: ms(18),
