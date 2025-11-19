@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import {
   Text,
-  FlatList,
   View,
   StyleSheet,
   Dimensions,
@@ -9,13 +8,22 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { fetchUserPrayers, addUserPrayer } from '@/store/userPrayersSlice';
+import {
+  fetchUserPrayers,
+  addUserPrayer,
+  setSearchQuery,
+  setFilters,
+  selectSearchQuery,
+  selectFilters,
+  selectFilteredPrayers,
+} from '@/store/userPrayersSlice';
 import { logout } from '@/store/authSlice';
 import { RootState } from '@/store/store';
 
@@ -23,6 +31,8 @@ import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import AddButton from '@/components/ui/AddButton';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import SearchBar from '@/components/Search/SearchBar';
+import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
 
 import type { Prayer } from '@/util/shared.types';
 import { ReactReduxContext } from 'react-redux';
@@ -41,9 +51,15 @@ export default function Cards() {
     (state: RootState) => state.userPrayers
   );
 
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const filters = useAppSelector(selectFilters);
+  const filteredPrayers = useAppSelector(selectFilteredPrayers);
+
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [searchBarVisible, setSearchBarVisible] = useState(false);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
     status === 'loading' || loading
@@ -60,9 +76,10 @@ export default function Cards() {
 
   useFocusEffect(fetchData);
 
-  // Add this to window for tab layout to access
+  // Expose functions to global for tab layout to access
   useLayoutEffect(() => {
     (global as any).cardsSetPrayerSessionVisible = setPrayerSessionVisible;
+    (global as any).cardsToggleSearch = () => setSearchBarVisible((prev) => !prev);
   }, [setPrayerSessionVisible]);
 
   const onAddPressHandler = () => {
@@ -87,6 +104,33 @@ export default function Cards() {
     }
   };
 
+  const handleSearchChange = (text: string) => {
+    dispatch(setSearchQuery(text));
+  };
+
+  const handleFilterPress = () => {
+    setFilterModalVisible(true);
+  };
+
+  const handleApplyFilters = (newFilters: FilterOptions) => {
+    dispatch(setFilters(newFilters));
+  };
+
+  // Hide search bar when user starts scrolling (only if no active search/filters)
+  const handleScrollBeginDrag = useCallback(() => {
+    if (
+      searchBarVisible &&
+      !searchQuery &&
+      !filters.createdBy &&
+      filters.dateRange === 'all' &&
+      filters.isAnswered === null
+    ) {
+      setSearchBarVisible(false);
+    }
+  }, [searchBarVisible, searchQuery, filters]);
+
+  const displayedPrayers = filteredPrayers || prayers;
+
   return (
     <LinearGradient
       colors={['#90c590', '#ffffff']}
@@ -106,7 +150,26 @@ export default function Cards() {
         onClose={() => setPrayerSessionVisible(false)}
         contextTitle="Personal Prayers"
       />
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={handleApplyFilters}
+        currentFilters={filters}
+        availableUsers={[]}
+      />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
+        {/* Search Bar - shown when searchBarVisible is true */}
+        {searchBarVisible && (
+          <View style={styles.searchBarContainer}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              onFilterPress={handleFilterPress}
+              placeholder="Search prayers..."
+            />
+          </View>
+        )}
+
         {error && <Text style={styles.text}>Error: {error}</Text>}
         {!user || !prayers || prayers.length === 0 ? (
           status !== 'loading' ? (
@@ -117,17 +180,25 @@ export default function Cards() {
               </Text>
             </View>
           ) : null
+        ) : displayedPrayers && displayedPrayers.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateTitle}>No Results</Text>
+            <Text style={styles.emptyStateText}>
+              No prayers match your search or filters.
+            </Text>
+          </View>
         ) : (
           <PrayerCards
             userId={user!.userProfileId}
             token={token ?? ''}
-            prayers={prayers}
+            prayers={displayedPrayers || []}
             refreshing={refreshing}
             onRefresh={onRefresh}
             flatListRef={flatListRef}
             onActionComplete={() => {
               onRefresh();
             }}
+            onScrollBeginDrag={handleScrollBeginDrag}
           />
         )}
       </View>
@@ -140,6 +211,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  searchBarContainer: {
+    backgroundColor: 'transparent',
   },
   text: {
     color: '#000',

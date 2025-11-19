@@ -14,22 +14,26 @@ interface CardProps {
   prayer: Prayer;
   children: React.ReactNode;
   onPress?: () => void;
+  onLongPress?: () => void;
   style?: object;
   currentUserId?: number;
   usersLookup?: { [userProfileId: number]: User };
   showReadMore?: boolean;
   isDetailView?: boolean;
+  isActive?: boolean;
 }
 
 const Card = ({
   prayer,
   children,
   onPress,
+  onLongPress,
   style,
   currentUserId,
   usersLookup,
   showReadMore = false,
   isDetailView = false,
+  isActive = false,
 }: CardProps) => {
 
   const getCreatorText = () => {
@@ -50,10 +54,12 @@ const Card = ({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       style={[
         styles.cardContainer,
         style,
-        !isDetailView && { maxHeight: maxCardHeight }
+        !isDetailView && { maxHeight: maxCardHeight },
+        isActive && styles.activeCard
       ]}
     >
       <View style={styles.card}>
@@ -140,6 +146,10 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     fontWeight: '600',
+  },
+  activeCard: {
+    opacity: 0.7,
+    transform: [{ scale: 1.05 }],
   },
 });
 
