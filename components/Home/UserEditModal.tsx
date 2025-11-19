@@ -10,13 +10,15 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import MainButton from '../ui/MainButton';
 import { formatPhoneNumberInput } from '../../util/phoneFormatter';
 import { User } from '../../util/shared.types';
 import { changeUserPassword } from '../../util/changeUserPassword';
-import { RootState } from '../../store/store';
+import { deleteUserAccount } from '../../util/deleteUserAccount';
+import { RootState, AppDispatch } from '../../store/store';
+import { logout } from '../../store/authSlice';
 import ChangePasswordModal from './ChangePasswordModal';
 
 interface UserEditModalProps {
@@ -51,7 +53,9 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   });
   const [changePasswordModalVisible, setChangePasswordModalVisible] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const token = useSelector((state: RootState) => state.auth.token);
+  const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
     if (visible) {
@@ -173,6 +177,81 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
     setChangePasswordModalVisible(false);
   };
 
+  const handleDeleteAccountPress = () => {
+    // First confirmation
+    Alert.alert(
+      'Delete Account',
+      'Deleting your account will permanently delete all your data, including prayers, groups, and preferences. Are you sure?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Delete',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Warning',
+              'This action is irreversible. Your account and all associated data will be permanently deleted. Continue?',
+              [
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: handleDeleteAccount,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!token) {
+      Alert.alert('Error', 'You must be logged in to delete your account.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const result = await deleteUserAccount(token, user.userProfileId);
+
+      if (result.success) {
+        // Close the modal immediately
+        onClose();
+
+        // Logout immediately to prevent any data fetching
+        dispatch(logout());
+
+        // Show success message after logout (user will see it on login screen)
+        setTimeout(() => {
+          Alert.alert(
+            'Account Deleted',
+            'Your account has been permanently deleted.'
+          );
+        }, 500);
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to delete account. Please try again.'
+        );
+        setIsDeletingAccount(false);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error deleting account:', error);
+      setIsDeletingAccount(false);
+    }
+  };
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <LinearGradient
@@ -269,6 +348,15 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 onPress={handleChangePasswordPress}
                 buttonStyle={styles.togglePasswordButton}
                 textStyle={styles.togglePasswordText}
+                disabled={isDeletingAccount}
+              />
+
+              <MainButton
+                title={isDeletingAccount ? "Deleting..." : "Delete Account"}
+                onPress={handleDeleteAccountPress}
+                buttonStyle={styles.deleteAccountButton}
+                textStyle={styles.deleteAccountText}
+                disabled={isDeletingAccount || isSaving}
               />
             </View>
           </ScrollView>
@@ -335,6 +423,13 @@ const styles = StyleSheet.create({
   },
   togglePasswordText: {
     color: '#333',
+  },
+  deleteAccountButton: {
+    backgroundColor: '#ef606fff',
+    marginBottom: 12,
+  },
+  deleteAccountText: {
+    color: '#fff',
   },
   requiredText: {
     color: '#666',
