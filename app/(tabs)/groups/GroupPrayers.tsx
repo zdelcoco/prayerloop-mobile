@@ -10,8 +10,8 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
 } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Dimensions } from 'react-native';
@@ -211,6 +211,7 @@ export default function GroupPrayers() {
             flatListRef={flatListRef}
             onActionComplete={fetchData}
             context='groups'
+            groupId={group.groupId}
           />
         )}
       </View>

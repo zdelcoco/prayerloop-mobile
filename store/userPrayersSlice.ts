@@ -9,11 +9,13 @@ import { createUserPrayer } from '@/util/createUserPrayer';
 
 import { updateUserPrayer } from '@/util/updateUserPrayer';
 
+import { reorderUserPrayers, ReorderPrayersRequest } from '@/util/reorderUserPrayers';
+
 import { Prayer, CreatePrayerRequest } from '@/util/shared.types';
 
 interface UserPrayersState {
   prayers: Prayer[] | null;
-  status: 'idle' | 'loading' | 'creating' | 'updating' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'creating' | 'updating' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -61,6 +63,17 @@ const userPrayersSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    reorderUserPrayersStart: (state) => {
+      state.status = 'reordering';
+    },
+    reorderUserPrayersSuccess: (state, action: PayloadAction<Prayer[]>) => {
+      state.status = 'succeeded';
+      state.prayers = action.payload;
+    },
+    reorderUserPrayersFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
     clearUserPrayers: (state) => {
       state.status = 'idle';
       state.prayers = null;
@@ -79,6 +92,9 @@ export const {
   updateUserPrayerStart,
   updateUserPrayerSuccess,
   updateUserPrayerFailure,
+  reorderUserPrayersStart,
+  reorderUserPrayersSuccess,
+  reorderUserPrayersFailure,
 } = userPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -168,6 +184,48 @@ export const putUserPrayer =
       }
     } catch (error) {
       dispatch(updateUserPrayerFailure('An error occurred.'));
+    }
+  };
+
+export const reorderPrayers =
+  (reorderedPrayers: Prayer[]): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(reorderUserPrayersFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(reorderUserPrayersStart());
+
+    // Optimistically update the local state
+    dispatch(reorderUserPrayersSuccess(reorderedPrayers));
+
+    try {
+      const reorderData: ReorderPrayersRequest = {
+        prayers: reorderedPrayers.map((prayer, index) => ({
+          prayerId: prayer.prayerId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderUserPrayers(
+        auth.token,
+        auth.user.userProfileId,
+        reorderData
+      );
+
+      if (!result.success) {
+        // Revert on failure by refetching
+        dispatch(fetchUserPrayers());
+        dispatch(
+          reorderUserPrayersFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      // Revert on failure by refetching
+      dispatch(fetchUserPrayers());
+      dispatch(reorderUserPrayersFailure('An error occurred.'));
     }
   };
 

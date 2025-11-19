@@ -6,13 +6,14 @@ import { createGroup } from '@/util/createGroup';
 import { CreateGroupRequest } from '@/util/createGroup.types';
 import { leaveGroup } from '@/util/leaveGroup';
 import { deleteGroup } from '@/util/deleteGroup';
+import { reorderUserGroups, ReorderGroupsRequest } from '@/util/reorderUserGroups';
 
 import { Group } from '@/util/shared.types';
 import { clearGroupPrayers } from './groupPrayersSlice';
 
 interface UserGroupsState {
   groups: Group[] | null;
-  status: 'idle' | 'creating' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'creating' | 'loading' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -84,6 +85,17 @@ const userGroupsSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    reorderUserGroupsStart: (state) => {
+      state.status = 'reordering';
+    },
+    reorderUserGroupsSuccess: (state, action: PayloadAction<Group[]>) => {
+      state.status = 'succeeded';
+      state.groups = action.payload;
+    },
+    reorderUserGroupsFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
   },
 });
 
@@ -100,6 +112,9 @@ export const {
   deleteGroupStart,
   deleteGroupSuccess,
   deleteGroupFailure,
+  reorderUserGroupsStart,
+  reorderUserGroupsSuccess,
+  reorderUserGroupsFailure,
 } = userGroupsSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -239,6 +254,48 @@ export const deleteGroupById =
     } catch (error) {
       dispatch(deleteGroupFailure('An error occurred.'));
       return { success: false, error: 'An error occurred.' };
+    }
+  };
+
+export const reorderGroups =
+  (reorderedGroups: Group[]): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(reorderUserGroupsFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(reorderUserGroupsStart());
+
+    // Optimistically update the local state
+    dispatch(reorderUserGroupsSuccess(reorderedGroups));
+
+    try {
+      const reorderData: ReorderGroupsRequest = {
+        groups: reorderedGroups.map((group, index) => ({
+          groupId: group.groupId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderUserGroups(
+        auth.token,
+        auth.user.userProfileId,
+        reorderData
+      );
+
+      if (!result.success) {
+        // Revert on failure by refetching
+        dispatch(fetchUserGroups());
+        dispatch(
+          reorderUserGroupsFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      // Revert on failure by refetching
+      dispatch(fetchUserGroups());
+      dispatch(reorderUserGroupsFailure('An error occurred.'));
     }
   };
 

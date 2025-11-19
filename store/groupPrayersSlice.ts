@@ -4,6 +4,7 @@ import { RootState } from './store';
 
 import { getGroupPrayers } from '../util/getGroupPrayers';
 import { createGroupPrayer } from '../util/createGroupPrayer';
+import { reorderGroupPrayers, ReorderPrayersRequest } from '../util/reorderGroupPrayers';
 import { Prayer, CreatePrayerRequest } from '../util/shared.types';
 
 interface GroupPrayersResponse {
@@ -14,7 +15,7 @@ interface GroupPrayersResponse {
 interface GroupPrayersState {
   groupProfileId: number;
   prayers: Prayer[] | null;
-  status: 'idle' | 'loading' | 'creating' | 'succeeded' | 'failed';
+  status: 'idle' | 'loading' | 'creating' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
 }
 
@@ -54,6 +55,17 @@ const groupPrayersSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    reorderGroupPrayersStart: (state) => {
+      state.status = 'reordering';
+    },
+    reorderGroupPrayersSuccess: (state, action: PayloadAction<Prayer[]>) => {
+      state.status = 'succeeded';
+      state.prayers = action.payload;
+    },
+    reorderGroupPrayersFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
     clearGroupPrayers: (state) => {
       state.status = 'idle';
       state.groupProfileId = 0;
@@ -70,6 +82,9 @@ export const {
   createGroupPrayerStart,
   createGroupPrayerSuccess,
   createGroupPrayerFailure,
+  reorderGroupPrayersStart,
+  reorderGroupPrayersSuccess,
+  reorderGroupPrayersFailure,
 } = groupPrayersSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -140,6 +155,48 @@ export const addGroupPrayer =
       }
     } catch (error) {
       dispatch(createGroupPrayerFailure('An error occurred.'));
+    }
+  };
+
+export const reorderPrayersInGroup =
+  (groupProfileId: number, reorderedPrayers: Prayer[]): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token) {
+      dispatch(reorderGroupPrayersFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(reorderGroupPrayersStart());
+
+    // Optimistically update the local state
+    dispatch(reorderGroupPrayersSuccess(reorderedPrayers));
+
+    try {
+      const reorderData: ReorderPrayersRequest = {
+        prayers: reorderedPrayers.map((prayer, index) => ({
+          prayerId: prayer.prayerId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderGroupPrayers(
+        auth.token,
+        groupProfileId,
+        reorderData
+      );
+
+      if (!result.success) {
+        // Revert on failure by refetching
+        dispatch(fetchGroupPrayers(groupProfileId));
+        dispatch(
+          reorderGroupPrayersFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      // Revert on failure by refetching
+      dispatch(fetchGroupPrayers(groupProfileId));
+      dispatch(reorderGroupPrayersFailure('An error occurred.'));
     }
   };
 

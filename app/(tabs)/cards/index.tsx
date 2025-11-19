@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import {
   Text,
-  FlatList,
   View,
   StyleSheet,
   Dimensions,
@@ -9,6 +8,7 @@ import {
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { router, useFocusEffect, useNavigation } from 'expo-router';

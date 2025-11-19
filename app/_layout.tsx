@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Provider, useSelector } from 'react-redux';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import store from '../store/store';
 import { usePushNotifications } from '../hooks/usePushNotifications';
@@ -50,12 +51,12 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle='dark-content' />
       <Provider store={store}>
         <RootLayoutNav />
       </Provider>
-    </>
+    </GestureHandlerRootView>
   );
 }
 

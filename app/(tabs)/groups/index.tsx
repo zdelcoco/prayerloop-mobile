@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Text, View, StyleSheet, FlatList } from 'react-native';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions } from 'react-native';
 
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
-import { fetchUserGroups } from '@/store/groupsSlice';
+import { fetchUserGroups, reorderGroups } from '@/store/groupsSlice';
 
 import type { Group, User } from '@/util/shared.types';
 import { groupUsersCache } from '@/util/groupUsersCache';
@@ -131,7 +132,7 @@ export default function Groups() {
 
   const onPressHandler = (groupId: number) => {
     if (!groups || !Array.isArray(groups)) return;
-    
+
     const group = groups.find((g) => g.groupId === groupId);
 
     if (group) {
@@ -140,6 +141,26 @@ export default function Groups() {
         params: { group: JSON.stringify(group) }, // Serialize group object
       });
     }
+  };
+
+  const handleDragEnd = useCallback((data: Group[]) => {
+    dispatch(reorderGroups(data));
+  }, [dispatch]);
+
+  const renderGroupItem = ({ item, drag, isActive }: RenderItemParams<Group>) => {
+    const members = groupMembers[item.groupId];
+    const membersText = members ? formatGroupMembersString(members) : 'Loading members...';
+
+    return (
+      <GroupCard
+        title={item.groupName}
+        description={item.groupDescription}
+        members={membersText}
+        onPress={() => onPressHandler(item.groupId)}
+        onLongPress={drag}
+        isActive={isActive}
+      />
+    );
   };
 
   const statusOverride = false;
@@ -157,24 +178,13 @@ export default function Groups() {
         onClose={toggleLoadingModal}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        <FlatList
+        <DraggableFlatList
           ref={flatListRef}
           data={groups || []}
           keyExtractor={(item) => item.groupId.toString()}
-          renderItem={({ item }) => {
-            const members = groupMembers[item.groupId];
-            const membersText = members ? formatGroupMembersString(members) : 'Loading members...';
-            
-            return (
-              <GroupCard
-                title={item.groupName}
-                description={item.groupDescription}
-                members={membersText}
-                onPress={() => onPressHandler(item.groupId)}
-              />
-            );
-          }}
-          ListEmptyComponent={() => 
+          renderItem={renderGroupItem}
+          onDragEnd={({ data }) => handleDragEnd(data)}
+          ListEmptyComponent={() =>
             status !== 'loading' ? (
               <View style={styles.emptyStateContainer}>
                 <Text style={styles.emptyStateTitle}>No Groups Yet</Text>
@@ -184,12 +194,8 @@ export default function Groups() {
               </View>
             ) : null
           }
-          initialNumToRender={10}
-          windowSize={5}
-          removeClippedSubviews={true}
           refreshing={refreshing}
           onRefresh={onRefresh}
-          progressViewOffset={50}
         />
       </View>
       <AddButton onPress={onAddPressHandler} />
