@@ -6,20 +6,31 @@ import { createGroup } from '@/util/createGroup';
 import { CreateGroupRequest } from '@/util/createGroup.types';
 import { leaveGroup } from '@/util/leaveGroup';
 import { deleteGroup } from '@/util/deleteGroup';
+import { reorderUserGroups, ReorderGroupsRequest } from '@/util/reorderUserGroups';
 
 import { Group } from '@/util/shared.types';
 import { clearGroupPrayers } from './groupPrayersSlice';
 
+export interface GroupFilterOptions {
+  dateRange?: 'all' | 'today' | 'week' | 'month' | 'year';
+}
+
 interface UserGroupsState {
   groups: Group[] | null;
-  status: 'idle' | 'creating' | 'loading' | 'succeeded' | 'failed';
+  status: 'idle' | 'creating' | 'loading' | 'reordering' | 'succeeded' | 'failed';
   error: string | null;
+  searchQuery: string;
+  filters: GroupFilterOptions;
 }
 
 const initialState: UserGroupsState = {
   groups: null,
   status: 'idle',
   error: null,
+  searchQuery: '',
+  filters: {
+    dateRange: 'all',
+  },
 };
 
 const userGroupsSlice = createSlice({
@@ -84,6 +95,29 @@ const userGroupsSlice = createSlice({
       state.status = 'failed';
       state.error = action.payload;
     },
+    reorderUserGroupsStart: (state) => {
+      state.status = 'reordering';
+    },
+    reorderUserGroupsSuccess: (state, action: PayloadAction<Group[]>) => {
+      state.status = 'succeeded';
+      state.groups = action.payload;
+    },
+    reorderUserGroupsFailure: (state, action: PayloadAction<string>) => {
+      state.status = 'failed';
+      state.error = action.payload;
+    },
+    setGroupSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+    setGroupFilters: (state, action: PayloadAction<GroupFilterOptions>) => {
+      state.filters = action.payload;
+    },
+    clearGroupSearchAndFilters: (state) => {
+      state.searchQuery = '';
+      state.filters = {
+        dateRange: 'all',
+      };
+    },
   },
 });
 
@@ -100,6 +134,12 @@ export const {
   deleteGroupStart,
   deleteGroupSuccess,
   deleteGroupFailure,
+  reorderUserGroupsStart,
+  reorderUserGroupsSuccess,
+  reorderUserGroupsFailure,
+  setGroupSearchQuery,
+  setGroupFilters,
+  clearGroupSearchAndFilters,
 } = userGroupsSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -109,6 +149,7 @@ export type AppThunk<ReturnType = void> = ThunkAction<
   PayloadAction<any>
 >;
 
+// Direct selectors
 export const selectUserGroups = (state: RootState) => state.userGroups.groups;
 
 export const selectUserGroupsStatus = (state: RootState) =>
@@ -116,6 +157,69 @@ export const selectUserGroupsStatus = (state: RootState) =>
 
 export const selectUserGroupsError = (state: RootState) =>
   state.userGroups.error;
+
+export const selectGroupSearchQuery = (state: RootState) => state.userGroups.searchQuery;
+
+export const selectGroupFilters = (state: RootState) => state.userGroups.filters;
+
+// Memoized selector for filtered groups
+export const selectFilteredGroups = createSelector(
+  [
+    (state: RootState) => state.userGroups.groups,
+    (state: RootState) => state.userGroups.searchQuery,
+    (state: RootState) => state.userGroups.filters,
+  ],
+  (groups, searchQuery, filters) => {
+    if (!groups) return null;
+
+    let filtered = [...groups];
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (group) =>
+          group.groupName.toLowerCase().includes(query) ||
+          group.groupDescription.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply date range filter
+    if (filters.dateRange && filters.dateRange !== 'all') {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      let cutoffDate: Date;
+
+      switch (filters.dateRange) {
+        case 'today':
+          cutoffDate = startOfDay;
+          break;
+        case 'week':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setDate(cutoffDate.getDate() - 7);
+          break;
+        case 'month':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setMonth(cutoffDate.getMonth() - 1);
+          break;
+        case 'year':
+          cutoffDate = new Date(startOfDay);
+          cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+          break;
+        default:
+          cutoffDate = new Date(0);
+      }
+
+      filtered = filtered.filter((group) => {
+        const createdDate = new Date(group.datetimeCreate);
+        return createdDate >= cutoffDate;
+      });
+    }
+
+    return filtered;
+  }
+);
 
 export const fetchUserGroups = (): AppThunk => async (dispatch, getState) => {
   const { auth } = getState();
@@ -239,6 +343,48 @@ export const deleteGroupById =
     } catch (error) {
       dispatch(deleteGroupFailure('An error occurred.'));
       return { success: false, error: 'An error occurred.' };
+    }
+  };
+
+export const reorderGroups =
+  (reorderedGroups: Group[]): AppThunk =>
+  async (dispatch, getState) => {
+    const { auth } = getState();
+    if (!auth.isAuthenticated || !auth.token || !auth.user) {
+      dispatch(reorderUserGroupsFailure('User not authenticated'));
+      return;
+    }
+
+    dispatch(reorderUserGroupsStart());
+
+    // Optimistically update the local state
+    dispatch(reorderUserGroupsSuccess(reorderedGroups));
+
+    try {
+      const reorderData: ReorderGroupsRequest = {
+        groups: reorderedGroups.map((group, index) => ({
+          groupId: group.groupId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderUserGroups(
+        auth.token,
+        auth.user.userProfileId,
+        reorderData
+      );
+
+      if (!result.success) {
+        // Revert on failure by refetching
+        dispatch(fetchUserGroups());
+        dispatch(
+          reorderUserGroupsFailure(result.error?.message || 'An error occurred.')
+        );
+      }
+    } catch (error) {
+      // Revert on failure by refetching
+      dispatch(fetchUserGroups());
+      dispatch(reorderUserGroupsFailure('An error occurred.'));
     }
   };
 

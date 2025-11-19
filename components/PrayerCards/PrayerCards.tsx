@@ -1,12 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Text, FlatList, ListRenderItem, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Text, FlatList, ListRenderItem, StyleSheet, Alert } from 'react-native';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import type { Prayer, User } from '@/util/shared.types';
 
 import Card from '@/components/PrayerCards/PrayerCard';
 import PrayerDetailModal from './PrayerDetailModal';
-import { useAppSelector } from '@/hooks/redux';
+import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 import { RootState } from '@/store/store';
 import { groupUsersCache } from '@/util/groupUsersCache';
+import { reorderPrayers } from '@/store/userPrayersSlice';
+import { reorderPrayersInGroup } from '@/store/groupPrayersSlice';
 
 interface PrayerCardsProps {
   userId: number;
@@ -14,9 +17,12 @@ interface PrayerCardsProps {
   prayers: Prayer[];
   refreshing: boolean;
   onRefresh: () => void;
-  flatListRef: React.RefObject<FlatList<any>>;
+  flatListRef?: any; // Changed to any to avoid type conflicts between different FlatList implementations
   onActionComplete: () => void;
   context?: 'cards' | 'groups'; // Add context prop
+  groupId?: number; // Add groupId for group prayers reordering
+  onScroll?: (event: any) => void; // Add onScroll prop
+  onScrollBeginDrag?: () => void; // Add onScrollBeginDrag prop
 }
 
 export default function PrayerCards({
@@ -28,10 +34,15 @@ export default function PrayerCards({
   flatListRef,
   onActionComplete,
   context = 'cards', // Default to 'cards' for backward compatibility
+  groupId, // Add groupId to destructured props
+  onScroll, // Add onScroll to destructured props
+  onScrollBeginDrag, // Add onScrollBeginDrag to destructured props
 }: PrayerCardsProps) {
+  const dispatch = useAppDispatch();
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
   const [usersLookup, setUsersLookup] = useState<{ [userProfileId: number]: User }>({});
+  const hasShownGroupReorderWarning = useRef(false);
 
   const { groups } = useAppSelector((state: RootState) => state.userGroups);
 
@@ -70,7 +81,42 @@ export default function PrayerCards({
     setSelectedPrayer(null);
   };
 
-  const renderItem: ListRenderItem<Prayer> = ({ item }) => {
+  const handleDragEnd = useCallback((data: Prayer[]) => {
+    if (context === 'cards') {
+      dispatch(reorderPrayers(data));
+    } else if (context === 'groups' && groupId) {
+      // Show warning alert for group prayers (first time only)
+      if (!hasShownGroupReorderWarning.current) {
+        hasShownGroupReorderWarning.current = true;
+        Alert.alert(
+          'Reorder Group Prayers',
+          'Reordering prayers in a group will affect how everyone in the group sees them. Continue?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => {
+                // Revert the optimistic update by refetching
+                onRefresh();
+              },
+            },
+            {
+              text: 'Continue',
+              onPress: () => {
+                dispatch(reorderPrayersInGroup(groupId, data));
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+      } else {
+        // User has already seen the warning, just dispatch
+        dispatch(reorderPrayersInGroup(groupId, data));
+      }
+    }
+  }, [dispatch, context, groupId, onRefresh]);
+
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<Prayer>) => {
     // Check if prayer description is long enough to be truncated
     const isLongPrayer = item.prayerDescription.length > 200 || item.prayerDescription.split('\n').length > 8;
 
@@ -78,9 +124,11 @@ export default function PrayerCards({
       <Card
         prayer={item}
         onPress={() => onPressHandler(item)}
+        onLongPress={drag}
         currentUserId={userId}
         usersLookup={usersLookup}
         showReadMore={isLongPrayer}
+        isActive={isActive}
       >
         <Text numberOfLines={8} ellipsizeMode="tail">{item.prayerDescription}</Text>
       </Card>
@@ -102,16 +150,18 @@ export default function PrayerCards({
           context={context}
         />
       )}
-      <FlatList
+      <DraggableFlatList
         ref={flatListRef}
         data={prayers}
         keyExtractor={(item) => item.prayerId.toString()}
         renderItem={renderItem}
+        onDragEnd={({ data }) => handleDragEnd(data)}
         contentContainerStyle={styles.listContainer}
-        extraData={prayers}
         refreshing={refreshing}
         onRefresh={onRefresh}
-        windowSize={5}
+        onScroll={onScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
+        scrollEventThrottle={16}
       />
     </>
   );
