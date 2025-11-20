@@ -144,116 +144,116 @@ export default function JoinGroupModal() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  scrollContent: {
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  inputSection: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  previewSection: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
+  button: {
+    alignItems: 'center',
     borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 30,
-    fontSize: 16,
-    backgroundColor: '#F1FDED',
-    textAlign: 'center',
-    letterSpacing: 1,
-  },
-  groupCard: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 30,
+    elevation: 3,
+    flex: 1,
+    paddingVertical: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
-  groupName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  groupDescription: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  membersSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    paddingTop: 15,
-  },
-  membersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#333',
-  },
-  memberName: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 15,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  previewButton: {
-    backgroundColor: '#007AFF',
-  },
-  joinButton: {
-    backgroundColor: '#008000',
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
+    justifyContent: 'space-between',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  groupCard: {
+    backgroundColor: '#F1FDED',
+    borderRadius: 15,
+    elevation: 3,
+    marginBottom: 30,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  groupDescription: {
+    color: '#666',
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  groupName: {
+    color: '#333',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#F1FDED',
+    borderColor: '#ccc',
+    borderRadius: 10,
+    borderWidth: 1,
+    fontSize: 16,
+    letterSpacing: 1,
+    marginBottom: 30,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    textAlign: 'center',
+  },
+  inputSection: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  joinButton: {
+    backgroundColor: '#008000',
+  },
+  memberName: {
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  membersSection: {
+    borderTopColor: '#ddd',
+    borderTopWidth: 1,
+    paddingTop: 15,
+  },
+  membersTitle: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  previewButton: {
+    backgroundColor: '#007AFF',
+  },
+  previewSection: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingTop: 20,
+  },
+  subtitle: {
+    color: '#666',
+    fontSize: 16,
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  title: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });

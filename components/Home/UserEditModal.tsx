@@ -374,55 +374,17 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#666',
   },
   container: {
     flex: 1,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 40,
-    justifyContent: 'center',
-    minHeight: '100%',
-  },
-  formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-    textAlign: 'center',
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
-    color: '#333',
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  togglePasswordButton: {
-    backgroundColor: '#90c590',
-    marginBottom: 12,
-  },
-  togglePasswordText: {
-    color: '#333',
   },
   deleteAccountButton: {
     backgroundColor: '#ef606fff',
@@ -431,26 +393,64 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     color: '#fff',
   },
-  requiredText: {
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular',
-    marginBottom: 20,
+  fieldLabel: {
+    color: '#333',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+    marginBottom: 6,
+    marginTop: 4,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 16,
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
+  },
+  gradient: {
+    flex: 1,
   },
   halfWidth: {
     flex: 1,
   },
-  cancelButton: {
-    backgroundColor: '#666',
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
+  },
+  requiredText: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 20,
   },
   saveButton: {
     backgroundColor: '#008000',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: '100%',
+    padding: 20,
+    paddingBottom: 40,
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  togglePasswordButton: {
+    backgroundColor: '#90c590',
+    marginBottom: 12,
+  },
+  togglePasswordText: {
+    color: '#333',
   },
 });
 

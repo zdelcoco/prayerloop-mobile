@@ -206,62 +206,62 @@ export default function PrayerModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-    padding: 20,
+  addButton: {
+    backgroundColor: '#008000',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
-    fontSize: 16,
-    backgroundColor: '#F1FDED',
-  },
-  textArea: {
-    height: 200,
-    textAlignVertical: 'top',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
+  button: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 10,
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#333',
+    borderRadius: 5,
+    flex: 1,
+    marginHorizontal: 5,
+    paddingVertical: 10,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
   },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-  },
-  addButton: {
-    backgroundColor: '#008000',
-  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+  },
+  checkboxContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  checkboxLabel: {
+    color: '#333',
+    fontSize: 16,
+  },
+  container: {
+    backgroundColor: '#f9f9f9',
+    flex: 1,
+    padding: 20,
+  },
+  input: {
+    backgroundColor: '#F1FDED',
+    borderColor: '#ccc',
+    borderRadius: 5,
+    borderWidth: 1,
+    fontSize: 16,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  textArea: {
+    height: 200,
+    textAlignVertical: 'top',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
   },
 });

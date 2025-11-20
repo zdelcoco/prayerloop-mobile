@@ -139,72 +139,72 @@ export default function ForgotPasswordModal({
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+  button: {
     alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 25,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 25,
-    color: '#666',
-    lineHeight: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    marginBottom: 25,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    flex: 1,
+    paddingVertical: 14,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 10,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  sendButton: {
-    backgroundColor: '#008000',
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
+    justifyContent: 'space-between',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  input: {
+    backgroundColor: '#f9f9f9',
+    borderColor: '#ccc',
+    borderRadius: 8,
+    borderWidth: 1,
+    fontSize: 16,
+    marginBottom: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    elevation: 5,
+    maxWidth: 400,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    width: '100%',
+  },
+  modalOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  sendButton: {
+    backgroundColor: '#008000',
+  },
+  subtitle: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 25,
+    textAlign: 'center',
+  },
+  title: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });

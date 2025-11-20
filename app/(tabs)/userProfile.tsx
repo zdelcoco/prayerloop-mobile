@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   versionText: {
-    fontSize: 12,
     color: '#666',
+    fontSize: 12,
     opacity: 0.6,
   },
 });

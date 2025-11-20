@@ -208,29 +208,29 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  text: {
-    color: '#000',
-    textAlign: 'center',
-    marginTop: 20,
-  },
   emptyStateContainer: {
+    alignItems: 'center',
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: 32,
     paddingTop: 100,
   },
+  emptyStateText: {
+    color: '#666',
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
   emptyStateTitle: {
+    color: '#333',
     fontSize: 24,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 16,
     textAlign: 'center',
   },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#666',
+  text: {
+    color: '#000',
+    marginTop: 20,
     textAlign: 'center',
-    lineHeight: 24,
   },
 });

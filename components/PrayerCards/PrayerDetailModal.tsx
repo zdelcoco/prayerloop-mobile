@@ -391,103 +391,65 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
+  button: {
     alignItems: 'center',
-    backgroundColor: 'rgba(50, 70, 55, 0.9)',
-  },
-  detailContainer: {
-    width: '90%',
-    backgroundColor: 'transparent',
-  },
-  scrollableContent: {
-    flexShrink: 0,
-  },
-  scrollableContentContainer: {
-    flexGrow: 1,
-  },
-  cardWrapper: {
+    backgroundColor: '#008000',
+    borderRadius: 5,
     flex: 1,
-  },
-  cardStyle: {
-    marginVertical: 0,
-    marginHorizontal: 0,
-    width: '100%',
-  },
-  text: {
-    fontSize: 16,
+    marginHorizontal: 5,
+    padding: 10,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
     marginTop: 8,
-  },
-  button: {
-    padding: 10,
-    backgroundColor: '#008000',
-    borderRadius: 5,
-    alignItems: 'center',
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  deleteButton: {
-    backgroundColor: '#cc0000',
-  },
-  shareButton: {
-    backgroundColor: '#007AFF',
-  },
-  spacer: {
-    flex: 1,
-    marginHorizontal: 5,
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  shareModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginHorizontal: 20,
-    maxHeight: '80%',
+  cancelButton: {
+    backgroundColor: '#6c757d',
   },
-  shareTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#333',
+  cardStyle: {
+    marginHorizontal: 0,
+    marginVertical: 0,
+    width: '100%',
   },
-  shareSubtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+  cardWrapper: {
+    flex: 1,
   },
-  shareOptionsContainer: {
-    gap: 16,
-    marginBottom: 24,
+  deleteButton: {
+    backgroundColor: '#cc0000',
   },
-  shareOptionButton: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
+  detailContainer: {
+    backgroundColor: 'transparent',
+    width: '90%',
+  },
+  disabledBanner: {
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
     borderColor: '#e0e0e0',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  shareOptionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
-  },
-  shareOptionDescription: {
-    fontSize: 14,
+  disabledBannerText: {
     color: '#666',
-    lineHeight: 20,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginLeft: 6,
+  },
+  disabledIndicator: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   disabledOptionButton: {
     backgroundColor: '#f5f5f5',
@@ -497,94 +459,132 @@ const styles = StyleSheet.create({
   disabledOptionText: {
     color: '#999',
   },
-  shareOptionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  emptyContainer: {
     alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptySubtext: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  groupDescription: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupItem: {
+    alignItems: 'center',
+    backgroundColor: '#F1FDED',
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 16,
+  },
+  groupName: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 4,
   },
-  disabledIndicator: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  disabledBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  disabledBannerText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 6,
-    fontStyle: 'italic',
+  groupsList: {
+    marginBottom: 24,
+    maxHeight: 300,
   },
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   loadingText: {
+    color: '#666',
+    fontSize: 16,
     marginTop: 12,
-    fontSize: 16,
-    color: '#666',
   },
-  emptyContainer: {
+  overlay: {
     alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#333',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#666',
-  },
-  groupsList: {
-    maxHeight: 300,
-    marginBottom: 24,
-  },
-  groupItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1FDED',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  groupInfo: {
+    backgroundColor: 'rgba(50, 70, 55, 0.9)',
     flex: 1,
+    justifyContent: 'center',
   },
-  groupName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
+  scrollableContent: {
+    flexShrink: 0,
   },
-  groupDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 18,
+  scrollableContentContainer: {
+    flexGrow: 1,
+  },
+  shareButton: {
+    backgroundColor: '#007AFF',
   },
   shareButtonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#6c757d',
+  shareModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    maxHeight: '80%',
+    padding: 20,
+  },
+  shareOptionButton: {
+    backgroundColor: '#F1FDED',
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+  },
+  shareOptionDescription: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  shareOptionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  shareOptionTitle: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  shareOptionsContainer: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  shareSubtitle: {
+    color: '#666',
+    fontSize: 16,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  shareTitle: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  spacer: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  text: {
+    fontSize: 16,
   },
 });
 

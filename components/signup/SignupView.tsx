@@ -329,128 +329,128 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
 }
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-    width: '100%',
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 40,
-    justifyContent: 'center',
-    minHeight: '100%',
-  },
-  formContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#666',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  errorInput: {
-    borderWidth: 1,
-    borderColor: 'red',
-  },
-  successInput: {
-    borderWidth: 1,
-    borderColor: 'green',
-  },
-  passwordError: {
-    color: 'red',
-    fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular',
-    marginBottom: 12,
-    marginTop: -8,
-  },
-  requiredText: {
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular',
-    marginBottom: 20,
-  },
-  nextButton: {
-    backgroundColor: '#008000',
-    marginBottom: 20,
+  backButton: {
+    backgroundColor: '#666',
   },
   backToLoginContainer: {
     alignItems: 'center',
   },
   backToLoginText: {
     color: '#008000',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
-  },
-  signUpButton: {
-    backgroundColor: '#008000',
-  },
-  backButton: {
-    backgroundColor: '#666',
+    fontSize: 16,
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
-  halfWidth: {
-    flex: 1,
+  errorInput: {
+    borderColor: 'red',
+    borderWidth: 1,
   },
   errorText: {
     color: 'red',
     paddingBottom: 18,
   },
-  usernameStatusText: {
-    color: '#666',
-    fontSize: 12,
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+  },
+  gradient: {
+    flex: 1,
+    width: '100%',
+  },
+  halfWidth: {
+    flex: 1,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
     fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  nextButton: {
+    backgroundColor: '#008000',
+    marginBottom: 20,
+  },
+  passwordError: {
+    color: 'red',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 12,
     marginTop: -8,
+  },
+  requiredText: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: '100%',
+    padding: 20,
+    paddingBottom: 40,
+  },
+  signUpButton: {
+    backgroundColor: '#008000',
+  },
+  subtitle: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  successInput: {
+    borderColor: 'green',
+    borderWidth: 1,
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
     marginBottom: 8,
   },
   usernameAvailableText: {
     color: 'green',
-    fontSize: 12,
     fontFamily: 'InstrumentSans-Regular',
-    marginTop: -8,
-    marginBottom: 8,
-  },
-  usernameTakenText: {
-    color: 'red',
     fontSize: 12,
-    fontFamily: 'InstrumentSans-Regular',
-    marginTop: -8,
     marginBottom: 8,
+    marginTop: -8,
   },
   usernameErrorText: {
     color: 'orange',
-    fontSize: 12,
     fontFamily: 'InstrumentSans-Regular',
-    marginTop: -8,
+    fontSize: 12,
     marginBottom: 8,
+    marginTop: -8,
+  },
+  usernameStatusText: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: -8,
+  },
+  usernameTakenText: {
+    color: 'red',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 12,
+    marginBottom: 8,
+    marginTop: -8,
   },
 });
 

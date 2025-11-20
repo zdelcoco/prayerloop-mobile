@@ -133,44 +133,41 @@ export default function PushNotificationTest() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    margin: 10,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#333',
-  },
-  statusContainer: {
-    backgroundColor: '#fff',
-    padding: 10,
+  button: {
+    alignItems: 'center',
     borderRadius: 8,
-    marginBottom: 15,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 5,
-  },
-  tokenText: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'monospace',
+    padding: 12,
   },
   buttonContainer: {
     gap: 10,
     marginBottom: 15,
   },
-  button: {
-    padding: 12,
+  buttonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  container: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    margin: 10,
+    padding: 20,
+  },
+  infoContainer: {
+    backgroundColor: '#fff',
     borderRadius: 8,
-    alignItems: 'center',
+    padding: 10,
+  },
+  infoText: {
+    color: '#666',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  infoTitle: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
   },
   localButton: {
     backgroundColor: '#4CAF50',
@@ -178,25 +175,28 @@ const styles = StyleSheet.create({
   pushButton: {
     backgroundColor: '#2196F3',
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  infoContainer: {
+  statusContainer: {
     backgroundColor: '#fff',
-    padding: 10,
     borderRadius: 8,
+    marginBottom: 15,
+    padding: 10,
   },
-  infoTitle: {
+  statusText: {
+    color: '#333',
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    marginBottom: 5,
   },
-  infoText: {
-    fontSize: 12,
+  title: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  tokenText: {
     color: '#666',
-    marginBottom: 4,
+    fontFamily: 'monospace',
+    fontSize: 12,
   },
 });
