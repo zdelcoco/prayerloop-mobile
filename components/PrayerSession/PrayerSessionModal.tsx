@@ -154,12 +154,28 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(20, 40, 25, 0.95)',
+  cardContainer: {
+    height: screenHeight * 0.5, // Center 1/2 of screen
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  closeButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 22,
+    padding: 12,
+    position: 'absolute',
+    right: 20,
+    top: 60,
   },
   container: {
     flex: 1,
+  },
+  footer: {
+    height: screenHeight * 0.25, // Bottom 1/4 of screen
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   header: {
     height: screenHeight * 0.25, // Top 1/4 of screen
@@ -170,25 +186,25 @@ const styles = StyleSheet.create({
     paddingTop: 60, // Account for status bar
     position: 'relative',
   },
-  title: {
-    fontSize: 22, // One notch larger
-    fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.46)',
-    textAlign: 'center',
-  },
-  closeButton: {
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 22,
-    position: 'absolute',
-    right: 20,
-    top: 60,
-  },
-  cardContainer: {
-    height: screenHeight * 0.5, // Center 1/2 of screen
-    justifyContent: 'center',
+  navButton: {
     alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 30,
+    height: 60,
+    justifyContent: 'center',
+    width: 60,
+  },
+  navButtonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  navigationContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  overlay: {
+    backgroundColor: 'rgba(20, 40, 25, 0.95)',
+    flex: 1,
   },
   prayerCard: {
     backgroundColor: '#fff',
@@ -203,6 +219,15 @@ const styles = StyleSheet.create({
     elevation: 12,
     justifyContent: 'flex-start',
   },
+  prayerText: {
+    fontSize: 18, // One notch larger
+    color: '#666',
+    lineHeight: 28,
+    textAlign: 'left',
+  },
+  prayerTextContainer: {
+    flex: 1, // Take remaining space in card
+  },
   prayerTitle: {
     fontSize: 22, // One notch larger
     fontWeight: 'bold',
@@ -210,59 +235,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
-  prayerTextContainer: {
-    flex: 1, // Take remaining space in card
-  },
-  prayerText: {
-    fontSize: 18, // One notch larger
-    color: '#666',
-    lineHeight: 28,
-    textAlign: 'left',
-  },
-  footer: {
-    height: screenHeight * 0.25, // Bottom 1/4 of screen
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  navigationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  navButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 30,
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  navButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  progressBar: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
+    height: 6,
+    overflow: 'hidden',
+    width: '100%',
   },
   progressContainer: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     marginHorizontal: 24,
+  },
+  progressFill: {
+    backgroundColor: '#90c590',
+    borderRadius: 3,
+    height: '100%',
   },
   progressText: {
     color: '#fff',
     fontSize: 16,
-    marginBottom: 12,
     fontWeight: '600',
+    marginBottom: 12,
   },
-  progressBar: {
-    width: '100%',
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#90c590',
-    borderRadius: 3,
+  title: {
+    fontSize: 22, // One notch larger
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.46)',
+    textAlign: 'center',
   },
 });
 

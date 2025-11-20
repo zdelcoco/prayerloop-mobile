@@ -239,91 +239,91 @@ const FilterModal: React.FC<FilterModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
+  applyButton: {
+    backgroundColor: '#008000',
+  },
+  closeButton: {
+    alignItems: 'flex-start',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+  footer: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  closeButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: 'InstrumentSans-Bold',
-    color: '#000',
-  },
-  resetButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-  },
-  resetText: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
-    color: '#008000',
-  },
-  scrollView: {
-    flex: 1,
+    padding: 20,
   },
   formContainer: {
     padding: 20,
   },
-  section: {
-    marginBottom: 24,
+  gradient: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'InstrumentSans-SemiBold',
+  header: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  option: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  optionSelected: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  optionText: {
+    color: '#333',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  optionTextSelected: {
     color: '#000',
-    marginBottom: 12,
+    fontFamily: 'InstrumentSans-SemiBold',
   },
   optionsContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 12,
     overflow: 'hidden',
   },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
-    backgroundColor: 'transparent',
+  resetButton: {
+    alignItems: 'flex-end',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
   },
-  optionSelected: {
-    backgroundColor: 'rgba(144, 197, 144, 0.2)',
-  },
-  optionText: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#333',
-  },
-  optionTextSelected: {
+  resetText: {
+    color: '#008000',
     fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
     color: '#000',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
+    marginBottom: 12,
   },
-  footer: {
-    padding: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  applyButton: {
-    backgroundColor: '#008000',
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 20,
   },
 });
 

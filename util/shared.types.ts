@@ -15,7 +15,7 @@ export interface Result<T = any> {
 export interface DefaultAPIResponse {
   message?: string;
   error?: string;
-};
+}
 
 export interface User {
   createdBy: number;

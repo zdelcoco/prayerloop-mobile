@@ -21,15 +21,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   gradient: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    width: '100%',
   },
   text: {
-    fontSize: 48,
-    marginBottom: 20,    
     fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 48,    
+    marginBottom: 20,
   }
 });
 

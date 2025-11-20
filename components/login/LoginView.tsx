@@ -236,50 +236,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  formContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#666',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  optionsRow: {
-    paddingTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 8,
+  errorText: {
+    color: 'red',
+    paddingBottom: 18,
   },
   forgotPassword: {
     color: '#008000',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+  },
+  gradient: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    width: '100%',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
+  },
+  optionsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+    paddingTop: 8,
   },
   signInButton: {
     backgroundColor: '#008000',
@@ -291,12 +283,20 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#008000',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
   },
-  errorText: {
-    color: 'red',
-    paddingBottom: 18,
+  subtitle: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
+    marginBottom: 8,
   },
 });
 

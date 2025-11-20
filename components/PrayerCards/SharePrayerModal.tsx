@@ -209,19 +209,95 @@ const SharePrayerModal: React.FC<SharePrayerModalProps> = ({
 
 const styles = StyleSheet.create({
   absoluteOverlay: {
-    position: 'absolute',
-    top: -100,
-    left: 0,
-    right: 0,
-    bottom: -100,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-    zIndex: 9999,
+    bottom: -100,
     height: Dimensions.get('window').height + 200,
+    justifyContent: 'flex-end',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: -100,
     width: Dimensions.get('window').width,
+    zIndex: 9999,
+  },
+  button: {
+    alignItems: 'center',
+    borderRadius: 8,
+    minWidth: 100,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+  },
+  content: {
+    padding: 20,
+    paddingBottom: 40,
   },
   dismissArea: {
     flex: 1,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptySubtext: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  emptyText: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  groupDescription: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupItem: {
+    alignItems: 'center',
+    backgroundColor: '#F1FDED',
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginBottom: 12,
+    padding: 16,
+  },
+  groupName: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  groupsList: {
+    marginBottom: 24,
+    maxHeight: 300,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 16,
+    marginTop: 12,
   },
   modalContainer: {
     backgroundColor: '#fff',
@@ -230,116 +306,40 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     minHeight: 300,
   },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
+  optionButton: {
+    backgroundColor: '#F1FDED',
+    borderColor: '#e0e0e0',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
+  optionDescription: {
     color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  optionTitle: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   optionsContainer: {
     gap: 16,
     marginBottom: 24,
   },
-  optionButton: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  optionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
-  },
-  optionDescription: {
-    fontSize: 14,
+  subtitle: {
     color: '#666',
-    lineHeight: 20,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 12,
     fontSize: 16,
-    color: '#666',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: '#333',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#666',
-  },
-  groupsList: {
-    maxHeight: 300,
     marginBottom: 24,
+    textAlign: 'center',
   },
-  groupItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F1FDED',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  groupInfo: {
-    flex: 1,
-  },
-  groupName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+  title: {
     color: '#333',
-  },
-  groupDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 18,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });
 

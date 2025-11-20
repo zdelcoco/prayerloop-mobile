@@ -65,47 +65,47 @@ const SearchBar: React.FC<SearchBarProps> = ({
 };
 
 const styles = StyleSheet.create({
+  clearButton: {
+    marginLeft: 4,
+    padding: 4,
+  },
   container: {
-    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'transparent',
-    gap: 8,
   },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
+  filterButton: {
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    paddingHorizontal: 12,
     height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  filterButtonPressed: {
+    opacity: 0.6,
+  },
+  input: {
+    color: '#000',
+    flex: 1,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 0,
   },
   searchIcon: {
     marginRight: 8,
   },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#000',
-    paddingVertical: Platform.OS === 'ios' ? 10 : 0,
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 4,
-  },
-  filterButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
+  searchInputContainer: {
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
     borderRadius: 8,
-  },
-  filterButtonPressed: {
-    opacity: 0.6,
+    flex: 1,
+    flexDirection: 'row',
+    height: 44,
+    paddingHorizontal: 12,
   },
 });
 
