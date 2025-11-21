@@ -16,20 +16,9 @@ export default function LoginScreen() {
     dispatch(login(username, password));
   };
 
-  const handleAutoLogin = (username: string, password: string) => {
-    // Auto-login with saved credentials
-    dispatch(login(username, password));
-  };
-
   const handleSignupPress = () => {
     router.push('/signup');
   };
-
-  const [loadingModalVisible, setLoadingModalVisible] = useState(
-    status === 'loading'
-  );
-
-  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   if (status === 'failed') {
     console.log(error);
@@ -38,17 +27,11 @@ export default function LoginScreen() {
   return (
     <>
       <LoadingModal
-        visible={status === 'loading' || loadingModalVisible}
+        visible={status === 'loading'}
         message='Logging in...'
-        onClose={toggleLoadingModal}
       />
       <LoginView
-        onPress={(username: string, password: string) =>
-          handleLogin(username, password)
-        }
-        onAutoLogin={(username: string, password: string) =>
-          handleAutoLogin(username, password)
-        }
+        onPress={handleLogin}
         onSignupPress={handleSignupPress}
         errorMessage={status === 'failed' && error ? error : undefined}
       />
