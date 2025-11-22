@@ -24,14 +24,12 @@ interface LoginViewProps {
   onPress: (username: string, password: string) => void;
   onSignupPress: () => void;
   errorMessage?: string;
-  onAutoLogin?: (username: string, password: string) => void;
 }
 
-function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginViewProps) {
+function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
-  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
 
   // Password reset modal states
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
@@ -41,23 +39,18 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
   const [resetToken, setResetToken] = useState('');
 
   useEffect(() => {
-    loadSavedCredentialsAndAutoLogin();
+    loadSavedCredentialsForDisplay();
   }, []);
 
-  const loadSavedCredentialsAndAutoLogin = async () => {
+  const loadSavedCredentialsForDisplay = async () => {
     try {
       const savedUsername = await AsyncStorage.getItem('rememberedUsername');
       const savedPassword = await AsyncStorage.getItem('rememberedPassword');
 
       if (savedUsername && savedPassword) {
+        // Pre-fill the form with saved credentials
         setUsername(savedUsername);
         setPassword(savedPassword);
-
-        // Auto-login if credentials exist and we haven't tried yet
-        if (!hasAttemptedAutoLogin && onAutoLogin) {
-          setHasAttemptedAutoLogin(true);
-          onAutoLogin(savedUsername, savedPassword);
-        }
       }
     } catch (error) {
       console.error('Error loading saved credentials:', error);
