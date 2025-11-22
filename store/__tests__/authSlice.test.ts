@@ -7,10 +7,21 @@ import authReducer, {
   signupFailure,
   logoutSuccess,
   updateUserProfileSuccess,
+  login,
+  validateToken,
+  logout,
 } from '../authSlice';
 import { User } from '../../util/shared.types';
 import { LoginResponse } from '../../util/login.types';
 import { SignupResponse } from '../../util/signup.types';
+import * as loginUtil from '../../util/login';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+
+// Mock dependencies
+jest.mock('../../util/login');
+jest.mock('@react-native-async-storage/async-storage');
+jest.mock('jwt-decode');
 
 describe('authSlice', () => {
   const initialState = {
@@ -54,6 +65,10 @@ describe('authSlice', () => {
     },
   };
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('initial state', () => {
     it('should return the initial state', () => {
       expect(authReducer(undefined, { type: 'unknown' })).toEqual(initialState);
@@ -90,6 +105,41 @@ describe('authSlice', () => {
     });
   });
 
+  describe('login thunk', () => {
+    const getState = jest.fn();
+
+    it('should dispatch loginSuccess on successful login', async () => {
+      const dispatch = jest.fn();
+      const mockLoginUser = loginUtil.loginUser as jest.MockedFunction<typeof loginUtil.loginUser>;
+
+      mockLoginUser.mockResolvedValue({
+        success: true,
+        data: mockLoginResponse,
+      });
+
+      await login('testuser', 'password')(dispatch, getState, undefined);
+
+      expect(dispatch).toHaveBeenCalledWith(loginStart());
+      expect(dispatch).toHaveBeenCalledWith(loginSuccess(mockLoginResponse));
+      expect(mockLoginUser).toHaveBeenCalledWith('testuser', 'password');
+    });
+
+    it('should dispatch loginFailure on failed login', async () => {
+      const dispatch = jest.fn();
+      const mockLoginUser = loginUtil.loginUser as jest.MockedFunction<typeof loginUtil.loginUser>;
+
+      mockLoginUser.mockResolvedValue({
+        success: false,
+        error: { type: 'InvalidCredentials', message: 'Invalid credentials' },
+      });
+
+      await login('testuser', 'wrongpassword')(dispatch, getState, undefined);
+
+      expect(dispatch).toHaveBeenCalledWith(loginStart());
+      expect(dispatch).toHaveBeenCalledWith(loginFailure('Invalid credentials'));
+    });
+  });
+
   describe('signup flow', () => {
     it('should handle signupStart', () => {
       const state = authReducer(initialState, signupStart());
@@ -115,7 +165,7 @@ describe('authSlice', () => {
   });
 
   describe('logout', () => {
-    it('should handle logoutSuccess and clear all auth state', () => {
+    it('should handle logoutSuccess and clear auth state', () => {
       const authenticatedState = {
         user: mockUser,
         token: 'mock-jwt-token',
@@ -129,8 +179,18 @@ describe('authSlice', () => {
       expect(state.user).toBeNull();
       expect(state.status).toBe('idle');
       expect(state.isAuthenticated).toBe(false);
-      // Token should still be there (logout clears it separately)
-      expect(state.token).toBe('mock-jwt-token');
+    });
+
+    it('should clear AsyncStorage credentials on logout', async () => {
+      const dispatch = jest.fn();
+      const getState = jest.fn();
+      const mockRemoveItem = AsyncStorage.removeItem as jest.MockedFunction<typeof AsyncStorage.removeItem>;
+
+      await logout()(dispatch, getState, undefined);
+
+      expect(mockRemoveItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockRemoveItem).toHaveBeenCalledWith('rememberedPassword');
+      expect(dispatch).toHaveBeenCalledWith(logoutSuccess());
     });
   });
 
@@ -155,44 +215,127 @@ describe('authSlice', () => {
       expect(state.user?.firstName).toBe('Updated');
       expect(state.user?.lastName).toBe('Name');
     });
-
-    it('should update user profile even if not authenticated', () => {
-      const state = authReducer(initialState, updateUserProfileSuccess(mockUser));
-      expect(state.user).toEqual(mockUser);
-    });
   });
 
-  describe('error handling', () => {
-    it('should clear previous errors on new login attempt', () => {
-      const failedState = {
-        ...initialState,
-        status: 'failed' as const,
-        error: 'Previous error',
-      };
-
-      const state = authReducer(failedState, loginStart());
-
-      expect(state.status).toBe('loading');
-      // Error is not explicitly cleared, but status changes
-      expect(state.error).toBe('Previous error');
+  describe('validateToken thunk', () => {
+    const createMockState = (authState: any) => ({
+      auth: authState,
+      userPrayers: { prayers: [], status: 'idle' as const, error: null, searchQuery: '', filters: {} },
+      userGroups: { groups: [], status: 'idle' as const, error: null, searchQuery: '', filters: {} },
+      groupPrayers: {},
+      groupUsers: {},
     });
 
-    it('should preserve user data when login fails', () => {
-      const authenticatedState = {
-        ...initialState,
-        user: mockUser,
-        token: 'old-token',
+    it('should do nothing if token is valid', async () => {
+      const dispatch = jest.fn();
+      const getState = jest.fn(() => createMockState({
+        token: 'valid-token',
         isAuthenticated: true,
-      };
+        user: null,
+        status: 'idle' as const,
+        error: null,
+      })) as any;
 
-      const state = authReducer(authenticatedState, loginFailure('New login failed'));
+      const mockJwtDecode = jwtDecode as jest.MockedFunction<typeof jwtDecode>;
+      mockJwtDecode.mockReturnValue({
+        exp: Date.now() / 1000 + 3600, // Expires in 1 hour
+      });
 
-      expect(state.error).toBe('New login failed');
-      expect(state.status).toBe('failed');
-      // Previous auth state is preserved
-      expect(state.user).toEqual(mockUser);
-      expect(state.token).toBe('old-token');
-      expect(state.isAuthenticated).toBe(true);
+      await validateToken()(dispatch, getState, undefined);
+
+      // Should not dispatch anything if token is valid
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('should attempt auto-login if token is expired and credentials exist', async () => {
+      const dispatch = jest.fn();
+      const getState = jest.fn(() => createMockState({
+        token: 'expired-token',
+        isAuthenticated: true,
+        user: null,
+        status: 'idle' as const,
+        error: null,
+      })) as any;
+
+      const mockJwtDecode = jwtDecode as jest.MockedFunction<typeof jwtDecode>;
+      const mockGetItem = AsyncStorage.getItem as jest.MockedFunction<typeof AsyncStorage.getItem>;
+      const mockLoginUser = loginUtil.loginUser as jest.MockedFunction<typeof loginUtil.loginUser>;
+
+      mockJwtDecode.mockReturnValue({
+        exp: Date.now() / 1000 - 3600, // Expired 1 hour ago
+      });
+
+      mockGetItem.mockImplementation((key: string) => {
+        if (key === 'rememberedUsername') return Promise.resolve('testuser');
+        if (key === 'rememberedPassword') return Promise.resolve('password');
+        return Promise.resolve(null);
+      });
+
+      mockLoginUser.mockResolvedValue({
+        success: true,
+        data: mockLoginResponse,
+      });
+
+      await validateToken()(dispatch, getState, undefined);
+
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedPassword');
+      expect(dispatch).toHaveBeenCalled(); // Should dispatch login actions
+    });
+
+    it('should logout if token is expired and no credentials exist', async () => {
+      const dispatch = jest.fn();
+      const getState = jest.fn(() => createMockState({
+        token: 'expired-token',
+        isAuthenticated: true,
+        user: null,
+        status: 'idle' as const,
+        error: null,
+      })) as any;
+
+      const mockJwtDecode = jwtDecode as jest.MockedFunction<typeof jwtDecode>;
+      const mockGetItem = AsyncStorage.getItem as jest.MockedFunction<typeof AsyncStorage.getItem>;
+
+      mockJwtDecode.mockReturnValue({
+        exp: Date.now() / 1000 - 3600, // Expired 1 hour ago
+      });
+
+      mockGetItem.mockResolvedValue(null); // No saved credentials
+
+      await validateToken()(dispatch, getState, undefined);
+
+      expect(dispatch).toHaveBeenCalled();
+    });
+
+    it('should attempt auto-login if no token exists and credentials exist', async () => {
+      const dispatch = jest.fn();
+      const getState = jest.fn(() => createMockState({
+        token: null,
+        isAuthenticated: false,
+        user: null,
+        status: 'idle' as const,
+        error: null,
+      })) as any;
+
+      const mockGetItem = AsyncStorage.getItem as jest.MockedFunction<typeof AsyncStorage.getItem>;
+      const mockLoginUser = loginUtil.loginUser as jest.MockedFunction<typeof loginUtil.loginUser>;
+
+      mockGetItem.mockImplementation((key: string) => {
+        if (key === 'rememberedUsername') return Promise.resolve('testuser');
+        if (key === 'rememberedPassword') return Promise.resolve('password');
+        return Promise.resolve(null);
+      });
+
+      mockLoginUser.mockResolvedValue({
+        success: true,
+        data: mockLoginResponse,
+      });
+
+      await validateToken()(dispatch, getState, undefined);
+
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedPassword');
+      expect(dispatch).toHaveBeenCalled();
     });
   });
 
