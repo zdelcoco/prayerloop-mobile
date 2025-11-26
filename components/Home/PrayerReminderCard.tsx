@@ -46,25 +46,6 @@ const PrayerReminderCard = () => {
   useEffect(() => {
     loadReminder();
     checkNotificationPermissions();
-
-    // Set up notification listener to reschedule daily reminders
-    const subscription = Notifications.addNotificationReceivedListener(
-      async (notification) => {
-        const data = notification.request.content.data;
-        if (data?.scheduledFor) {
-          const storedReminder = await AsyncStorage.getItem('prayerReminder');
-          if (storedReminder) {
-            const parsed = JSON.parse(storedReminder);
-            if (parsed.isEnabled && parsed.frequency === 'daily') {
-              // Pass false to suppress permission alert during auto-rescheduling
-              await scheduleNotifications(parsed, false);
-            }
-          }
-        }
-      }
-    );
-
-    return () => subscription.remove();
   }, []);
 
   const checkNotificationPermissions = async () => {
@@ -112,17 +93,15 @@ const PrayerReminderCard = () => {
     }
   };
 
-  const scheduleNotifications = async (reminderConfig: PrayerReminder, showPermissionAlert = true) => {
+  const scheduleNotifications = async (reminderConfig: PrayerReminder) => {
     // Cancel existing notifications
     await Notifications.cancelAllScheduledNotificationsAsync();
 
     if (!notificationPermission) {
-      if (showPermissionAlert) {
-        Alert.alert(
-          'Permission Required',
-          'Please enable notifications to use prayer reminders'
-        );
-      }
+      Alert.alert(
+        'Permission Required',
+        'Please enable notifications to use prayer reminders'
+      );
       return;
     }
 
@@ -130,27 +109,16 @@ const PrayerReminderCard = () => {
       if (reminderConfig.frequency === 'daily') {
         const [hours, minutes] = reminderConfig.time.split(':').map(Number);
 
-        // Calculate the next occurrence
-        const now = new Date();
-        const scheduledTime = new Date();
-        scheduledTime.setHours(hours, minutes, 0, 0);
-
-        // If the scheduled time has already passed today, schedule for tomorrow
-        if (scheduledTime <= now) {
-          scheduledTime.setDate(scheduledTime.getDate() + 1);
-        }
-
-        // Use date-based trigger for the first notification
-        // Calendar triggers with repeats=true don't wait for next occurrence
+        // Use DAILY trigger for repeating daily notifications
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Prayer Time',
             body: reminderConfig.message,
-            data: { scheduledFor: scheduledTime.toISOString() },
           },
           trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: scheduledTime,
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour: hours,
+            minute: minutes,
           },
         });
       } else if (reminderConfig.frequency === 'weekly') {
@@ -513,170 +481,160 @@ const PrayerReminderCard = () => {
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 10,
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  detailsContainer: {
-    marginTop: 12,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  settingsButton: {
-    backgroundColor: '#008000',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  settingsButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
   cancelButton: {
     color: '#999',
     fontSize: 16,
   },
-  saveButton: {
-    color: '#008000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContent: {
-    flex: 1,
+  cardContainer: {
+    backgroundColor: '#F1FDED',
+    borderRadius: 10,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 8,
     padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 20,
-    marginBottom: 12,
-    color: '#333',
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  optionRow: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  optionRowSelected: {
-    backgroundColor: '#E8F5E8',
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  optionTextSelected: {
-    color: '#008000',
-    fontWeight: '500',
-  },
-  timeSelector: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  timeDisplay: {
-    fontSize: 32,
-    fontWeight: '600',
-    color: '#008000',
-    marginBottom: 4,
-  },
-  tapToEdit: {
-    fontSize: 14,
-    color: '#666',
-  },
-  daysContainer: {
-    gap: 12,
-  },
-  dayContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   dayButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderColor: '#ccc',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ccc',
     minWidth: 60,
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   dayButtonSelected: {
     backgroundColor: '#008000',
     borderColor: '#008000',
   },
   dayButtonText: {
-    fontSize: 14,
     color: '#333',
+    fontSize: 14,
     fontWeight: '500',
   },
   dayButtonTextSelected: {
     color: '#fff',
   },
+  dayContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
   dayTimeButton: {
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
     borderRadius: 8,
     minWidth: 80,
-    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   dayTimeText: {
+    color: '#008000',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  daysContainer: {
+    gap: 12,
+  },
+  detailText: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  detailsContainer: {
+    marginTop: 12,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    flex: 1,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  optionRow: {
+    borderRadius: 8,
+    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  optionRowSelected: {
+    backgroundColor: '#E8F5E8',
+  },
+  optionText: {
+    color: '#333',
+    fontSize: 16,
+  },
+  optionTextSelected: {
     color: '#008000',
     fontWeight: '500',
   },
-  timePickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+  saveButton: {
+    color: '#008000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  sectionSubtitle: {
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+    marginTop: 20,
+  },
+  settingsButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#008000',
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  settingsButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tapToEdit: {
+    color: '#666',
+    fontSize: 14,
+  },
+  timeDisplay: {
+    color: '#008000',
+    fontSize: 32,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  timePicker: {
+    backgroundColor: '#fff',
+  },
+  timePickerCancel: {
+    color: '#999',
+    fontSize: 16,
   },
   timePickerContainer: {
     backgroundColor: '#fff',
@@ -684,29 +642,39 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingBottom: 40,
   },
-  timePickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  timePickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  timePickerCancel: {
-    color: '#999',
-    fontSize: 16,
-  },
   timePickerDone: {
     color: '#008000',
     fontSize: 16,
     fontWeight: '600',
   },
-  timePicker: {
-    backgroundColor: '#fff',
+  timePickerHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  timePickerOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  timePickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  timeSelector: {
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    marginBottom: 20,
+    paddingVertical: 20,
+  },
+  title: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

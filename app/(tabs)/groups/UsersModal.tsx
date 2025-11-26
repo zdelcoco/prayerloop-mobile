@@ -34,6 +34,7 @@ import { RootState } from '@/store/store';
 
 import { User } from '@/util/shared.types';
 import { createGroupInvite } from '@/util/createGroupInvite';
+import { generateGroupInviteLink } from '@/util/deepLinks';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 
 function ms(size: number): number {
@@ -178,7 +179,8 @@ export default function UsersModal() {
 
       if (result.success && result.data?.inviteCode) {
         const groupName = route.params.groupName || 'this group';
-        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop!\n\nYour invite code is:\n${result.data.inviteCode}\n\nDownload PrayerLoop and enter this code to join the group.`;
+        const deepLink = generateGroupInviteLink(result.data.inviteCode);
+        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop!\n\nTap this link to join:\n${deepLink}\n\nOr enter this code manually:\n${result.data.inviteCode}`;
 
         try {
           await Share.share({
@@ -189,8 +191,8 @@ export default function UsersModal() {
           console.error('Share error:', shareError);
           // If sharing fails, show the code in an alert
           Alert.alert(
-            'Invite Code Generated',
-            `Invite code: ${result.data.inviteCode}\n\nShare this code with someone to invite them to ${groupName}`,
+            'Invite Generated',
+            `Deep link:\n${deepLink}\n\nInvite code: ${result.data.inviteCode}\n\nShare either with someone to invite them to ${groupName}`,
             [{ text: 'OK' }]
           );
         }
@@ -561,8 +563,36 @@ export default function UsersModal() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  centeredMessageContainer: {
+    alignItems: 'center',
     flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  closeButtonContainer: {
+    backgroundColor: '#008000',
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 20,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  closeButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  contentContainer: {
+    flex: 1, // Takes remaining space below the header
+  },
+  crownIcon: {
+    marginLeft: 8,
   },
   customHeader: {
     height: ms(60),
@@ -576,49 +606,28 @@ const styles = StyleSheet.create({
     color: '#000',
     padding: ms(24),
   },
-  contentContainer: {
-    flex: 1, // Takes remaining space below the header
-  },
-  listStyle: {
-    flex: 1, // Ensure list takes available space in the container
-  },
-  listContentContainer: {
-    paddingHorizontal: 10,
-    paddingBottom: 20, // Padding at the bottom of the scrollable content
-  },
-  userItemContainer: {
-    backgroundColor: '#F1FDED',
+  deleteGroupButtonContainer: {
+    backgroundColor: '#D9534F',
     borderRadius: 10,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 8,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  userNameText: {
+  deleteGroupButtonText: {
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
-  crownIcon: {
-    marginLeft: 8,
-  },
-  centeredMessageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 10,
+  emptyText: {
+    color: '#666666',
     fontSize: 16,
-    color: '#666',
+    textAlign: 'center',
   },
   errorText: {
     fontSize: 16,
@@ -626,94 +635,87 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 15,
   },
-  emptyText: {
+  inviteButtonContainer: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  inviteButtonText: {
+    color: '#ffffff',
     fontSize: 16,
-    color: '#666666',
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  leaveGroupButtonContainer: {
+    backgroundColor: '#D9534F',
+    borderRadius: 10,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  leaveGroupButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  listContentContainer: {
+    paddingBottom: 20,
+    paddingHorizontal: 10, // Padding at the bottom of the scrollable content
+  },
+  listStyle: {
+    flex: 1, // Ensure list takes available space in the container
+  },
+  loadingText: {
+    color: '#666',
+    fontSize: 16,
+    marginTop: 10,
   },
   retryButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
     borderRadius: 5,
     marginTop: 10,
+    paddingHorizontal: 25,
+    paddingVertical: 10,
   },
   retryButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  inviteButtonContainer: {
-    backgroundColor: '#007AFF',
+  safeArea: {
+    flex: 1,
+  },
+  userItemContainer: {
+    alignItems: 'center',
+    backgroundColor: '#F1FDED',
     borderRadius: 10,
+    elevation: 3,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginVertical: 8,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 8,
-    marginHorizontal: 16,
   },
-  inviteButtonText: {
+  userNameText: {
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    color: '#ffffff',
-  },
-  leaveGroupButtonContainer: {
-    backgroundColor: '#D9534F',
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  leaveGroupButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#ffffff',
-  },
-  deleteGroupButtonContainer: {
-    backgroundColor: '#D9534F',
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  deleteGroupButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#ffffff',
-  },
-  closeButtonContainer: {
-    backgroundColor: '#008000',
-    borderRadius: 10,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    marginBottom: 20,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: '#ffffff',
   },
 });

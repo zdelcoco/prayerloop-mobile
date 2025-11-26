@@ -30,7 +30,6 @@ interface UserEditModalProps {
 }
 
 interface EditableUserData {
-  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -45,7 +44,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   isSaving = false,
 }) => {
   const [formData, setFormData] = useState<EditableUserData>({
-    username: user.username || '',
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     email: user.email || '',
@@ -60,7 +58,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   useEffect(() => {
     if (visible) {
       setFormData({
-        username: user.username || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
@@ -80,16 +77,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
   const handleSave = () => {
     // Validate required fields
-    if (!formData.username.trim()) {
-      Alert.alert('Validation Error', 'Username is required.');
-      return;
-    }
     if (!formData.firstName.trim()) {
       Alert.alert('Validation Error', 'First name is required.');
-      return;
-    }
-    if (!formData.lastName.trim()) {
-      Alert.alert('Validation Error', 'Last name is required.');
       return;
     }
     if (!formData.email.trim()) {
@@ -106,7 +95,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
     // Call the parent save handler with the updated data
     onSave({
-      username: formData.username,
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
@@ -117,7 +105,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   const handleCancel = () => {
     // Check if any changes have been made
     const hasChanges =
-      formData.username !== (user.username || '') ||
       formData.firstName !== (user.firstName || '') ||
       formData.lastName !== (user.lastName || '') ||
       formData.email !== (user.email || '') ||
@@ -272,17 +259,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
             <View style={styles.formContainer}>
               <Text style={styles.title}>Edit Profile</Text>
 
-              <Text style={styles.fieldLabel}>Username *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your username"
-                placeholderTextColor="#666"
-                value={formData.username}
-                onChangeText={(text) => updateField('username', text)}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
               <Text style={styles.fieldLabel}>First Name *</Text>
               <TextInput
                 style={styles.input}
@@ -290,16 +266,18 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 placeholderTextColor="#666"
                 value={formData.firstName}
                 onChangeText={(text) => updateField('firstName', text)}
+                autoCapitalize="words"
                 autoCorrect={false}
               />
 
-              <Text style={styles.fieldLabel}>Last Name *</Text>
+              <Text style={styles.fieldLabel}>Last Name</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your last name"
                 placeholderTextColor="#666"
                 value={formData.lastName}
                 onChangeText={(text) => updateField('lastName', text)}
+                autoCapitalize="words"
                 autoCorrect={false}
               />
 
@@ -374,55 +352,17 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#666',
   },
   container: {
     flex: 1,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    paddingBottom: 40,
-    justifyContent: 'center',
-    minHeight: '100%',
-  },
-  formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-    textAlign: 'center',
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
-    color: '#333',
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  togglePasswordButton: {
-    backgroundColor: '#90c590',
-    marginBottom: 12,
-  },
-  togglePasswordText: {
-    color: '#333',
   },
   deleteAccountButton: {
     backgroundColor: '#ef606fff',
@@ -431,26 +371,64 @@ const styles = StyleSheet.create({
   deleteAccountText: {
     color: '#fff',
   },
-  requiredText: {
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular',
-    marginBottom: 20,
+  fieldLabel: {
+    color: '#333',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+    marginBottom: 6,
+    marginTop: 4,
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 16,
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
+  },
+  gradient: {
+    flex: 1,
   },
   halfWidth: {
     flex: 1,
   },
-  cancelButton: {
-    backgroundColor: '#666',
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
+  },
+  requiredText: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 20,
   },
   saveButton: {
     backgroundColor: '#008000',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    minHeight: '100%',
+    padding: 20,
+    paddingBottom: 40,
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  togglePasswordButton: {
+    backgroundColor: '#90c590',
+    marginBottom: 12,
+  },
+  togglePasswordText: {
+    color: '#333',
   },
 });
 

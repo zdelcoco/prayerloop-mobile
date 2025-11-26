@@ -322,63 +322,63 @@ export default function GroupPrayers() {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
   container: {
     flex: 1,
     position: 'relative',
   },
-  searchBarContainer: {
-    backgroundColor: 'transparent',
+  emptyStateContainer: {
+    alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 32,
+    paddingTop: 100,
+  },
+  emptyStateText: {
+    color: '#666',
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  emptyStateTitle: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   headerRightContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 8,
     marginRight: 8,
   },
+  headerTitle: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: ms(18),
+    fontWeight: 'bold',
+  },
+  searchBarContainer: {
+    backgroundColor: 'transparent',
+  },
   searchButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
   },
   searchButtonPressed: {
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   text: {
+    color: '#333',
     fontSize: ms(18),
     fontWeight: '600',
-    color: '#333',
     marginTop: 18,
     textAlign: 'center',
-  },
-  backButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  headerTitle: {
-    fontSize: ms(18),
-    fontFamily: 'InstrumentSans-Bold',
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  emptyStateContainer: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 100,
-  },
-  emptyStateTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
   },
 });

@@ -6,7 +6,6 @@ import {
   View,
   TextInput,
   Platform,
-  Switch,
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
@@ -21,17 +20,15 @@ import ResetPasswordModal from '../auth/ResetPasswordModal';
 import { forgotPassword } from '@/util/forgotPassword';
 
 interface LoginViewProps {
-  onPress: (username: string, password: string) => void;
+  onPress: (email: string, password: string) => void;
   onSignupPress: () => void;
   errorMessage?: string;
-  onAutoLogin?: (username: string, password: string) => void;
 }
 
-function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginViewProps) {
-  const [username, setUsername] = useState('');
+function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
-  const [hasAttemptedAutoLogin, setHasAttemptedAutoLogin] = useState(false);
 
   // Password reset modal states
   const [forgotPasswordVisible, setForgotPasswordVisible] = useState(false);
@@ -41,41 +38,36 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
   const [resetToken, setResetToken] = useState('');
 
   useEffect(() => {
-    loadSavedCredentialsAndAutoLogin();
+    loadSavedCredentialsForDisplay();
   }, []);
 
-  const loadSavedCredentialsAndAutoLogin = async () => {
+  const loadSavedCredentialsForDisplay = async () => {
     try {
-      const savedUsername = await AsyncStorage.getItem('rememberedUsername');
+      const savedEmail = await AsyncStorage.getItem('rememberedEmail');
       const savedPassword = await AsyncStorage.getItem('rememberedPassword');
 
-      if (savedUsername && savedPassword) {
-        setUsername(savedUsername);
+      if (savedEmail && savedPassword) {
+        // Pre-fill the form with saved credentials
+        setEmail(savedEmail);
         setPassword(savedPassword);
-
-        // Auto-login if credentials exist and we haven't tried yet
-        if (!hasAttemptedAutoLogin && onAutoLogin) {
-          setHasAttemptedAutoLogin(true);
-          onAutoLogin(savedUsername, savedPassword);
-        }
       }
     } catch (error) {
       console.error('Error loading saved credentials:', error);
     }
   };
 
-  const saveCredentials = async (username: string, password: string) => {
+  const saveCredentials = async (email: string, password: string) => {
     try {
-      await AsyncStorage.setItem('rememberedUsername', username);
+      await AsyncStorage.setItem('rememberedEmail', email);
       await AsyncStorage.setItem('rememberedPassword', password);
     } catch (error) {
       console.error('Error saving credentials:', error);
     }
   };
 
-  const onUserNameChange = (text: string) => {
+  const onEmailChange = (text: string) => {
     setShowError(false);
-    setUsername(text);
+    setEmail(text);
   };
 
   const onPasswordChange = (text: string) => {
@@ -87,9 +79,9 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
     setShowError(true);
 
     // Always save credentials for auto-login next time
-    await saveCredentials(username, password);
+    await saveCredentials(email, password);
 
-    onPress(username, password);
+    onPress(email, password);
   };
 
   // Password reset handlers
@@ -154,23 +146,22 @@ function LoginView({ onPress, onSignupPress, errorMessage, onAutoLogin }: LoginV
             </Text>
           ) : (
             <Text style={styles.subtitle}>
-              Enter your username and password to get started with prayerloop
+              Enter your email and password to get started with prayerloop
             </Text>
           )}
 
           <TextInput
             style={styles.input}
-            placeholder='Username'
+            placeholder='Email'
             placeholderTextColor={'#666'}
-            value={username}
-            onChangeText={onUserNameChange}
+            value={email}
+            onChangeText={onEmailChange}
             autoCapitalize='none'
-            textContentType="username"
-            autoComplete="username"
+            autoCorrect={false}
+            keyboardType='email-address'
+            textContentType="emailAddress"
+            autoComplete="email"
             returnKeyType="next"
-            onSubmitEditing={() => {
-              // Focus password field when pressing "next" on keyboard
-            }}
           />
 
           <TextInput
@@ -236,50 +227,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  formContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#666',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
-  },
-  optionsRow: {
-    paddingTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginBottom: 8,
+  errorText: {
+    color: 'red',
+    paddingBottom: 18,
   },
   forgotPassword: {
     color: '#008000',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
+    width: '100%',
+  },
+  gradient: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    width: '100%',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
+  },
+  optionsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 8,
+    paddingTop: 8,
   },
   signInButton: {
     backgroundColor: '#008000',
@@ -291,12 +274,20 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: '#008000',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
   },
-  errorText: {
-    color: 'red',
-    paddingBottom: 18,
+  subtitle: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
+    marginBottom: 8,
   },
 });
 

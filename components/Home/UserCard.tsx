@@ -24,7 +24,7 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
     return null;
   }
 
-  const { username, email, phoneNumber, firstName, lastName } = user;
+  const { email, phoneNumber, firstName, lastName } = user;
   const userIcon = `${firstName?.[0]?.toUpperCase() || ''}${lastName?.[0]?.toUpperCase() || ''}`;
   const formattedPhone = formatPhoneNumber(phoneNumber);
 
@@ -48,9 +48,6 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
       // Build the update request - only include changed fields
       const updateRequest: UpdateUserProfileRequest = {};
 
-      if (updatedData.username !== undefined && updatedData.username !== user.username) {
-        updateRequest.username = updatedData.username;
-      }
       if (updatedData.firstName !== undefined && updatedData.firstName !== user.firstName) {
         updateRequest.firstName = updatedData.firstName;
       }
@@ -112,15 +109,10 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
         
         <View style={styles.details}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Username</Text>
-            <Text style={styles.detailText}>{username}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Email</Text>
             <Text style={styles.detailText}>{email}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Phone</Text>
             <Text style={styles.detailText}>
@@ -143,80 +135,80 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
 
 const styles = StyleSheet.create({
   cardContainer: {
+    alignItems: 'center',
     backgroundColor: '#F1FDED',
     borderRadius: 10,
-    padding: 16,
-    marginVertical: 8,
+    elevation: 3,
     marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    position: 'relative',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+  },
+  detailLabel: {
+    color: '#666',
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  detailRow: {
     alignItems: 'center',
-    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  detailText: {
+    color: '#333',
+    flex: 2,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    textAlign: 'right',
+  },
+  details: {
+    gap: 8,
+    width: '100%',
   },
   editButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 20,
-    width: 36,
+    elevation: 2,
     height: 36,
     justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute',
+    right: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    elevation: 2,
-  },
-  iconWrapper: {
-    backgroundColor: '#008000',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    top: 12,
+    width: 36,
   },
   iconText: {
     color: '#FFF',
+    fontFamily: 'InstrumentSans-Bold',
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: 'InstrumentSans-Bold',
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    backgroundColor: '#008000',
+    borderRadius: 32,
+    height: 64,
+    justifyContent: 'center',
+    marginBottom: 8,
+    width: 64,
   },
   name: {
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 18,
     fontWeight: '600',
     marginBottom: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
     textAlign: 'center',
-  },
-  details: {
-    width: '100%',
-    gap: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    fontFamily: 'InstrumentSans-SemiBold',
-    flex: 1,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#333',
-    fontFamily: 'InstrumentSans-Regular',
-    flex: 2,
-    textAlign: 'right',
   },
 });
 

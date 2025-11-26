@@ -310,120 +310,30 @@ const StartPrayerSessionCard = () => {
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 10,
-    padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  startButton: {
-    backgroundColor: '#008000',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  startButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
   cancelButton: {
     color: '#999',
     fontSize: 16,
   },
-  startSessionButton: {
-    color: '#008000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  startSessionButtonDisabled: {
-    color: '#ccc',
-  },
-  modalContent: {
-    flex: 1,
+  cardContainer: {
+    backgroundColor: '#F1FDED',
+    borderRadius: 10,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginVertical: 8,
     padding: 16,
-  },
-  selectionSummary: {
-    fontSize: 16,
-    color: '#008000',
-    marginBottom: 20,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-  },
-  sourceRowSelected: {
-    backgroundColor: '#E8F5E8',
-    borderColor: '#008000',
-  },
-  sourceInfo: {
-    flex: 1,
-  },
-  sourceName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 4,
-  },
-  sourceNameSelected: {
-    color: '#008000',
-  },
-  sourceType: {
-    fontSize: 14,
-    color: '#666',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   checkbox: {
-    width: 24,
-    height: 24,
+    alignItems: 'center',
+    borderColor: '#ccc',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#ccc',
-    alignItems: 'center',
+    height: 24,
     justifyContent: 'center',
+    width: 24,
   },
   checkboxSelected: {
     backgroundColor: '#008000',
@@ -434,14 +344,104 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  description: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 32,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
     color: '#666',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    flex: 1,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  selectionSummary: {
+    color: '#008000',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  sourceInfo: {
+    flex: 1,
+  },
+  sourceName: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  sourceNameSelected: {
+    color: '#008000',
+  },
+  sourceRow: {
+    alignItems: 'center',
+    borderColor: '#eee',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  sourceRowSelected: {
+    backgroundColor: '#E8F5E8',
+    borderColor: '#008000',
+  },
+  sourceType: {
+    color: '#666',
+    fontSize: 14,
+  },
+  startButton: {
+    alignItems: 'center',
+    backgroundColor: '#008000',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  startButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  startSessionButton: {
+    color: '#008000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  startSessionButtonDisabled: {
+    color: '#ccc',
+  },
+  title: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
   },
 });
 

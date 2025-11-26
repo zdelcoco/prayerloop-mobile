@@ -4,24 +4,24 @@ import { LoginResponse } from './login.types';
 import { BASE_API_URL, Result } from './shared.types';
 
 export const loginUser = async (
-  username: string,
+  email: string,
   password: string
 ): Promise<Result> => {
-  if (username === '' || password === '') {
+  if (email === '' || password === '') {
     return {
       success: false,
       error: {
         type: 'InvalidInput',
-        message: 'Username and password are required',
+        message: 'Email and password are required',
       },
     };
   }
 
   try {
-    console.log('logging in as ', username);
+    console.log('logging in as ', email);
     const url = `${BASE_API_URL}/login`;
     console.log('login url:', url);
-    const response = await axios.post(url, { username, password });
+    const response = await axios.post(url, { email, password });
 
     const loginResponse: LoginResponse = {
       message: response.data.message,
@@ -40,7 +40,7 @@ export const loginUser = async (
             success: false,
             error: {
               type: 'InvalidCredentials',
-              message: 'Invalid username or password',
+              message: 'Invalid email or password',
             },
           };
         } else if (axiosError.response.status >= 500) {

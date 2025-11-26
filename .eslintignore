@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+.expo-shared/
+coverage/
+android/
+ios/
+dist/
+build/
+*.config.js
+*.config.ts

@@ -159,55 +159,69 @@ export default function VerifyCodeModal({
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
+  button: {
     alignItems: 'center',
-    padding: 20,
+    borderRadius: 8,
+    flex: 1,
+    paddingVertical: 14,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  emailText: {
+    color: '#008000',
+    fontWeight: '600',
+  },
+  helperText: {
+    color: '#888',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: '#f9f9f9',
+    borderColor: '#90c590',
+    borderRadius: 8,
+    borderWidth: 2,
+    fontSize: 28,
+    fontWeight: 'bold',
+    letterSpacing: 8,
+    marginBottom: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    textAlign: 'center',
   },
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 15,
-    padding: 25,
-    width: '100%',
+    elevation: 5,
     maxWidth: 400,
+    padding: 25,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5,
+    width: '100%',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 25,
-    color: '#666',
-    lineHeight: 20,
-  },
-  emailText: {
-    fontWeight: '600',
-    color: '#008000',
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: '#90c590',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    marginBottom: 15,
-    fontSize: 28,
-    backgroundColor: '#f9f9f9',
-    textAlign: 'center',
-    letterSpacing: 8,
-    fontWeight: 'bold',
+  modalOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
   },
   resendContainer: {
     alignItems: 'center',
@@ -218,35 +232,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 15,
+  subtitle: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 25,
+    textAlign: 'center',
   },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
+  title: {
+    color: '#333',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   verifyButton: {
     backgroundColor: '#008000',
-  },
-  disabledButton: {
-    backgroundColor: '#ccc',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  helperText: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#888',
   },
 });

@@ -3,6 +3,7 @@ import { logout } from '@/store/authSlice';
 import { router } from 'expo-router';
 import { Share, Alert } from 'react-native';
 import { createGroupInvite } from '@/util/createGroupInvite';
+import { generateGroupInviteLink } from '@/util/deepLinks';
 import { RootState } from '@/store/store';
 import type { ContextMenuOption } from '@/components/ui/ContextMenu';
 
@@ -83,12 +84,13 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0, grou
 
   const handleInviteToGroup = async () => {
     if (!groupId || !groupName || !token) return;
-    
+
     try {
       const result = await createGroupInvite(token, groupId);
       if (result.success && result.data?.inviteCode) {
-        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop!\n\nYour invite code is:\n${result.data.inviteCode}\n\nDownload PrayerLoop and enter this code to join the group.`;
-        
+        const deepLink = generateGroupInviteLink(result.data.inviteCode);
+        const inviteMessage = `You're invited to join "${groupName}" on PrayerLoop!\n\nTap this link to join:\n${deepLink}\n\nOr enter this code manually:\n${result.data.inviteCode}`;
+
         try {
           await Share.share({
             message: inviteMessage,
@@ -98,8 +100,8 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0, grou
           console.error('Share error:', shareError);
           // If sharing fails, show the code in an alert
           Alert.alert(
-            'Invite Code Generated',
-            `Invite code: ${result.data.inviteCode}\n\nShare this code with someone to invite them to ${groupName}`,
+            'Invite Generated',
+            `Deep link:\n${deepLink}\n\nInvite code: ${result.data.inviteCode}\n\nShare either with someone to invite them to ${groupName}`,
             [{ text: 'OK' }]
           );
         }

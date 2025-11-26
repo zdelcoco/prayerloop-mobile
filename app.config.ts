@@ -4,11 +4,12 @@ const config: ExpoConfig = {
   name: "prayerloop",
   owner: "delsuckahh",
   slug: "prayerloop",
-  version: "2025.11.3",
+  version: "2025.11.4",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "prayerloop",
   sdkVersion: "53.0.0",
+  backgroundColor: "#90C590",
   splash: {
     image: "./assets/images/splash.png",
     resizeMode: "cover",
@@ -27,15 +28,17 @@ const config: ExpoConfig = {
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false
-    }
+    },
+    backgroundColor: "#90C590"
   },
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
-      backgroundColor: "#FFFFFF"
+      backgroundColor: "#90C590"
     },
     package: "com.prayerloop.app",
-    versionCode: 1
+    versionCode: 1,
+    backgroundColor: "#90C590"
   },
   web: {
     favicon: "./assets/favicon.png"

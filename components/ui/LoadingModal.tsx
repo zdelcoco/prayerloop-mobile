@@ -35,22 +35,22 @@ const LoadingModal: React.FC<LoadingModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderRadius: 8,
+    paddingBottom: 30,
+    paddingHorizontal: 60,
+    paddingTop: 48,
+  },
   extraLargeSpinner: {
     transform: [{ scale: 2 }],
   },
-  container: {
-    paddingTop: 48,
-    paddingBottom: 30,
-    paddingHorizontal: 60,
-    borderRadius: 8,
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
   text: {
-    marginTop: 48,
-    fontSize: 24,
     color: '#b2d8b2',
     fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 24,
+    marginTop: 48,
   },
 });
 

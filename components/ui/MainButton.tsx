@@ -31,15 +31,15 @@ function MainButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#008000',
-    padding: 15,
-    borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: '#008000',
+    borderRadius: 8,
+    padding: 15,
   },
   text: {
     color: '#fff',
-    fontSize: 16,
     fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
   },
 });
 

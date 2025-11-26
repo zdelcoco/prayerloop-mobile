@@ -125,22 +125,66 @@ export default function PrayerModal({
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
+  addButton: {
+    backgroundColor: '#008000',
+  },
+  button: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: '#ccc',
+    borderRadius: 5,
+    flexGrow: 1,
+    marginHorizontal: 5,
+    paddingVertical: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  checkboxContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  checkboxLabel: {
+    color: '#333',
+    fontSize: 16,
+  },
+  disabledButton: {
+    backgroundColor: '#aaa',
+  },
+  input: {
+    borderColor: '#ccc',
+    borderRadius: 5,
+    borderWidth: 1,
+    color: '#333',
+    fontSize: 16,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   modalContainer: {
-    width: '90%',
     backgroundColor: '#fff',
     borderRadius: 10,
+    elevation: 5,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5,
+    width: '90%',
+  },
+  modalOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    flex: 1,
+    justifyContent: 'center',
   },
   modalTitle: {
     fontSize: 18,
@@ -148,52 +192,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 10,
-    fontSize: 16,
-    color: '#333',
-  },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 10,
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#333',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 15,
-  },
-  button: {
-    flexGrow: 1,
-    paddingVertical: 10,
-    marginHorizontal: 5,
-    borderRadius: 5,
-    backgroundColor: '#ccc',
-    alignItems: 'center',
-  },
-  addButton: {
-    backgroundColor: '#008000',
-  },
-  disabledButton: {
-    backgroundColor: '#aaa',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

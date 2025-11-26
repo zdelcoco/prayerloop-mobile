@@ -175,68 +175,68 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+  },
+  cancelButton: {
+    backgroundColor: '#666',
   },
   container: {
     flex: 1,
     justifyContent: 'center',
     padding: 20,
   },
-  formContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    padding: 20,
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: 'InstrumentSans-Bold',
-    marginBottom: 8,
-    color: '#000',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: 'InstrumentSans-Regular',
-    color: '#666',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
   fieldLabel: {
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-SemiBold',
     color: '#333',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
     marginBottom: 6,
     marginTop: 4,
   },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    fontFamily: 'InstrumentSans-Regular',
+  formContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    padding: 20,
   },
-  helperText: {
-    color: '#666',
-    fontSize: 13,
-    fontFamily: 'InstrumentSans-Regular',
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+  gradient: {
+    flex: 1,
   },
   halfWidth: {
     flex: 1,
   },
-  cancelButton: {
-    backgroundColor: '#666',
+  helperText: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginBottom: 20,
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    marginBottom: 12,
+    padding: 15,
   },
   saveButton: {
     backgroundColor: '#008000',
+  },
+  subtitle: {
+    color: '#666',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  title: {
+    color: '#000',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 24,
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });
 

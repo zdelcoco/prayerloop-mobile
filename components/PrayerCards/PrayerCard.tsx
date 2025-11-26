@@ -96,60 +96,60 @@ const Card = ({
 };
 
 const styles = StyleSheet.create({
-  cardContainer: {
-    marginVertical: 8,
-    marginHorizontal: 16,
+  activeCard: {
+    opacity: 0.7,
+    transform: [{ scale: 1.05 }],
   },
   card: {
     backgroundColor: '#F1FDED',
     borderRadius: 10,
+    elevation: 3,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-  },
-  privateIcon: {
-    marginLeft: 8,
+  cardContainer: {
+    marginHorizontal: 16,
+    marginVertical: 8,
   },
   content: {
     marginBottom: 12,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  status: {
-    color: '#666',
-    fontSize: 12,
   },
   date: {
     color: '#666',
     fontSize: 12,
   },
+  footer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  privateIcon: {
+    marginLeft: 8,
+  },
   readMoreText: {
     color: '#008000',
     fontSize: 14,
     fontStyle: 'italic',
-    marginTop: 8,
     fontWeight: '600',
+    marginTop: 8,
   },
-  activeCard: {
-    opacity: 0.7,
-    transform: [{ scale: 1.05 }],
+  status: {
+    color: '#666',
+    fontSize: 12,
+  },
+  title: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

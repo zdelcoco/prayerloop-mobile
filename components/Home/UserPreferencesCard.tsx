@@ -173,68 +173,68 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#F1FDED',
     borderRadius: 10,
-    padding: 16,
-    marginVertical: 8,
+    elevation: 3,
     marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 8,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
   },
   comingSoonBadge: {
-    fontSize: 14,
     color: '#008000',
+    fontSize: 14,
     fontStyle: 'italic',
     fontWeight: '500',
 
-  },
-  preferenceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    minHeight: 40,
-  },
-  preferenceLabel: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 22,
-    flex: 1,
-    marginRight: 16,
   },
   comingSoonLabel: {
     color: '#999',
     fontStyle: 'italic',
   },
-  switchContainer: {
-    minWidth: 50,
-    alignItems: 'flex-end',
-  },
-  preferenceValue: {
-    fontSize: 16,
+  emptyText: {
     color: '#666',
-    fontWeight: '500',
+    fontSize: 14,
+    textAlign: 'center',
   },
   loadingText: {
-    fontSize: 14,
     color: '#666',
+    fontSize: 14,
     textAlign: 'center',
   },
-  emptyText: {
-    fontSize: 14,
+  preferenceLabel: {
+    color: '#333',
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+    marginRight: 16,
+  },
+  preferenceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    minHeight: 40,
+    paddingVertical: 8,
+  },
+  preferenceValue: {
     color: '#666',
-    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  switchContainer: {
+    alignItems: 'flex-end',
+    minWidth: 50,
+  },
+  title: {
+    color: '#333',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
   },
 });
 

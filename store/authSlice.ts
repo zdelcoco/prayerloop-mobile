@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import { ThunkAction } from 'redux-thunk';
+import { jwtDecode } from 'jwt-decode';
 import { RootState } from './store';
 import { User } from '../util/shared.types';
 import { loginUser } from '../util/login';
@@ -9,6 +10,11 @@ import { SignupRequest, SignupResponse } from '../util/signup.types';
 import { clearUserPrayers } from './userPrayersSlice';
 import { clearUserGroups } from './groupsSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface JWTPayload {
+  exp: number;
+  [key: string]: any;
+}
 
 interface AuthState {
   user: User | null;
@@ -76,11 +82,11 @@ export type AppThunk<ReturnType = void> = ThunkAction<
 >;
 
 export const login =
-  (username: string, password: string): AppThunk =>
+  (email: string, password: string): AppThunk =>
   async (dispatch) => {
     dispatch(loginStart());
     try {
-      const result = await loginUser(username, password);
+      const result = await loginUser(email, password);
       if (result.success) {
         dispatch(loginSuccess(result.data));
       } else {
@@ -111,10 +117,60 @@ export const signup =
     }
   };
 
+export const validateToken = (): AppThunk => async (dispatch, getState) => {
+  const { token } = getState().auth;
+
+  if (!token) {
+    // No token, try auto-login with saved credentials
+    await attemptAutoLogin(dispatch);
+    return;
+  }
+
+  try {
+    // Decode JWT to check expiration
+    const decoded = jwtDecode<JWTPayload>(token);
+    const currentTime = Date.now() / 1000; // Convert to seconds
+
+    if (decoded.exp < currentTime) {
+      // Token is expired, attempt auto-login with saved credentials
+      console.log('Token expired, attempting auto-login');
+      await attemptAutoLogin(dispatch);
+    }
+    // Token is valid, user stays logged in
+  } catch (error) {
+    // Invalid token format, attempt auto-login
+    console.error('Invalid token, attempting auto-login:', error);
+    await attemptAutoLogin(dispatch);
+  }
+};
+
+// Helper function to attempt auto-login with saved credentials
+const attemptAutoLogin = async (dispatch: any) => {
+  try {
+    const savedEmail = await AsyncStorage.getItem('rememberedEmail');
+    const savedPassword = await AsyncStorage.getItem('rememberedPassword');
+
+    if (savedEmail && savedPassword) {
+      // Attempt auto-login with saved credentials
+      console.log('Attempting auto-login with saved credentials');
+      await dispatch(login(savedEmail, savedPassword));
+      // If login succeeds, user stays authenticated
+      // If it fails, loginFailure will be dispatched and user goes to login screen
+    } else {
+      // No saved credentials, logout to show login screen
+      console.log('No saved credentials, logging out');
+      dispatch(logout());
+    }
+  } catch (error) {
+    console.error('Auto-login failed:', error);
+    dispatch(logout());
+  }
+};
+
 export const logout = (): AppThunk => async (dispatch) => {
   // Clear saved credentials from AsyncStorage
   try {
-    await AsyncStorage.removeItem('rememberedUsername');
+    await AsyncStorage.removeItem('rememberedEmail');
     await AsyncStorage.removeItem('rememberedPassword');
   } catch (error) {
     console.error('Error clearing saved credentials on logout:', error);

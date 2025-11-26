@@ -111,21 +111,29 @@ export default function TestNotifications() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    gap: 15,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
   button: {
-    backgroundColor: '#90c590',
-    padding: 15,
-    borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: '#90c590',
+    borderRadius: 8,
+    padding: 15,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  container: {
+    gap: 15,
+    padding: 20,
+  },
+  info: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 10,
+    textAlign: 'center',
   },
   localButton: {
     backgroundColor: '#4CAF50',
@@ -133,18 +141,10 @@ const styles = StyleSheet.create({
   pushButton: {
     backgroundColor: '#2196F3',
   },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: 'white',
+  title: {
+    fontSize: 18,
     fontWeight: 'bold',
-    fontSize: 16,
-  },
-  info: {
+    marginBottom: 10,
     textAlign: 'center',
-    color: '#666',
-    fontSize: 12,
-    marginTop: 10,
   },
 });

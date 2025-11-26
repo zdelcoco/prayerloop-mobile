@@ -180,18 +180,19 @@ export default function ContextMenu({ visible, onClose, title, options }: Contex
 const { height: screenHeight } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'transparent',
-  },
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     backgroundColor: 'transparent',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  blueButton: {
+    backgroundColor: '#007bff',
+  },
+  blueText: {
+    color: '#fff',
   },
   bottomSheet: {
     backgroundColor: '#f9f9f9',
@@ -207,65 +208,16 @@ const styles = StyleSheet.create({
     // Ensure it's always positioned correctly
     position: 'relative',
   },
-  handleContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#ccc',
-    borderRadius: 2,
-  },
-  safeArea: {
-    paddingBottom: 20,
-  },
-  content: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
-  },
   button: {
-    marginVertical: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
     borderRadius: 10,
+    elevation: 3,
+    marginVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
-  },
-  defaultButton: {
-    backgroundColor: '#90c590',
-  },
-  primaryButton: {
-    backgroundColor: '#008000',
-  },
-  blueButton: {
-    backgroundColor: '#007bff',
-  },
-  destructiveButton: {
-    backgroundColor: '#ef606fff',
-  },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-    marginVertical: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   buttonText: {
     color: '#fff',
@@ -273,16 +225,64 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  cancelButton: {
+    backgroundColor: '#6c757d',
+    borderRadius: 10,
+    elevation: 3,
+    marginVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  container: {
+    backgroundColor: 'transparent',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  content: {
+    padding: 20,
+    paddingTop: 10,
+  },
+  defaultButton: {
+    backgroundColor: '#90c590',
+  },
   defaultText: {
     color: '#333',
+  },
+  destructiveButton: {
+    backgroundColor: '#ef606fff',
+  },
+  destructiveText: {
+    color: '#fff',
+  },
+  handle: {
+    backgroundColor: '#ccc',
+    borderRadius: 2,
+    height: 4,
+    width: 40,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  primaryButton: {
+    backgroundColor: '#008000',
   },
   primaryText: {
     color: '#fff',
   },
-  blueText: {
-    color: '#fff',
+  safeArea: {
+    paddingBottom: 20,
   },
-  destructiveText: {
-    color: '#fff',
+  title: {
+    color: '#333',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });
