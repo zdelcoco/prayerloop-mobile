@@ -58,7 +58,6 @@ describe('authSlice', () => {
   const mockSignupResponse: SignupResponse = {
     message: 'Signup successful',
     user: {
-      username: 'testuser',
       email: 'test@example.com',
       firstName: 'Test',
       lastName: 'User',
@@ -188,7 +187,7 @@ describe('authSlice', () => {
 
       await logout()(dispatch, getState, undefined);
 
-      expect(mockRemoveItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockRemoveItem).toHaveBeenCalledWith('rememberedEmail');
       expect(mockRemoveItem).toHaveBeenCalledWith('rememberedPassword');
       expect(dispatch).toHaveBeenCalledWith(logoutSuccess());
     });
@@ -266,7 +265,7 @@ describe('authSlice', () => {
       });
 
       mockGetItem.mockImplementation((key: string) => {
-        if (key === 'rememberedUsername') return Promise.resolve('testuser');
+        if (key === 'rememberedEmail') return Promise.resolve('test@example.com');
         if (key === 'rememberedPassword') return Promise.resolve('password');
         return Promise.resolve(null);
       });
@@ -278,7 +277,7 @@ describe('authSlice', () => {
 
       await validateToken()(dispatch, getState, undefined);
 
-      expect(mockGetItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedEmail');
       expect(mockGetItem).toHaveBeenCalledWith('rememberedPassword');
       expect(dispatch).toHaveBeenCalled(); // Should dispatch login actions
     });
@@ -321,7 +320,7 @@ describe('authSlice', () => {
       const mockLoginUser = loginUtil.loginUser as jest.MockedFunction<typeof loginUtil.loginUser>;
 
       mockGetItem.mockImplementation((key: string) => {
-        if (key === 'rememberedUsername') return Promise.resolve('testuser');
+        if (key === 'rememberedEmail') return Promise.resolve('test@example.com');
         if (key === 'rememberedPassword') return Promise.resolve('password');
         return Promise.resolve(null);
       });
@@ -333,7 +332,7 @@ describe('authSlice', () => {
 
       await validateToken()(dispatch, getState, undefined);
 
-      expect(mockGetItem).toHaveBeenCalledWith('rememberedUsername');
+      expect(mockGetItem).toHaveBeenCalledWith('rememberedEmail');
       expect(mockGetItem).toHaveBeenCalledWith('rememberedPassword');
       expect(dispatch).toHaveBeenCalled();
     });

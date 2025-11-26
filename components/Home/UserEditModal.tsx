@@ -30,7 +30,6 @@ interface UserEditModalProps {
 }
 
 interface EditableUserData {
-  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -45,7 +44,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   isSaving = false,
 }) => {
   const [formData, setFormData] = useState<EditableUserData>({
-    username: user.username || '',
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     email: user.email || '',
@@ -60,7 +58,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   useEffect(() => {
     if (visible) {
       setFormData({
-        username: user.username || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
@@ -80,16 +77,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
   const handleSave = () => {
     // Validate required fields
-    if (!formData.username.trim()) {
-      Alert.alert('Validation Error', 'Username is required.');
-      return;
-    }
     if (!formData.firstName.trim()) {
       Alert.alert('Validation Error', 'First name is required.');
-      return;
-    }
-    if (!formData.lastName.trim()) {
-      Alert.alert('Validation Error', 'Last name is required.');
       return;
     }
     if (!formData.email.trim()) {
@@ -106,7 +95,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
     // Call the parent save handler with the updated data
     onSave({
-      username: formData.username,
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
@@ -117,7 +105,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   const handleCancel = () => {
     // Check if any changes have been made
     const hasChanges =
-      formData.username !== (user.username || '') ||
       formData.firstName !== (user.firstName || '') ||
       formData.lastName !== (user.lastName || '') ||
       formData.email !== (user.email || '') ||
@@ -272,17 +259,6 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
             <View style={styles.formContainer}>
               <Text style={styles.title}>Edit Profile</Text>
 
-              <Text style={styles.fieldLabel}>Username *</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your username"
-                placeholderTextColor="#666"
-                value={formData.username}
-                onChangeText={(text) => updateField('username', text)}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
               <Text style={styles.fieldLabel}>First Name *</Text>
               <TextInput
                 style={styles.input}
@@ -294,7 +270,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 autoCorrect={false}
               />
 
-              <Text style={styles.fieldLabel}>Last Name *</Text>
+              <Text style={styles.fieldLabel}>Last Name</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your last name"

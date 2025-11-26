@@ -12,8 +12,8 @@ export default function LoginScreen() {
 
   const { error, status } = useAppSelector(memoizedAuthSelector);
 
-  const handleLogin = (username: string, password: string) => {
-    dispatch(login(username, password));
+  const handleLogin = (email: string, password: string) => {
+    dispatch(login(email, password));
   };
 
   const handleSignupPress = () => {

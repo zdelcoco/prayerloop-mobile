@@ -5,13 +5,13 @@ import { BASE_API_URL, Result } from './shared.types';
 export const signupUser = async (
   signupData: SignupRequest
 ): Promise<Result> => {
-  // Basic validation
-  if (!signupData.username || !signupData.password || !signupData.firstName || !signupData.lastName || !signupData.email) {
+  // Basic validation - required fields: email, password, firstName
+  if (!signupData.email || !signupData.password || !signupData.firstName) {
     return {
       success: false,
       error: {
         type: 'InvalidInput',
-        message: 'Username, password, email, first name, and last name are required',
+        message: 'Email, password, and first name are required',
       },
     };
   }
@@ -50,7 +50,7 @@ export const signupUser = async (
   }
 
   try {
-    console.log('signing up user:', signupData.username);
+    console.log('signing up user:', signupData.email);
     const url = `${BASE_API_URL}/signup`;
     console.log('signup url:', url);
     const response = await axios.post(url, signupData);
