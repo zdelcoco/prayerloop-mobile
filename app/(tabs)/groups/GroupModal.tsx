@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { addGroup } from '@/store/groupsSlice';
 import { useAppDispatch } from '@/hooks/redux';
 
@@ -19,7 +19,6 @@ import { CreateGroupRequest } from '@/util/createGroup.types';
 export default function GroupModal() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
-  const route = useRoute();
   const [groupTitle, setGroupTitle] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
 
@@ -34,20 +33,15 @@ export default function GroupModal() {
   };
 
   const addPressHandler = useCallback(async () => {
-    console.log('Add group');
 
     if (!groupTitle || !groupDescription) {
       return Alert.alert('Error', 'Please fill in all fields');
     }
 
-    console.log('Creating group with title:', groupTitle);
-
     const newGroup: CreateGroupRequest = {
       groupName: groupTitle,
       groupDescription: groupDescription,
     };
-
-    console.log('New group data:', newGroup);
 
     try {
       await dispatch(addGroup(newGroup));
@@ -65,7 +59,7 @@ export default function GroupModal() {
       console.error('Error adding group:', error);
       Alert.alert('Error', 'Something went wrong while adding the group.');
     }
-  }, [dispatch, groupDescription, groupTitle]);
+  }, [dispatch, groupDescription, groupTitle, navigation]);
 
   return (
     <KeyboardAvoidingView
@@ -78,6 +72,8 @@ export default function GroupModal() {
         placeholderTextColor='#888'
         value={groupTitle}
         onChangeText={onGroupTitleChange}
+        autoCapitalize="sentences"
+        autoCorrect={true}
       />
       <TextInput
         style={[styles.input, styles.textArea]}
@@ -86,6 +82,8 @@ export default function GroupModal() {
         value={groupDescription}
         onChangeText={onGroupDescriptionChange}
         multiline
+        autoCapitalize="sentences"
+        autoCorrect={true}
       />
       <View style={styles.buttonContainer}>
         <Pressable

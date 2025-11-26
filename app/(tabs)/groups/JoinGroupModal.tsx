@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups } from '@/store/groupsSlice';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import type { Group, User } from '@/util/shared.types';
 import { joinGroup } from '@/util/joinGroup';
@@ -24,6 +24,7 @@ export default function JoinGroupModal() {
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { token } = useAppSelector((state) => state.auth);
+  const params = useLocalSearchParams<{ code?: string }>();
 
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,21 @@ export default function JoinGroupModal() {
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
+
+  // Handle invite code from deep link
+  useEffect(() => {
+    if (params.code) {
+      const code = Array.isArray(params.code) ? params.code[0] : params.code;
+      setInviteCode(code);
+
+      // Show a message that the code was pre-filled from a link
+      Alert.alert(
+        'Invite Code Loaded',
+        'The invite code has been automatically filled from your link. Tap "Join Group" to continue.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [params.code]);
 
   const handleDirectJoin = useCallback(async () => {
     if (!inviteCode.trim() || !token) return;

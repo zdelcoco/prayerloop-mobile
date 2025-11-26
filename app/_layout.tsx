@@ -1,15 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { StatusBar, View } from 'react-native';
+import { StatusBar } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Provider, useSelector, useDispatch } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import { PersistGate } from 'redux-persist/integration/react';
 import * as SplashScreen from 'expo-splash-screen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import store, { persistor } from '../store/store';
+import { useAppDispatch } from '../store/hooks';
 import { validateToken } from '../store/authSlice';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import SplashView from '../components/ui/SplashView';
+import InstrumentSansRegular from '../assets/fonts/InstrumentSans-Regular.ttf';
+import InstrumentSansBold from '../assets/fonts/InstrumentSans-Bold.ttf';
+import InstrumentSansSemiBold from '../assets/fonts/InstrumentSans-SemiBold.ttf';
 
 // Keep splash visible until we're ready
 SplashScreen.preventAutoHideAsync();
@@ -17,7 +22,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayoutNav() {
   const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   // Initialize push notifications for authenticated users
   usePushNotifications();
@@ -29,12 +34,38 @@ function RootLayoutNav() {
 
   // Navigate based on auth state
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/(auth)/login');
-    } else {
-      router.replace('/(tabs)/cards');
-    }
-  }, [isAuthenticated]);
+    const handleNavigation = async () => {
+      if (!isAuthenticated) {
+        router.replace('/(auth)/login');
+      } else {
+        // Check for pending group invite from deep link
+        try {
+          const pendingInvite = await AsyncStorage.getItem('pendingGroupInvite');
+          if (pendingInvite) {
+            // Clear the pending invite
+            await AsyncStorage.removeItem('pendingGroupInvite');
+            // Navigate to groups tab first
+            router.replace('/(tabs)/groups');
+            // Then open the join modal with the code
+            setTimeout(() => {
+              router.push({
+                pathname: '/(tabs)/groups/JoinGroupModal',
+                params: { code: pendingInvite },
+              });
+            }, 100);
+          } else {
+            // Normal navigation to cards
+            router.replace('/(tabs)/cards');
+          }
+        } catch (error) {
+          console.error('Error checking pending invite:', error);
+          router.replace('/(tabs)/cards');
+        }
+      }
+    };
+
+    handleNavigation();
+  }, [isAuthenticated, router]);
 
   return (
     <Stack
@@ -47,6 +78,7 @@ function RootLayoutNav() {
       <Stack.Screen name='index' options={{ headerShown: false }} />
       <Stack.Screen name='(auth)' options={{ headerShown: false }} />
       <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+      <Stack.Screen name='join-group' options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -54,9 +86,9 @@ function RootLayoutNav() {
 export default function RootLayout() {
   const [appIsReady, setAppIsReady] = useState(false);
   const [fontsLoaded] = useFonts({
-    'InstrumentSans-Regular': require('../assets/fonts/InstrumentSans-Regular-BF645daa1019d9e.ttf'),
-    'InstrumentSans-Bold': require('../assets/fonts/InstrumentSans-Bold-BF645daa10224d2.ttf'),
-    'InstrumentSans-SemiBold': require('../assets/fonts/InstrumentSans-SemiBold-BF645daa0fdb37c.ttf'),
+    'InstrumentSans-Regular': InstrumentSansRegular,
+    'InstrumentSans-Bold': InstrumentSansBold,
+    'InstrumentSans-SemiBold': InstrumentSansSemiBold,
   });
 
   // Hide splash screen once fonts are loaded and persist is ready

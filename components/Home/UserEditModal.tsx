@@ -290,6 +290,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 placeholderTextColor="#666"
                 value={formData.firstName}
                 onChangeText={(text) => updateField('firstName', text)}
+                autoCapitalize="words"
                 autoCorrect={false}
               />
 
@@ -300,6 +301,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 placeholderTextColor="#666"
                 value={formData.lastName}
                 onChangeText={(text) => updateField('lastName', text)}
+                autoCapitalize="words"
                 autoCorrect={false}
               />
 
