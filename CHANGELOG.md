@@ -6,9 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses a date-based versioning scheme: `[year].[month].[sequence]`
 (e.g., 2025.11.3 is the third release in November 2025).
 
-## [Unreleased]
+## [2025.11.4] - 2025-11-26
 
 ### Added
+
+- Email login (instead of username)
+- Join group deep link
+- Fixed reminders
+- Implemented redux-persist and fixed login screen flashing on each launch
 - Comprehensive test coverage for Redux slices (90 tests)
 - ESLint configuration with auto-fix capabilities
 - GitHub Actions workflow for automated testing and linting on PRs
@@ -16,6 +21,7 @@ and this project uses a date-based versioning scheme: `[year].[month].[sequence]
 ## [2025.11.3] - 2025-11-19
 
 ### Added
+
 - **Delete Account Feature** - Users can now permanently delete their account
   - Two-step confirmation with password verification
   - Warning about data loss
