@@ -82,11 +82,11 @@ export type AppThunk<ReturnType = void> = ThunkAction<
 >;
 
 export const login =
-  (username: string, password: string): AppThunk =>
+  (email: string, password: string): AppThunk =>
   async (dispatch) => {
     dispatch(loginStart());
     try {
-      const result = await loginUser(username, password);
+      const result = await loginUser(email, password);
       if (result.success) {
         dispatch(loginSuccess(result.data));
       } else {
@@ -147,13 +147,13 @@ export const validateToken = (): AppThunk => async (dispatch, getState) => {
 // Helper function to attempt auto-login with saved credentials
 const attemptAutoLogin = async (dispatch: any) => {
   try {
-    const savedUsername = await AsyncStorage.getItem('rememberedUsername');
+    const savedEmail = await AsyncStorage.getItem('rememberedEmail');
     const savedPassword = await AsyncStorage.getItem('rememberedPassword');
 
-    if (savedUsername && savedPassword) {
+    if (savedEmail && savedPassword) {
       // Attempt auto-login with saved credentials
       console.log('Attempting auto-login with saved credentials');
-      await dispatch(login(savedUsername, savedPassword));
+      await dispatch(login(savedEmail, savedPassword));
       // If login succeeds, user stays authenticated
       // If it fails, loginFailure will be dispatched and user goes to login screen
     } else {
@@ -168,9 +168,9 @@ const attemptAutoLogin = async (dispatch: any) => {
 };
 
 export const logout = (): AppThunk => async (dispatch) => {
-  // Clear saved credentials from AsyncStorage (for backward compatibility)
+  // Clear saved credentials from AsyncStorage
   try {
-    await AsyncStorage.removeItem('rememberedUsername');
+    await AsyncStorage.removeItem('rememberedEmail');
     await AsyncStorage.removeItem('rememberedPassword');
   } catch (error) {
     console.error('Error clearing saved credentials on logout:', error);

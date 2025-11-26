@@ -6,7 +6,6 @@ import {
   View,
   TextInput,
   Platform,
-  Switch,
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
@@ -21,13 +20,13 @@ import ResetPasswordModal from '../auth/ResetPasswordModal';
 import { forgotPassword } from '@/util/forgotPassword';
 
 interface LoginViewProps {
-  onPress: (username: string, password: string) => void;
+  onPress: (email: string, password: string) => void;
   onSignupPress: () => void;
   errorMessage?: string;
 }
 
 function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showError, setShowError] = useState(false);
 
@@ -44,12 +43,12 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
 
   const loadSavedCredentialsForDisplay = async () => {
     try {
-      const savedUsername = await AsyncStorage.getItem('rememberedUsername');
+      const savedEmail = await AsyncStorage.getItem('rememberedEmail');
       const savedPassword = await AsyncStorage.getItem('rememberedPassword');
 
-      if (savedUsername && savedPassword) {
+      if (savedEmail && savedPassword) {
         // Pre-fill the form with saved credentials
-        setUsername(savedUsername);
+        setEmail(savedEmail);
         setPassword(savedPassword);
       }
     } catch (error) {
@@ -57,18 +56,18 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
     }
   };
 
-  const saveCredentials = async (username: string, password: string) => {
+  const saveCredentials = async (email: string, password: string) => {
     try {
-      await AsyncStorage.setItem('rememberedUsername', username);
+      await AsyncStorage.setItem('rememberedEmail', email);
       await AsyncStorage.setItem('rememberedPassword', password);
     } catch (error) {
       console.error('Error saving credentials:', error);
     }
   };
 
-  const onUserNameChange = (text: string) => {
+  const onEmailChange = (text: string) => {
     setShowError(false);
-    setUsername(text);
+    setEmail(text);
   };
 
   const onPasswordChange = (text: string) => {
@@ -80,9 +79,9 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
     setShowError(true);
 
     // Always save credentials for auto-login next time
-    await saveCredentials(username, password);
+    await saveCredentials(email, password);
 
-    onPress(username, password);
+    onPress(email, password);
   };
 
   // Password reset handlers
@@ -147,23 +146,22 @@ function LoginView({ onPress, onSignupPress, errorMessage }: LoginViewProps) {
             </Text>
           ) : (
             <Text style={styles.subtitle}>
-              Enter your username and password to get started with prayerloop
+              Enter your email and password to get started with prayerloop
             </Text>
           )}
 
           <TextInput
             style={styles.input}
-            placeholder='Username'
+            placeholder='Email'
             placeholderTextColor={'#666'}
-            value={username}
-            onChangeText={onUserNameChange}
+            value={email}
+            onChangeText={onEmailChange}
             autoCapitalize='none'
-            textContentType="username"
-            autoComplete="username"
+            autoCorrect={false}
+            keyboardType='email-address'
+            textContentType="emailAddress"
+            autoComplete="email"
             returnKeyType="next"
-            onSubmitEditing={() => {
-              // Focus password field when pressing "next" on keyboard
-            }}
           />
 
           <TextInput

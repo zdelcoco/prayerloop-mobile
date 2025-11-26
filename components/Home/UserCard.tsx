@@ -24,7 +24,7 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
     return null;
   }
 
-  const { username, email, phoneNumber, firstName, lastName } = user;
+  const { email, phoneNumber, firstName, lastName } = user;
   const userIcon = `${firstName?.[0]?.toUpperCase() || ''}${lastName?.[0]?.toUpperCase() || ''}`;
   const formattedPhone = formatPhoneNumber(phoneNumber);
 
@@ -48,9 +48,6 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
       // Build the update request - only include changed fields
       const updateRequest: UpdateUserProfileRequest = {};
 
-      if (updatedData.username !== undefined && updatedData.username !== user.username) {
-        updateRequest.username = updatedData.username;
-      }
       if (updatedData.firstName !== undefined && updatedData.firstName !== user.firstName) {
         updateRequest.firstName = updatedData.firstName;
       }
@@ -112,15 +109,10 @@ const UserCard = ({ user, onUserUpdate }: UserCardProps) => {
         
         <View style={styles.details}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Username</Text>
-            <Text style={styles.detailText}>{username}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Email</Text>
             <Text style={styles.detailText}>{email}</Text>
           </View>
-          
+
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Phone</Text>
             <Text style={styles.detailText}>
