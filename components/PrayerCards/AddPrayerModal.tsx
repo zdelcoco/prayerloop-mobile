@@ -98,6 +98,8 @@ export default function AddPrayerModal({
             placeholderTextColor="#888"
             value={prayerTitle}
             onChangeText={onPrayerTitleChange}
+            autoCapitalize="sentences"
+            autoCorrect={true}
           />
           <TextInput
             style={[styles.input, styles.textArea]}
@@ -106,6 +108,8 @@ export default function AddPrayerModal({
             value={prayerDescription}
             onChangeText={onPrayerDescriptionChange}
             multiline
+            autoCapitalize="sentences"
+            autoCorrect={true}
           />
           <View style={styles.checkboxContainer}>
             <Text style={styles.checkboxLabel}>Mark as Private</Text>

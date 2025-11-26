@@ -19,17 +19,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { Prayer } from '@/util/shared.types';
 import { useHeaderHeight } from '@react-navigation/elements';
 
-interface AddPrayerProps {
-  mode: 'add' | 'edit';
-  groupProfileId: number;
-  prayer?: Prayer;
-}
-
-export default function PrayerModal({
-  mode,
-  groupProfileId,
-  prayer,
-}: AddPrayerProps) {
+export default function PrayerModal() {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const route = useRoute<{
@@ -62,7 +52,7 @@ export default function PrayerModal({
   useLayoutEffect(() => {
     navigation.setOptions({
       title:
-      route.params.mode === 'add'
+        route.params.mode === 'add'
           ? 'Create a Group Prayer Request'
           : 'Edit Group Prayer Request',
     });
@@ -115,6 +105,7 @@ export default function PrayerModal({
     dispatch,
     resetForm,
     navigation,
+    route.params.groupProfileId,
   ]);
 
   const handleEditPrayer = useCallback(async () => {
@@ -136,7 +127,7 @@ export default function PrayerModal({
     };
 
     try {
-      await dispatch(putUserPrayer(route.params.prayer!.prayerId, prayerData));
+      await dispatch(putUserPrayer(route.params.prayer.prayerId, prayerData));
       resetForm();
       navigation.goBack(); // Close the modal/screen
     } catch (error) {
@@ -150,7 +141,7 @@ export default function PrayerModal({
     dispatch,
     resetForm,
     navigation,
-    prayer,
+    route.params.prayer,
   ]);
 
   /* todo -- fix styling to be consistent with rest of app, aka add linear gradient */
@@ -166,6 +157,8 @@ export default function PrayerModal({
         placeholderTextColor='#888'
         value={prayerTitle}
         onChangeText={onPrayerTitleChange}
+        autoCapitalize='sentences'
+        autoCorrect={true}
       />
       <TextInput
         style={[styles.input, styles.textArea]}
@@ -174,6 +167,8 @@ export default function PrayerModal({
         value={prayerDescription}
         onChangeText={onPrayerDescriptionChange}
         multiline
+        autoCapitalize='sentences'
+        autoCorrect={true}
       />
       <View style={styles.checkboxContainer}>
         <Text style={styles.checkboxLabel}>Mark as Private</Text>
@@ -193,7 +188,9 @@ export default function PrayerModal({
         </Pressable>
         <Pressable
           style={[styles.button, styles.addButton]}
-          onPress={route.params.mode === 'add' ? handleAddPrayer : handleEditPrayer}
+          onPress={
+            route.params.mode === 'add' ? handleAddPrayer : handleEditPrayer
+          }
           disabled={!prayerTitle || !prayerDescription}
         >
           <Text style={styles.buttonText}>
@@ -257,11 +254,5 @@ const styles = StyleSheet.create({
   textArea: {
     height: 200,
     textAlignVertical: 'top',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
   },
 });
