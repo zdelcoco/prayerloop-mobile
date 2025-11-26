@@ -7,12 +7,18 @@ import {
   TextInput,
   Platform,
   ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  InputAccessoryView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainButton from '../ui/MainButton';
 import { SignupRequest } from '../../util/signup.types';
 import { formatPhoneNumberInput } from '../../util/phoneFormatter';
+
+const INPUT_ACCESSORY_ID = 'signupInputAccessory';
 
 interface SignupViewProps {
   onPress: (signupData: SignupRequest) => void;
@@ -21,6 +27,7 @@ interface SignupViewProps {
 }
 
 function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
+  const insets = useSafeAreaInsets();
   const [formData, setFormData] = useState<SignupRequest>({
     password: '',
     email: '',
@@ -30,6 +37,23 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showError, setShowError] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   const updateField = (field: keyof SignupRequest, value: string) => {
     setShowError(false);
@@ -74,22 +98,28 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
   const isValidEmail = formData.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
 
   return (
-    <LinearGradient
-      colors={['#90C590', '#F6EDD9']}
-      style={styles.gradient}
-      end={{ x: 1, y: 0.6 }}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardContainer}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+  <>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <LinearGradient
+        colors={['#90C590', '#F6EDD9']}
+        style={styles.gradient}
+        end={{ x: 1, y: 0.6 }}
       >
-        <ScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardContainer}
         >
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={[
+              styles.scrollContent,
+              !isKeyboardVisible && styles.scrollContentCentered,
+              { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 40 },
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={true}
+          >
           <View style={styles.formContainer}>
             <Text style={styles.title}>Create Account</Text>
             {errorMessage && showError ? (
@@ -116,6 +146,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               autoCorrect={false}
               textContentType="emailAddress"
               autoComplete="email"
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
             {!isValidEmail && showError && (
               <Text style={styles.fieldError}>Please enter a valid email address</Text>
@@ -133,6 +164,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
 
             <TextInput
@@ -150,6 +182,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
             {!passwordsMatch && showError && (
               <Text style={styles.fieldError}>Passwords do not match</Text>
@@ -165,6 +198,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               autoCorrect={false}
               textContentType="givenName"
               autoComplete="name-given"
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
 
             <TextInput
@@ -177,6 +211,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               autoCorrect={false}
               textContentType="familyName"
               autoComplete="name-family"
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
 
             <TextInput
@@ -189,6 +224,7 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               maxLength={14}
               textContentType="telephoneNumber"
               autoComplete="tel"
+              inputAccessoryViewID={INPUT_ACCESSORY_ID}
             />
 
             <Text style={styles.requiredText}>* Required fields</Text>
@@ -206,13 +242,33 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
               </Text>
             </Pressable>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
+    </TouchableWithoutFeedback>
+
+    {Platform.OS === 'ios' && (
+      <InputAccessoryView nativeID={INPUT_ACCESSORY_ID}>
+        <View style={styles.accessoryContainer}>
+          <Pressable onPress={Keyboard.dismiss} style={styles.doneButton}>
+            <Text style={styles.doneButtonText}>Done</Text>
+          </Pressable>
+        </View>
+      </InputAccessoryView>
+    )}
+  </>
   );
 }
 
 const styles = StyleSheet.create({
+  accessoryContainer: {
+    alignItems: 'flex-end',
+    backgroundColor: '#f0f0f0',
+    borderTopColor: '#ccc',
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   backToLoginContainer: {
     alignItems: 'center',
   },
@@ -220,6 +276,16 @@ const styles = StyleSheet.create({
     color: '#008000',
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
+  },
+  doneButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  doneButtonText: {
+    color: '#008000',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
+    fontWeight: '600',
   },
   errorInput: {
     borderColor: 'red',
@@ -268,10 +334,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 20,
+  },
+  scrollContentCentered: {
     justifyContent: 'center',
-    minHeight: '100%',
-    padding: 20,
-    paddingBottom: 40,
   },
   signUpButton: {
     backgroundColor: '#008000',
