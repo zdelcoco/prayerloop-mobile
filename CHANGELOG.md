@@ -12,6 +12,7 @@ and this project uses a date-based versioning scheme: `[year].[month].[sequence]
 
 - Fixed token handling on app startup
 - Fixed logout user on 401 response from backend
+- Fixed OTA updates configuration
 
 ## [2025.11.4] - 2025-11-26
 

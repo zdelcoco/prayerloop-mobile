@@ -15,7 +15,11 @@ const config: ExpoConfig = {
     resizeMode: "cover",
     backgroundColor: "#90C590"
   },
+  runtimeVersion: {
+    policy: "appVersion"  // OTA updates tied to app version
+  },
   updates: {
+    url: "https://u.expo.dev/fc5504a0-2a5e-4124-a0b0-1a91636e0ff6",
     fallbackToCacheTimeout: 0
   },
   assetBundlePatterns: [
