@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import apiClient from './apiClient';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface JoinGroupRequest {
   inviteCode: string;
@@ -26,25 +27,18 @@ export const joinGroup = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/groups/${groupId}/join`;
     const requestData: JoinGroupRequest = {
       inviteCode: inviteCode.trim(),
     };
 
-    const response = await axios.post(url, requestData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
+    const response = await apiClient.post(`/groups/${groupId}/join`, requestData);
 
     console.log('joinGroup response:', response.data);
 
     return { success: true, data: response.data };
   } catch (error: unknown) {
     console.error('joinGroup error:', error);
-    
+
     // Handle specific 403 invalid invite code error
     if (axios.isAxiosError(error) && error.response?.status === 403) {
       return {
@@ -55,7 +49,7 @@ export const joinGroup = async (
         },
       };
     }
-    
+
     return defaultNetworkCatch(error);
   }
 };

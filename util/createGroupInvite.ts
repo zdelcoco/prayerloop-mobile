@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface CreateGroupInviteResponse {
   inviteCode: string;
@@ -22,13 +22,7 @@ export const createGroupInvite = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/groups/${groupId}/invite`;
-    const response = await axios.post(url, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      timeout: 10000, // 10 second timeout
-    });
+    const response = await apiClient.post(`/groups/${groupId}/invite`, {});
 
     console.log('createGroupInvite response: ', response.data);
 

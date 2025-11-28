@@ -1,7 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 import {
-  BASE_API_URL,
   CreatePrayerRequest,
   CreatePrayerResponse,
   defaultNetworkCatch,
@@ -24,12 +23,7 @@ export const createGroupPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/groups/${groupProfileId}/prayers`;
-    const response = await axios.post(url, prayerData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });    
+    const response = await apiClient.post(`/groups/${groupProfileId}/prayers`, prayerData);
 
     const prayerResponse: CreatePrayerResponse = {
       message: response.data.message,

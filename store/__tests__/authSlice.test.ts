@@ -6,6 +6,7 @@ import authReducer, {
   signupSuccess,
   signupFailure,
   logoutSuccess,
+  tokenValidationComplete,
   updateUserProfileSuccess,
   login,
   validateToken,
@@ -28,6 +29,7 @@ describe('authSlice', () => {
     user: null,
     token: null,
     isAuthenticated: false,
+    isTokenValidated: false,
     status: 'idle' as const,
     error: null,
   };
@@ -169,6 +171,7 @@ describe('authSlice', () => {
         user: mockUser,
         token: 'mock-jwt-token',
         isAuthenticated: true,
+        isTokenValidated: true,
         status: 'succeeded' as const,
         error: null,
       };
@@ -199,6 +202,7 @@ describe('authSlice', () => {
         ...initialState,
         user: mockUser,
         isAuthenticated: true,
+        isTokenValidated: true,
         token: 'mock-jwt-token',
       };
 
@@ -225,11 +229,12 @@ describe('authSlice', () => {
       groupUsers: {},
     });
 
-    it('should do nothing if token is valid', async () => {
+    it('should dispatch tokenValidationComplete if token is valid', async () => {
       const dispatch = jest.fn();
       const getState = jest.fn(() => createMockState({
         token: 'valid-token',
         isAuthenticated: true,
+        isTokenValidated: false,
         user: null,
         status: 'idle' as const,
         error: null,
@@ -242,8 +247,8 @@ describe('authSlice', () => {
 
       await validateToken()(dispatch, getState, undefined);
 
-      // Should not dispatch anything if token is valid
-      expect(dispatch).not.toHaveBeenCalled();
+      // Should dispatch tokenValidationComplete when token is valid
+      expect(dispatch).toHaveBeenCalledWith(tokenValidationComplete());
     });
 
     it('should attempt auto-login if token is expired and credentials exist', async () => {
@@ -251,6 +256,7 @@ describe('authSlice', () => {
       const getState = jest.fn(() => createMockState({
         token: 'expired-token',
         isAuthenticated: true,
+        isTokenValidated: false,
         user: null,
         status: 'idle' as const,
         error: null,
@@ -287,6 +293,7 @@ describe('authSlice', () => {
       const getState = jest.fn(() => createMockState({
         token: 'expired-token',
         isAuthenticated: true,
+        isTokenValidated: false,
         user: null,
         status: 'idle' as const,
         error: null,
@@ -311,6 +318,7 @@ describe('authSlice', () => {
       const getState = jest.fn(() => createMockState({
         token: null,
         isAuthenticated: false,
+        isTokenValidated: false,
         user: null,
         status: 'idle' as const,
         error: null,
@@ -362,6 +370,7 @@ describe('authSlice', () => {
         user: mockUser,
         token: 'mock-jwt-token',
         isAuthenticated: true,
+        isTokenValidated: true,
         status: 'succeeded' as const,
         error: null,
       };

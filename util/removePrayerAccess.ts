@@ -5,8 +5,8 @@
   FOR NOW THIS WILL RESULT IN ORPHANED PRAYER RECORDS
 
 */
-import axios from 'axios';
-import { BASE_API_URL, DefaultAPIResponse, defaultNetworkCatch, Result } from './shared.types';
+import apiClient from './apiClient';
+import { DefaultAPIResponse, defaultNetworkCatch, Result } from './shared.types';
 
 export const removePrayerAccess = async (
   token: string,
@@ -24,12 +24,7 @@ export const removePrayerAccess = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/prayers/${prayerId}/access/${prayerAccessId}`;
-    const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.delete(`/prayers/${prayerId}/access/${prayerAccessId}`);
 
     const removePrayerResponse: DefaultAPIResponse = {
       message: response.data.message,

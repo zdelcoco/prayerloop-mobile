@@ -1,12 +1,12 @@
 /*
-  
+
   TODO: DEPRECATE THIS
 
   HANDLE ON BACKEND -- IF LAST OF PRAYER_ACCESS, THEN DELETE THE PRAYER ENTIRELY
 
 */
-import axios from 'axios';
-import { BASE_API_URL, DefaultAPIResponse, defaultNetworkCatch, Result} from './shared.types';
+import apiClient from './apiClient';
+import { DefaultAPIResponse, defaultNetworkCatch, Result} from './shared.types';
 
 export const deletePrayer = async (
   token: string,
@@ -23,12 +23,7 @@ export const deletePrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/prayers/${prayerId}`;
-    const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.delete(`/prayers/${prayerId}`);
 
     const deletePrayerResponse: DefaultAPIResponse = {
       message: response.data.message,

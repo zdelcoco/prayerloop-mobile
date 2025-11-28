@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses a date-based versioning scheme: `[year].[month].[sequence]`
 (e.g., 2025.11.3 is the third release in November 2025).
 
+## [2025.11.5] - 2025-11-28
+
+### Fixed
+
+- Fixed token handling on app startup
+- Fixed logout user on 401 response from backend
+
 ## [2025.11.4] - 2025-11-26
 
 ### Added

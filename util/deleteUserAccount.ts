@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import apiClient from './apiClient';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface DeleteAccountResponse {
   message: string;
@@ -20,12 +20,7 @@ export const deleteUserAccount = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/account`;
-    const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.delete(`/users/${userProfileId}/account`);
 
     const deleteResponse: DeleteAccountResponse = {
       message: response.data.message,

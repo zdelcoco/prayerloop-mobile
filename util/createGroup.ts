@@ -1,8 +1,7 @@
 import axios, { AxiosError } from 'axios';
+import apiClient from './apiClient';
 
 import {
-  BASE_API_URL,
-  defaultNetworkCatch,
   Group,
   Result,
 } from './shared.types';
@@ -24,14 +23,8 @@ export const createGroup = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/groups`;
-    console.log('createGroupPrayer url: ', url);
-    console.log('createGroupPrayer request: ', createGroupRequest);
-    const response = await axios.post(url, createGroupRequest, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });    
+    console.log('createGroup request: ', createGroupRequest);
+    const response = await apiClient.post('/groups', createGroupRequest);
 
     const groupResponse: Group = {
       groupId: response.data.groupId,
@@ -44,7 +37,7 @@ export const createGroup = async (
       updatedBy: response.data.updatedBy,
       deleted: response.data.deleted
     };
-    console.log('createGroupPrayer response: ', groupResponse);
+    console.log('createGroup response: ', groupResponse);
 
     return { success: true, data: groupResponse };
   } catch (error) {
