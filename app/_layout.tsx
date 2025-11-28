@@ -9,18 +9,24 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import store, { persistor } from '../store/store';
 import { useAppDispatch } from '../store/hooks';
-import { validateToken } from '../store/authSlice';
+import { validateToken, logoutSuccess } from '../store/authSlice';
+import { clearUserPrayers } from '../store/userPrayersSlice';
+import { clearUserGroups } from '../store/groupsSlice';
+import { setupApiClient } from '../util/apiClient';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import SplashView from '../components/ui/SplashView';
 import InstrumentSansRegular from '../assets/fonts/InstrumentSans-Regular.ttf';
 import InstrumentSansBold from '../assets/fonts/InstrumentSans-Bold.ttf';
 import InstrumentSansSemiBold from '../assets/fonts/InstrumentSans-SemiBold.ttf';
 
+// Setup API client with store and actions for 401 handling
+setupApiClient(store, logoutSuccess, clearUserPrayers, clearUserGroups);
+
 // Keep splash visible until we're ready
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
-  const isAuthenticated = useSelector((state: any) => state.auth.isAuthenticated);
+  const { isAuthenticated, isTokenValidated } = useSelector((state: any) => state.auth);
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -32,8 +38,13 @@ function RootLayoutNav() {
     dispatch(validateToken());
   }, []);
 
-  // Navigate based on auth state
+  // Navigate based on auth state - only after token validation completes
   useEffect(() => {
+    // Wait for token validation to complete before navigating
+    if (!isTokenValidated) {
+      return;
+    }
+
     const handleNavigation = async () => {
       if (!isAuthenticated) {
         router.replace('/(auth)/login');
@@ -65,7 +76,7 @@ function RootLayoutNav() {
     };
 
     handleNavigation();
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isTokenValidated, router]);
 
   return (
     <Stack

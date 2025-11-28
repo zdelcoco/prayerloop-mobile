@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import apiClient from './apiClient';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface AddPrayerAccessRequest {
   accessType: 'group' | 'user';
@@ -28,19 +28,12 @@ export const addPrayerAccess = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/prayers/${prayerId}/access`;
     const requestData: AddPrayerAccessRequest = {
       accessType,
       accessTypeId,
     };
 
-    const response = await axios.post(url, requestData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 10000,
-    });
+    const response = await apiClient.post(`/prayers/${prayerId}/access`, requestData);
 
     console.log('addPrayerAccess response:', response.data);
 

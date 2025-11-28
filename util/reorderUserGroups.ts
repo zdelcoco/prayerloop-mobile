@@ -1,7 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 import {
-  BASE_API_URL,
   DefaultAPIResponse,
   defaultNetworkCatch,
   Result,
@@ -30,12 +29,7 @@ export const reorderUserGroups = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/groups/reorder`;
-    const response = await axios.patch(url, reorderData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.patch(`/users/${userProfileId}/groups/reorder`, reorderData);
 
     console.log('reorderUserGroups response: ', response.data);
 

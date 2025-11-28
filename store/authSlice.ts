@@ -20,6 +20,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isTokenValidated: boolean; // Tracks whether token validation has completed
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
@@ -28,6 +29,7 @@ const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
+  isTokenValidated: false,
   status: 'idle',
   error: null,
 };
@@ -42,6 +44,7 @@ const authSlice = createSlice({
     loginSuccess: (state, action: PayloadAction<LoginResponse>) => {
       state.status = 'succeeded';
       state.isAuthenticated = true;
+      state.isTokenValidated = true; // Fresh login = valid token
       state.token = action.payload.token;
       state.user = action.payload.user;
     },
@@ -62,8 +65,13 @@ const authSlice = createSlice({
     },
     logoutSuccess: (state) => {
       state.user = null;
+      state.token = null;
       state.status = 'idle';
       state.isAuthenticated = false;
+      state.isTokenValidated = false; // Reset for next login cycle
+    },
+    tokenValidationComplete: (state) => {
+      state.isTokenValidated = true;
     },
     updateUserProfileSuccess: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
@@ -71,7 +79,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, signupStart, signupSuccess, signupFailure, logoutSuccess, updateUserProfileSuccess } =
+export const { loginStart, loginSuccess, loginFailure, signupStart, signupSuccess, signupFailure, logoutSuccess, tokenValidationComplete, updateUserProfileSuccess } =
   authSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -123,6 +131,7 @@ export const validateToken = (): AppThunk => async (dispatch, getState) => {
   if (!token) {
     // No token, try auto-login with saved credentials
     await attemptAutoLogin(dispatch);
+    dispatch(tokenValidationComplete());
     return;
   }
 
@@ -136,11 +145,13 @@ export const validateToken = (): AppThunk => async (dispatch, getState) => {
       console.log('Token expired, attempting auto-login');
       await attemptAutoLogin(dispatch);
     }
-    // Token is valid, user stays logged in
+    // Token is valid (or auto-login attempted), mark validation complete
+    dispatch(tokenValidationComplete());
   } catch (error) {
     // Invalid token format, attempt auto-login
     console.error('Invalid token, attempting auto-login:', error);
     await attemptAutoLogin(dispatch);
+    dispatch(tokenValidationComplete());
   }
 };
 

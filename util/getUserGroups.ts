@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-import { BASE_API_URL, defaultNetworkCatch, Group, Result } from './shared.types';
+import { defaultNetworkCatch, Group, Result } from './shared.types';
 
 export const getUserGroups = async (
   token: string,
@@ -17,12 +17,7 @@ export const getUserGroups = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/groups`;
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.get(`/users/${userProfileId}/groups`);
 
     const groupsResponse: Group[] = response.data;
     console.log('getUserGroups response: ', groupsResponse);
