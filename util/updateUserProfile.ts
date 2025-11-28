@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-import { BASE_API_URL, User, defaultNetworkCatch, Result } from './shared.types';
+import { User, defaultNetworkCatch, Result } from './shared.types';
 
 export interface UpdateUserProfileRequest {
   username?: string;
@@ -31,12 +31,7 @@ export const updateUserProfile = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}`;
-    const response = await axios.patch(url, updateData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.patch(`/users/${userProfileId}`, updateData);
 
     const updateResponse: UpdateUserProfileResponse = {
       message: response.data.message,

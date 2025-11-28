@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface LeaveGroupResponse {
   message: string;
@@ -22,13 +22,7 @@ export const leaveGroup = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/groups/${groupId}/users/${userId}`;
-    const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      timeout: 10000, // 10 second timeout
-    });
+    const response = await apiClient.delete(`/groups/${groupId}/users/${userId}`);
 
     console.log('leaveGroup response: ', response.data);
 

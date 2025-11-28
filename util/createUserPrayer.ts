@@ -1,7 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 import {
-  BASE_API_URL,
   CreatePrayerRequest,
   CreatePrayerResponse,
   defaultNetworkCatch,
@@ -24,12 +23,7 @@ export const createUserPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/prayers`;
-    const response = await axios.post(url, prayerData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.post(`/users/${userProfileId}/prayers`, prayerData);
 
     const prayerResponse: CreatePrayerResponse = {
       message: response.data.message,

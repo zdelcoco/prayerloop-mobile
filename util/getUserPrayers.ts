@@ -1,7 +1,7 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 import { GetUserPrayersResponse } from './getUserPrayers.types';
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export const getUserPrayers = async (
   token: string,
@@ -18,12 +18,7 @@ export const getUserPrayers = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/prayers`;
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.get(`/users/${userProfileId}/prayers`);
 
     const prayersResponse: GetUserPrayersResponse = {
       message: response.data.message,

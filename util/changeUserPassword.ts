@@ -1,6 +1,6 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
-import { BASE_API_URL, defaultNetworkCatch, Result } from './shared.types';
+import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface ChangePasswordRequest {
   oldPassword: string;
@@ -27,12 +27,7 @@ export const changeUserPassword = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/users/${userProfileId}/password`;
-    const response = await axios.patch(url, passwordData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.patch(`/users/${userProfileId}/password`, passwordData);
 
     const changeResponse: ChangePasswordResponse = {
       message: response.data.message,

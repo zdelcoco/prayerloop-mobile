@@ -1,7 +1,7 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 import { CreateUserPrayerRequest } from './createUserPrayer.types';
-import { BASE_API_URL, DefaultAPIResponse, defaultNetworkCatch, Result } from './shared.types';
+import { DefaultAPIResponse, defaultNetworkCatch, Result } from './shared.types';
 
 export const updateUserPrayer = async (
   token: string,
@@ -19,12 +19,7 @@ export const updateUserPrayer = async (
   }
 
   try {
-    const url = `${BASE_API_URL}/prayers/${prayerId}`;
-    const response = await axios.put(url, prayerData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await apiClient.put(`/prayers/${prayerId}`, prayerData);
 
     const prayerResponse: DefaultAPIResponse = {
       message: response.data.message,
