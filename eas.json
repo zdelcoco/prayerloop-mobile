@@ -36,6 +36,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://dev.prayerloop.io"
       }
