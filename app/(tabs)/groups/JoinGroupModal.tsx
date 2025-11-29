@@ -104,7 +104,7 @@ export default function JoinGroupModal() {
 
   return (
     <LinearGradient
-      colors={['#90c590', '#ffffff']}
+      colors={['#90C590', '#F6EDD9']}
       style={StyleSheet.absoluteFillObject}
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}

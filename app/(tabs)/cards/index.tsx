@@ -29,7 +29,6 @@ import { RootState } from '@/store/store';
 
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
-import AddButton from '@/components/ui/AddButton';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 import SearchBar from '@/components/Search/SearchBar';
 import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
@@ -76,15 +75,25 @@ export default function Cards() {
 
   useFocusEffect(fetchData);
 
+  // Register tab bar add button handler when this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      global.tabBarAddVisible = true;
+      global.tabBarAddHandler = () => {
+        navigation.navigate('PrayerModal', { mode: 'add' });
+      };
+      return () => {
+        // Cleanup when screen loses focus
+        global.tabBarAddHandler = null;
+      };
+    }, [navigation])
+  );
+
   // Expose functions to global for tab layout to access
   useLayoutEffect(() => {
     (global as any).cardsSetPrayerSessionVisible = setPrayerSessionVisible;
     (global as any).cardsToggleSearch = () => setSearchBarVisible((prev) => !prev);
   }, [setPrayerSessionVisible]);
-
-  const onAddPressHandler = () => {
-    navigation.navigate('PrayerModal', { mode: 'add' });
-  };
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
@@ -133,7 +142,7 @@ export default function Cards() {
 
   return (
     <LinearGradient
-      colors={['#90c590', '#ffffff']}
+      colors={['#90C590', '#F6EDD9']}
       style={StyleSheet.absoluteFillObject}
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
@@ -202,7 +211,6 @@ export default function Cards() {
           />
         )}
       </View>
-      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }

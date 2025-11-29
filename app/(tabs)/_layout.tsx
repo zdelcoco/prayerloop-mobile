@@ -2,15 +2,25 @@ import { Tabs } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions, StyleSheet, View, Text, Animated, Pressable } from 'react-native';
+import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+// Global add button handler - screens register their add action here
+// This allows nested screens (like GroupPrayers) to override the default behavior
+declare global {
+  // eslint-disable-next-line no-var
+  var tabBarAddHandler: (() => void) | null;
+  // eslint-disable-next-line no-var
+  var tabBarAddVisible: boolean;
+}
 
-import Colors from '@/constants/Colors';
+// Initialize globals
+global.tabBarAddHandler = null;
+global.tabBarAddVisible = true;
 
 // Tab configuration for icons
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
@@ -19,11 +29,18 @@ const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
   groups: { icon: 'users', label: 'Groups' },
 };
 
+// Muted green for inactive states
+const MUTED_GREEN = '#ccf0ccff';
+// Deep green for active states
+const ACTIVE_GREEN = '#2E7D32';
+// Dark color for inactive icons
+const DARK_ICON = '#2d3e31';
+
 // Animated circular tab button
 function FloatingTabButton({
   focused,
   icon,
-  label,
+  label: _label,
   onPress
 }: {
   focused: boolean;
@@ -31,23 +48,15 @@ function FloatingTabButton({
   label: string;
   onPress: () => void;
 }) {
-  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.85)).current;
-  const bgOpacity = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.9)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: focused ? 1 : 0.85,
-        useNativeDriver: true,
-        tension: 100,
-        friction: 10,
-      }),
-      Animated.timing(bgOpacity, {
-        toValue: focused ? 1 : 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.spring(scaleAnim, {
+      toValue: focused ? 1 : 0.9,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
   }, [focused]);
 
   return (
@@ -57,26 +66,87 @@ function FloatingTabButton({
           styles.floatingTabCircle,
           {
             transform: [{ scale: scaleAnim }],
+            backgroundColor: focused ? ACTIVE_GREEN : MUTED_GREEN,
           },
         ]}
       >
-        {/* Active background */}
-        <Animated.View
-          style={[
-            styles.floatingTabActiveBackground,
-            { opacity: bgOpacity },
-          ]}
-        />
         <FontAwesome
           name={icon as any}
           size={22}
-          color={focused ? '#FFFFFF' : '#555555'}
+          color={focused ? '#FFFFFF' : DARK_ICON}
           style={styles.floatingTabIcon}
         />
       </Animated.View>
-      {/* <Text style={[styles.floatingTabLabel, focused && styles.floatingTabLabelActive]}>
-        {label}
-      </Text> */}
+    </Pressable>
+  );
+}
+
+// Floating add button for tab bar
+function FloatingAddButton({ onPress }: { onPress: () => void }) {
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.8,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 10,
+    }).start();
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.floatingTabButton}
+    >
+      <Animated.View
+        style={[
+          styles.floatingAddCircle,
+          { transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        <FontAwesome name="plus" size={22} color={DARK_ICON} style={styles.floatingTabIcon} />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// Header icon button with circular outline (matches tab button size)
+function HeaderIconButton({
+  onPress,
+  iconName,
+  iconType = 'fontawesome',
+  size = 20,
+}: {
+  onPress: () => void;
+  iconName: string;
+  iconType?: 'fontawesome' | 'ionicons';
+  size?: number;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.headerIconButton,
+        pressed && styles.headerIconButtonPressed,
+      ]}
+    >
+      {iconType === 'ionicons' ? (
+        <Ionicons name={iconName as any} size={size} color={DARK_ICON} />
+      ) : (
+        <FontAwesome name={iconName as any} size={size} color={DARK_ICON} />
+      )}
     </Pressable>
   );
 }
@@ -84,10 +154,28 @@ function FloatingTabButton({
 // Custom floating tab bar component
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const [addButtonVisible, setAddButtonVisible] = useState(global.tabBarAddVisible);
+
+  // Poll for visibility changes (screens will update global.tabBarAddVisible)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (addButtonVisible !== global.tabBarAddVisible) {
+        setAddButtonVisible(global.tabBarAddVisible);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [addButtonVisible]);
+
+  // Handle add button press - calls the registered handler
+  const handleAddPress = useCallback(() => {
+    if (global.tabBarAddHandler) {
+      global.tabBarAddHandler();
+    }
+  }, []);
 
   return (
     <View style={[styles.floatingTabBarContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
-      <BlurView intensity={12} tint="regular" style={styles.floatingTabBarBlur}>
+      <BlurView intensity={8} tint="regular" style={styles.floatingTabBarBlur}>
         <View style={styles.floatingTabBarInner}>
           {state.routes.map((route, index) => {
             const isFocused = state.index === index;
@@ -115,6 +203,8 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               />
             );
           })}
+          {/* Add button on the right side - only show if visible */}
+          {addButtonVisible && <FloatingAddButton onPress={handleAddPress} />}
         </View>
       </BlurView>
     </View>
@@ -132,7 +222,7 @@ export default function TabsLayout() {
 
   return (
     <LinearGradient
-      colors={['#90c590', '#ffffff']}
+      colors={['#90C590', '#F6EDD9']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
@@ -142,9 +232,13 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: true,
           headerTransparent: true,
+          headerStyle: {
+            height: 120, // Increased to fit larger icon buttons
+            marginBottom: 40,
+          },
           headerBackground: () => (
             <LinearGradient
-              colors={['#90c590', '#ffffff']}
+              colors={['#90C590', '#F6EDD9']}
               style={{ flex: 1 }}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: SCREEN_HEIGHT }}
@@ -165,21 +259,17 @@ export default function TabsLayout() {
             title: 'Prayer Cards',
             headerRight: () => (
               <View style={styles.headerRightContainer}>
-                <Pressable
+                <HeaderIconButton
                   onPress={() => {
-                    // Call the global search toggle function
                     if ((global as any).cardsToggleSearch) {
                       (global as any).cardsToggleSearch();
                     }
                   }}
-                  style={({ pressed }) => [
-                    styles.searchButton,
-                    pressed && styles.searchButtonPressed,
-                  ]}
-                >
-                  <Ionicons name="search" size={ms(20)} color="#000" />
-                </Pressable>
-                <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={ms(20)} />
+                  iconName="search"
+                  iconType="ionicons"
+                  size={20}
+                />
+                <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={20} />
               </View>
             ),
           }}
@@ -189,7 +279,9 @@ export default function TabsLayout() {
           options={{
             title: 'Home',
             headerRight: () => (
-              <ContextMenuButton type="home" iconSize={ms(20)} />
+              <View style={styles.headerRightContainer}>
+                <ContextMenuButton type="home" iconSize={20} />
+              </View>
             ),
           }}
         />
@@ -198,7 +290,9 @@ export default function TabsLayout() {
           options={{
             title: 'Groups',
             headerRight: () => (
-              <ContextMenuButton type="groups" iconSize={ms(20)} />
+              <View style={styles.headerRightContainer}>
+                <ContextMenuButton type="groups" iconSize={20} />
+              </View>
             ),
           }}
         />
@@ -218,15 +312,18 @@ const styles = StyleSheet.create({
     gap: 8,
     marginRight: 8,
   },
-  searchButton: {
+  headerIconButton: {
     alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
     justifyContent: 'center',
-    width: 40,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: '#2d3e31',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
-  searchButtonPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  headerIconButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
   },
   // Floating tab bar styles
   floatingTabBarContainer: {
@@ -235,52 +332,48 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: 20,
   },
   floatingTabBarBlur: {
     borderRadius: 60,
     overflow: 'hidden',
     borderColor: '#2d3e31ff',
     borderWidth: 1,
-    // Shadow for floating effect
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 8,
   },
   floatingTabBarInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    gap: 16,
+    paddingVertical: 8,
+    paddingRight: 4,
+    paddingLeft: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   floatingTabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 4,
   },
   floatingTabCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderColor: '#2d3e31ff',
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-  },
-  floatingTabActiveBackground: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 25,
-    backgroundColor: '#2E7D32', // Deep green for active state
   },
   floatingTabIcon: {
     zIndex: 1,
+  },
+  floatingAddCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderColor: '#2d3e31ff',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ccf0ccff', // Muted green for add button
   },
   // floatingTabLabel: {
   //   fontSize: 11,
