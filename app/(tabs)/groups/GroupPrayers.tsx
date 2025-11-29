@@ -34,7 +34,6 @@ import { Group, User } from '@/util/shared.types';
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import { Prayer } from '@/util/shared.types';
-import AddButton from '@/components/ui/AddButton';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from 'expo-router';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
@@ -145,7 +144,7 @@ export default function GroupPrayers() {
                 pressed && styles.searchButtonPressed,
               ]}
             >
-              <Ionicons name="search" size={24} color="#000" />
+              <Ionicons name="search" size={20} color="#2d3e31" />
             </Pressable>
             <ContextMenuButton
               type='groupDetail'
@@ -153,7 +152,7 @@ export default function GroupPrayers() {
               groupName={group.groupName}
               groupCreatorId={group.createdBy}
               prayerCount={sanitizedPrayers?.length || 0}
-              iconSize={24}
+              iconSize={20}
             />
           </View>
         ),
@@ -165,7 +164,11 @@ export default function GroupPrayers() {
         parentNavigation.setOptions({
           headerTitle: 'Groups',
           headerLeft: null,
-          headerRight: () => <ContextMenuButton type='groups' iconSize={24} />,
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <ContextMenuButton type='groups' iconSize={20} />
+            </View>
+          ),
         });
       }
     };
@@ -203,6 +206,24 @@ export default function GroupPrayers() {
     }, [fetchData])
   );
 
+  // Register tab bar add button handler when this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      global.tabBarAddVisible = true;
+      global.tabBarAddHandler = () => {
+        navigation.navigate('PrayerModal', {
+          mode: 'add',
+          groupProfileId: group.groupId,
+          groupName: group.groupName,
+        });
+      };
+      return () => {
+        // Cleanup when screen loses focus
+        global.tabBarAddHandler = null;
+      };
+    }, [navigation, group.groupId, group.groupName])
+  );
+
   // Add this to window for context menu to access
   useLayoutEffect(() => {
     (global as any).groupSetPrayerSessionVisible = setPrayerSessionVisible;
@@ -232,18 +253,9 @@ export default function GroupPrayers() {
 
   const displayedPrayers = filteredPrayers || sanitizedPrayers;
 
-  const onAddPressHandler = () => {
-    console.log('Add button pressed');
-    navigation.navigate('PrayerModal', {
-      mode: 'add',
-      groupProfileId: group.groupId,
-      groupName: group.groupName,
-    });
-  };
-
   return (
     <LinearGradient
-      colors={['#90c590', '#ffffff']}
+      colors={['#90C590', '#F6EDD9']}
       style={StyleSheet.absoluteFillObject}
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
@@ -316,7 +328,6 @@ export default function GroupPrayers() {
           />
         )}
       </View>
-      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }
@@ -366,13 +377,16 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     alignItems: 'center',
-    borderRadius: 20,
-    height: 40,
     justifyContent: 'center',
-    width: 40,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    borderColor: '#2d3e31',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
   },
   searchButtonPressed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
   },
   text: {
     color: '#333',
