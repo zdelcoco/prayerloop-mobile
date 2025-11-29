@@ -6,23 +6,43 @@ import { Dimensions, StyleSheet, View, Text, Animated, Pressable } from 'react-n
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import { useEffect, useRef } from 'react';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import Colors from '@/constants/Colors';
 
-// Custom tab button with animated bubble effect
-function TabButton({ focused, icon, label }: { focused: boolean; icon: string; label: string }) {
-  const fadeAnim = useRef(new Animated.Value(focused ? 1 : 0)).current;
-  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.9)).current;
+// Tab configuration for icons
+const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
+  cards: { icon: 'vcard', label: 'Cards' },
+  userProfile: { icon: 'home', label: 'Home' },
+  groups: { icon: 'users', label: 'Groups' },
+};
+
+// Animated circular tab button
+function FloatingTabButton({
+  focused,
+  icon,
+  label,
+  onPress
+}: {
+  focused: boolean;
+  icon: string;
+  label: string;
+  onPress: () => void;
+}) {
+  const scaleAnim = useRef(new Animated.Value(focused ? 1 : 0.85)).current;
+  const bgOpacity = useRef(new Animated.Value(focused ? 1 : 0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.spring(scaleAnim, {
-        toValue: focused ? 1 : 0.9,
+        toValue: focused ? 1 : 0.85,
         useNativeDriver: true,
-        tension: 80,
-        friction: 8,
+        tension: 100,
+        friction: 10,
       }),
-      Animated.timing(fadeAnim, {
+      Animated.timing(bgOpacity, {
         toValue: focused ? 1 : 0,
         duration: 200,
         useNativeDriver: true,
@@ -31,27 +51,72 @@ function TabButton({ focused, icon, label }: { focused: boolean; icon: string; l
   }, [focused]);
 
   return (
-    <View style={styles.tabButton}>
-      {/* Animated background pill */}
+    <Pressable onPress={onPress} style={styles.floatingTabButton}>
       <Animated.View
         style={[
-          styles.tabButtonBackground,
+          styles.floatingTabCircle,
           {
-            opacity: fadeAnim,
             transform: [{ scale: scaleAnim }],
-          }
+          },
         ]}
-      />
-      {/* Icon and label on top */}
-      <FontAwesome
-        name={icon as any}
-        size={22}
-        color={focused ? '#E8F5E8' : '#666'}
-        style={styles.tabIcon}
-      />
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+      >
+        {/* Active background */}
+        <Animated.View
+          style={[
+            styles.floatingTabActiveBackground,
+            { opacity: bgOpacity },
+          ]}
+        />
+        <FontAwesome
+          name={icon as any}
+          size={22}
+          color={focused ? '#FFFFFF' : '#555555'}
+          style={styles.floatingTabIcon}
+        />
+      </Animated.View>
+      {/* <Text style={[styles.floatingTabLabel, focused && styles.floatingTabLabelActive]}>
         {label}
-      </Text>
+      </Text> */}
+    </Pressable>
+  );
+}
+
+// Custom floating tab bar component
+function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.floatingTabBarContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+      <BlurView intensity={12} tint="regular" style={styles.floatingTabBarBlur}>
+        <View style={styles.floatingTabBarInner}>
+          {state.routes.map((route, index) => {
+            const isFocused = state.index === index;
+            const config = TAB_CONFIG[route.name] || { icon: 'circle', label: route.name };
+
+            const onPress = () => {
+              const event = navigation.emit({
+                type: 'tabPress',
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(route.name);
+              }
+            };
+
+            return (
+              <FloatingTabButton
+                key={route.key}
+                focused={isFocused}
+                icon={config.icon}
+                label={config.label}
+                onPress={onPress}
+              />
+            );
+          })}
+        </View>
+      </BlurView>
     </View>
   );
 }
@@ -73,6 +138,7 @@ export default function TabsLayout() {
       end={{ x: 0, y: 1 }}
     >
       <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           headerShown: true,
           headerTransparent: true,
@@ -89,28 +155,14 @@ export default function TabsLayout() {
             fontSize: ms(18),
             fontFamily: 'InstrumentSans-Bold',
           },
-          tabBarStyle: {
-            backgroundColor: '#ffffff',
-            borderTopWidth: 1,
-            borderTopColor: '#e0e0e0',
-            height: 90,
-            paddingBottom: 10,
-            paddingTop: 10,
-          },
-          tabBarIconStyle: {
-            width: 80,
-            height: 40,
-          },
-          tabBarShowLabel: false, // Hide default labels since we're using custom component
+          // Hide default tab bar since we're using custom
+          tabBarStyle: { display: 'none' },
         }}
       >
         <Tabs.Screen
           name='cards'
           options={{
             title: 'Prayer Cards',
-            tabBarIcon: ({ focused }) => (
-              <TabButton focused={focused} icon="vcard" label="Cards" />
-            ),
             headerRight: () => (
               <View style={styles.headerRightContainer}>
                 <Pressable
@@ -136,9 +188,6 @@ export default function TabsLayout() {
           name='userProfile'
           options={{
             title: 'Home',
-            tabBarIcon: ({ focused }) => (
-              <TabButton focused={focused} icon="home" label="Home" />
-            ),
             headerRight: () => (
               <ContextMenuButton type="home" iconSize={ms(20)} />
             ),
@@ -148,9 +197,6 @@ export default function TabsLayout() {
           name='groups'
           options={{
             title: 'Groups',
-            tabBarIcon: ({ focused }) => (
-              <TabButton focused={focused} icon="users" label="Groups" />
-            ),
             headerRight: () => (
               <ContextMenuButton type="groups" iconSize={ms(20)} />
             ),
@@ -182,35 +228,68 @@ const styles = StyleSheet.create({
   searchButtonPressed: {
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
-  tabButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 75,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    position: 'relative',
-  },
-  tabButtonBackground: {
-    backgroundColor: '#008000',
-    borderRadius: 24,
+  // Floating tab bar styles
+  floatingTabBarContainer: {
+    position: 'absolute',
     bottom: 0,
     left: 0,
-    position: 'absolute',
     right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  floatingTabBarBlur: {
+    borderRadius: 60,
+    overflow: 'hidden',
+    borderColor: '#2d3e31ff',
+    borderWidth: 1,
+    // Shadow for floating effect
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  floatingTabBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    gap: 16,
+  },
+  floatingTabButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  floatingTabCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  floatingTabActiveBackground: {
+    position: 'absolute',
+    left: 0,
     top: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 25,
+    backgroundColor: '#2E7D32', // Deep green for active state
   },
-  tabIcon: {
+  floatingTabIcon: {
     zIndex: 1,
   },
-  tabLabel: {
-    fontSize: 14,
-    marginTop: 2,
-    color: '#666', // Darker gray for better readability
-    fontWeight: '500',
-    zIndex: 1,
-  },
-  tabLabelActive: {
-    color: '#E8F5E8', // Green for active state
-    fontWeight: '600',
-  },
+  // floatingTabLabel: {
+  //   fontSize: 11,
+  //   marginTop: 4,
+  //   color: '#666666',
+  //   fontWeight: '500',
+  // },
+  // floatingTabLabelActive: {
+  //   color: '#2E7D32',
+  //   fontWeight: '600',
+  // },
 });
