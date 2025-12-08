@@ -239,7 +239,6 @@ export default function TabsLayout() {
           headerTransparent: true,
           headerStyle: {
             height: 120, // Increased to fit larger icon buttons
-            marginBottom: 40,
           },
           headerBackground: () => (
             <LinearGradient

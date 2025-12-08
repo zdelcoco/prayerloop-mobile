@@ -377,13 +377,17 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-    width: 50,
-    height: 50,
+    backgroundColor: '#ccf0ccff', // Muted green - matches header icons
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 25,
-    borderWidth: 1.5,
-    borderColor: '#2d3e31',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 50,
   },
   searchButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
