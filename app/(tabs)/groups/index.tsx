@@ -183,6 +183,7 @@ export default function Groups() {
           keyExtractor={(item) => item.groupId.toString()}
           renderItem={renderGroupItem}
           onDragEnd={({ data }) => handleDragEnd(data)}
+          contentContainerStyle={styles.listContainer}
           ListEmptyComponent={() =>
             status !== 'loading' ? (
               <View style={styles.emptyStateContainer}>
@@ -205,6 +206,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  listContainer: {
+    paddingBottom: 120, // Extra padding for floating tab bar
   },
   emptyStateContainer: {
     alignItems: 'center',
