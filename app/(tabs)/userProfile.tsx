@@ -16,7 +16,7 @@ import TestNotifications from '@/components/TestNotifications';
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 120, // Extra padding for floating tab bar
   },
   versionContainer: {
     alignItems: 'center',
