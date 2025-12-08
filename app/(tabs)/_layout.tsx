@@ -5,7 +5,7 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
-import { useEffect, useRef, useState, useCallback, act } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -360,12 +360,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
-  tabBarDivider: {
-    backgroundColor: ACTIVE_GREEN,
-    height: 36,
-    marginHorizontal: 8,
-    width: 2,
-  },
   floatingTabCircle: {
     alignItems: 'center',
     borderColor: 'rgba(255, 255, 255, 0.5)',
@@ -404,5 +398,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginRight: 8,
+  },
+  tabBarDivider: {
+    backgroundColor: ACTIVE_GREEN,
+    height: 36,
+    marginHorizontal: 8,
+    width: 2,
   },
 });
