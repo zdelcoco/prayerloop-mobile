@@ -306,47 +306,37 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  headerRightContainer: {
+  floatingAddCircle: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginRight: 8,
-  },
-  headerIconButton: {
-    alignItems: 'center',
+    backgroundColor: '#ccf0ccff', // Muted green for add button
+    borderColor: '#2d3e31ff',
+    borderRadius: 30,
+    borderWidth: 1,
+    height: 60,
     justifyContent: 'center',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1.5,
-    borderColor: '#2d3e31',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-  },
-  headerIconButtonPressed: {
-    backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
-  },
-  // Floating tab bar styles
-  floatingTabBarContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+    width: 60,
   },
   floatingTabBarBlur: {
-    borderRadius: 60,
-    overflow: 'hidden',
     borderColor: '#2d3e31ff',
+    borderRadius: 60,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  floatingTabBarContainer: {
+    alignItems: 'center',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
   },
   floatingTabBarInner: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingRight: 4,
-    paddingLeft: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingLeft: 8,
+    paddingRight: 4,
+    paddingVertical: 8,
   },
   floatingTabButton: {
     alignItems: 'center',
@@ -354,35 +344,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   floatingTabCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderColor: '#2d3e31ff',
-    borderWidth: 1,
     alignItems: 'center',
+    borderColor: '#2d3e31ff',
+    borderRadius: 30,
+    borderWidth: 1,
+    height: 60,
     justifyContent: 'center',
+    width: 60,
   },
   floatingTabIcon: {
     zIndex: 1,
   },
-  floatingAddCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderColor: '#2d3e31ff',
-    borderWidth: 1,
+  headerIconButton: {
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderColor: '#2d3e31',
+    borderRadius: 25,
+    borderWidth: 1.5,
+    height: 50,
     justifyContent: 'center',
-    backgroundColor: '#ccf0ccff', // Muted green for add button
+    width: 50,
   },
-  // floatingTabLabel: {
-  //   fontSize: 11,
-  //   marginTop: 4,
-  //   color: '#666666',
-  //   fontWeight: '500',
-  // },
-  // floatingTabLabelActive: {
-  //   color: '#2E7D32',
-  //   fontWeight: '600',
-  // },
+  headerIconButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
+  },
+  headerRightContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
+  },
 });

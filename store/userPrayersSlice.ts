@@ -45,6 +45,7 @@ const userPrayersSlice = createSlice({
   reducers: {
     getUserPrayersStart: (state) => {
       state.status = 'loading';
+      state.error = null; // Clear any previous errors when starting a new fetch
     },
     getUserPrayersSuccess: (
       state,
@@ -52,6 +53,7 @@ const userPrayersSlice = createSlice({
     ) => {
       state.status = 'succeeded';
       state.prayers = action.payload.prayers;
+      state.error = null; // Clear error on successful fetch
     },
     getUserPrayersFailure: (state, action: PayloadAction<string>) => {
       state.status = 'failed';
