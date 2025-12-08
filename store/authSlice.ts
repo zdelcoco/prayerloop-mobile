@@ -51,11 +51,16 @@ const authSlice = createSlice({
     loginFailure: (state, action: PayloadAction<string>) => {
       state.status = 'failed';
       state.error = action.payload;
+      // Clear auth state on login failure to prevent stale persisted state
+      // from allowing access to authenticated screens
+      state.isAuthenticated = false;
+      state.token = null;
+      state.user = null;
     },
     signupStart: (state) => {
       state.status = 'loading';
     },
-    signupSuccess: (state, action: PayloadAction<SignupResponse>) => {
+    signupSuccess: (state, _: PayloadAction<SignupResponse>) => {
       state.status = 'succeeded';
       state.error = null;
     },

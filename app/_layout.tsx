@@ -81,9 +81,9 @@ function RootLayoutNav() {
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
         animation: 'fade',
         animationDuration: 300,
+        headerShown: false,
       }}
     >
       <Stack.Screen name='index' options={{ headerShown: false }} />
