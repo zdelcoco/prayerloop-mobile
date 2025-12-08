@@ -4,7 +4,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import ContextMenu from './ContextMenu';
 import { useContextMenu, type ContextMenuType } from '@/hooks/useContextMenu';
 
-// Dark color for icons (matches tab bar)
+// Dark color for icons
 const DARK_ICON = '#2d3e31';
 
 interface ContextMenuButtonProps {
@@ -74,9 +74,13 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    borderWidth: 1.5,
-    borderColor: '#2d3e31',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: '#ccf0ccff', // Muted green - matches tab buttons
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
   circleButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency

@@ -5,7 +5,7 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, act } from 'react';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -203,8 +203,13 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
               />
             );
           })}
-          {/* Add button on the right side - only show if visible */}
-          {addButtonVisible && <FloatingAddButton onPress={handleAddPress} />}
+          {/* Vertical divider and add button on the right side - only show if visible */}
+          {addButtonVisible && (
+            <>
+              <View style={styles.tabBarDivider} />
+              <FloatingAddButton onPress={handleAddPress} />
+            </>
+          )}
         </View>
       </BlurView>
     </View>
@@ -308,19 +313,27 @@ const styles = StyleSheet.create({
   },
   floatingAddCircle: {
     alignItems: 'center',
-    backgroundColor: '#ccf0ccff', // Muted green for add button
-    borderColor: '#2d3e31ff',
+    backgroundColor: MUTED_GREEN, // Muted tan for add button
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 30,
     borderWidth: 1,
     height: 60,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     width: 60,
   },
   floatingTabBarBlur: {
-    borderColor: '#2d3e31ff',
+    borderColor: 'rgba(252, 251, 231, 0.58)',
     borderRadius: 60,
-    borderWidth: 1,
+    borderWidth: 2,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   floatingTabBarContainer: {
     alignItems: 'center',
@@ -331,25 +344,39 @@ const styles = StyleSheet.create({
   },
   floatingTabBarInner: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(192, 181, 106, 0.09)',
     flexDirection: 'row',
     justifyContent: 'center',
     paddingLeft: 8,
     paddingRight: 4,
     paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   floatingTabButton: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
+  tabBarDivider: {
+    backgroundColor: ACTIVE_GREEN,
+    height: 36,
+    marginHorizontal: 8,
+    width: 2,
+  },
   floatingTabCircle: {
     alignItems: 'center',
-    borderColor: '#2d3e31ff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 30,
     borderWidth: 1,
     height: 60,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     width: 60,
   },
   floatingTabIcon: {
@@ -357,12 +384,16 @@ const styles = StyleSheet.create({
   },
   headerIconButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderColor: '#2d3e31',
+    backgroundColor: MUTED_GREEN,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 25,
-    borderWidth: 1.5,
+    borderWidth: 1,
     height: 50,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     width: 50,
   },
   headerIconButtonPressed: {

@@ -6,7 +6,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions } from 'react-native';
 import Constants from 'expo-constants';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 
 import UserCard from '@/components/Home/UserCard';
 import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
@@ -36,14 +36,16 @@ export default function UserProfile() {
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
 
-  // Hide the tab bar add button on this screen
+  // Register tab bar add button handler when this screen is focused
   useFocusEffect(
     useCallback(() => {
-      global.tabBarAddVisible = false;
-      global.tabBarAddHandler = null;
+      global.tabBarAddVisible = true;
+      global.tabBarAddHandler = () => {
+        router.push({ pathname: '/cards/PrayerModal', params: { mode: 'add' } });
+      };
       return () => {
-        // Reset to visible when leaving this screen
-        global.tabBarAddVisible = true;
+        // Cleanup when screen loses focus
+        global.tabBarAddHandler = null;
       };
     }, [])
   );
