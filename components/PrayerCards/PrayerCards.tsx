@@ -169,6 +169,6 @@ export default function PrayerCards({
 
 const styles = StyleSheet.create({
   listContainer: {
-    paddingBottom: 24,
+    paddingBottom: 120, // Extra padding for floating tab bar
   },
 });

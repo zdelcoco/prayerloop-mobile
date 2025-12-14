@@ -4,7 +4,7 @@ const config: ExpoConfig = {
   name: "prayerloop",
   owner: "delsuckahh",
   slug: "prayerloop",
-  version: "2025.11.5",
+  version: "2025.12.1",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "prayerloop",

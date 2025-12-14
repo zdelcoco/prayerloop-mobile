@@ -17,19 +17,8 @@ import GroupCard from '@/components/Groups/GroupCard';
 import LoadingModal from '@/components/ui/LoadingModal';
 import { router, useFocusEffect } from 'expo-router';
 import { clearGroupPrayers } from '@/store/groupPrayersSlice';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import AddButton from '@/components/ui/AddButton';
-
-type GroupPrayersRouteParams = {
-  group: string; // Serialized group
-};
 
 export default function Groups() {
-  const navigation = useNavigation();
-  const route =
-    useRoute<
-      RouteProp<{ GroupPrayers: GroupPrayersRouteParams }, 'GroupPrayers'>
-    >();
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef<FlatList<Group>>(null);
 
@@ -38,10 +27,10 @@ export default function Groups() {
   const headerGradientEnd = headerHeight / screenHeight;
 
   const dispatch = useAppDispatch();
-  const { groups, status, error } = useAppSelector(
+  const { groups, status } = useAppSelector(
     (state: RootState) => state.userGroups
   );
-  const { user, isAuthenticated, token } = useAppSelector(
+  const { token } = useAppSelector(
     (state: RootState) => state.auth
   );
 
@@ -90,6 +79,20 @@ export default function Groups() {
     }, [fetchData])
   );
 
+  // Register tab bar add button handler when this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      global.tabBarAddVisible = true;
+      global.tabBarAddHandler = () => {
+        router.push({ pathname: '/groups/ActionSelection' });
+      };
+      return () => {
+        // Cleanup when screen loses focus
+        global.tabBarAddHandler = null;
+      };
+    }, [])
+  );
+
   useEffect(() => {
     if (groups && Array.isArray(groups) && token) {
       // Create a stable string representation of group IDs for comparison
@@ -106,10 +109,6 @@ export default function Groups() {
       }
     }
   }, [groups, token, fetchGroupMembers]);
-
-  const onAddPressHandler = () => {
-    router.push({ pathname: '/groups/ActionSelection' });
-  };
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -167,7 +166,7 @@ export default function Groups() {
 
   return (
     <LinearGradient
-      colors={['#90c590', '#ffffff']}
+      colors={['#90C590', '#F6EDD9']}
       style={StyleSheet.absoluteFillObject}
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
@@ -184,6 +183,7 @@ export default function Groups() {
           keyExtractor={(item) => item.groupId.toString()}
           renderItem={renderGroupItem}
           onDragEnd={({ data }) => handleDragEnd(data)}
+          contentContainerStyle={styles.listContainer}
           ListEmptyComponent={() =>
             status !== 'loading' ? (
               <View style={styles.emptyStateContainer}>
@@ -198,7 +198,6 @@ export default function Groups() {
           onRefresh={onRefresh}
         />
       </View>
-      <AddButton onPress={onAddPressHandler} />
     </LinearGradient>
   );
 }
@@ -207,6 +206,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  listContainer: {
+    paddingBottom: 120, // Extra padding for floating tab bar
   },
   emptyStateContainer: {
     alignItems: 'center',
