@@ -72,6 +72,18 @@ export interface CreatePrayerRequest {
   prayerSubjectId?: number;
 }
 
+export interface PrayerSubjectMember {
+  prayerSubjectMembershipId: number;
+  memberPrayerSubjectId: number;
+  membershipRole: 'member' | 'leader';
+  datetimeCreate: string;
+  createdBy: number;
+  memberDisplayName: string;
+  memberType: 'individual' | 'family' | 'group';
+  memberPhotoS3Key: string | null;
+  memberUserProfileId: number | null;
+}
+
 export interface PrayerSubject {
   prayerSubjectId: number;
   prayerSubjectType: 'individual' | 'family' | 'group';
@@ -87,6 +99,7 @@ export interface PrayerSubject {
   createdBy: number;
   updatedBy: number;
   prayers: Prayer[];
+  members?: PrayerSubjectMember[];
 }
 
 export interface CreatePrayerSubjectRequest {

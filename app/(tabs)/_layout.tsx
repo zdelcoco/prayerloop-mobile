@@ -16,11 +16,14 @@ declare global {
   var tabBarAddHandler: (() => void) | null;
   // eslint-disable-next-line no-var
   var tabBarAddVisible: boolean;
+  // eslint-disable-next-line no-var
+  var tabBarHidden: boolean;
 }
 
 // Initialize globals
 global.tabBarAddHandler = null;
 global.tabBarAddVisible = true;
+global.tabBarHidden = false;
 
 // Tab configuration for icons
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
@@ -155,16 +158,20 @@ function HeaderIconButton({
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const [addButtonVisible, setAddButtonVisible] = useState(global.tabBarAddVisible);
+  const [isHidden, setIsHidden] = useState(global.tabBarHidden);
 
-  // Poll for visibility changes (screens will update global.tabBarAddVisible)
+  // Poll for visibility changes (screens will update global.tabBarAddVisible and global.tabBarHidden)
   useEffect(() => {
     const interval = setInterval(() => {
       if (addButtonVisible !== global.tabBarAddVisible) {
         setAddButtonVisible(global.tabBarAddVisible);
       }
+      if (isHidden !== global.tabBarHidden) {
+        setIsHidden(global.tabBarHidden);
+      }
     }, 100);
     return () => clearInterval(interval);
-  }, [addButtonVisible]);
+  }, [addButtonVisible, isHidden]);
 
   // Handle add button press - calls the registered handler
   const handleAddPress = useCallback(() => {
@@ -172,6 +179,11 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
       global.tabBarAddHandler();
     }
   }, []);
+
+  // Don't render if hidden (must be after all hooks)
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <View style={[styles.floatingTabBarContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>

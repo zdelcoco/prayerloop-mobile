@@ -27,7 +27,7 @@ import type { PrayerSubject } from '@/util/shared.types';
 
 type RootStackParamList = {
   PrayerModal: { mode: string; prayerSubjectId?: number };
-  ContactDetail: { contact: PrayerSubject };
+  ContactDetail: { contact: string }; // Serialized PrayerSubject
 };
 
 export default function Cards() {
@@ -96,9 +96,7 @@ export default function Cards() {
   };
 
   const handleContactPress = (contact: PrayerSubject) => {
-    // TODO: Navigate to contact detail screen
-    // For now, just log the press
-    console.log('Contact pressed:', contact.prayerSubjectDisplayName);
+    navigation.navigate('ContactDetail', { contact: JSON.stringify(contact) });
   };
 
   const handleContactLongPress = (contact: PrayerSubject) => {

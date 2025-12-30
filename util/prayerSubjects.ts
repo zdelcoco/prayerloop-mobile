@@ -3,6 +3,7 @@ import {
   defaultNetworkCatch,
   Result,
   PrayerSubject,
+  PrayerSubjectMember,
   CreatePrayerSubjectRequest,
   UpdatePrayerSubjectRequest,
 } from './shared.types';
@@ -22,6 +23,11 @@ export interface ReorderPrayerSubjectsRequest {
     prayerSubjectId: number;
     displaySequence: number;
   }[];
+}
+
+export interface GetPrayerSubjectMembersResponse {
+  message: string;
+  members: PrayerSubjectMember[];
 }
 
 export const getPrayerSubjects = async (
@@ -178,6 +184,37 @@ export const reorderPrayerSubjects = async (
       success: true,
       data: {
         message: response.data.message,
+      },
+    };
+  } catch (error: unknown) {
+    return defaultNetworkCatch(error);
+  }
+};
+
+export const getPrayerSubjectMembers = async (
+  token: string,
+  prayerSubjectId: number
+): Promise<Result<GetPrayerSubjectMembersResponse>> => {
+  if (!token) {
+    return {
+      success: false,
+      error: {
+        type: 'Unauthorized',
+        message: 'Unauthorized access. Please log in.',
+      },
+    };
+  }
+
+  try {
+    const response = await apiClient.get(
+      `/prayer-subjects/${prayerSubjectId}/members`
+    );
+
+    return {
+      success: true,
+      data: {
+        message: response.data.message,
+        members: response.data.members,
       },
     };
   } catch (error: unknown) {
