@@ -69,6 +69,40 @@ export interface CreatePrayerRequest {
   prayerDescription: string;
   isPrivate: boolean;
   prayerType: string;
+  prayerSubjectId?: number;
+}
+
+export interface PrayerSubject {
+  prayerSubjectId: number;
+  prayerSubjectType: 'individual' | 'family' | 'group';
+  prayerSubjectDisplayName: string;
+  notes: string | null;
+  displaySequence: number;
+  photoS3Key: string | null;
+  userProfileId: number | null;
+  useLinkedUserPhoto: boolean;
+  linkStatus: 'unlinked' | 'pending' | 'linked' | 'declined';
+  datetimeCreate: string;
+  datetimeUpdate: string;
+  createdBy: number;
+  updatedBy: number;
+  prayers: Prayer[];
+}
+
+export interface CreatePrayerSubjectRequest {
+  prayerSubjectType: 'individual' | 'family' | 'group';
+  prayerSubjectDisplayName: string;
+  notes?: string;
+  photoS3Key?: string;
+  userProfileId?: number;
+  useLinkedUserPhoto?: boolean;
+}
+
+export interface UpdatePrayerSubjectRequest {
+  prayerSubjectDisplayName?: string;
+  notes?: string;
+  photoS3Key?: string;
+  useLinkedUserPhoto?: boolean;
 }
 
 export interface CreatePrayerResponse {
