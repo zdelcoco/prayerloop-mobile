@@ -25,7 +25,7 @@ import { addPrayerAccess } from '@/util/addPrayerAccess';
 import { RootState } from '@/store/store';
 
 type RootStackParamList = {
-  PrayerModal: { mode: string; prayer: Prayer };
+  PrayerModal: { mode: string; prayer: Prayer; prayerSubjectId?: number };
 };
 
 interface PrayerDetailModalProps {
@@ -33,6 +33,7 @@ interface PrayerDetailModalProps {
   userId: number;
   userToken: string;
   prayer: Prayer;
+  prayerSubjectId?: number; // Optional - used to prepopulate "who is this prayer for?" when editing
   onClose: () => void;
   onActionComplete: () => void;
   onShare: () => void;
@@ -45,6 +46,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   userId,
   userToken,
   prayer,
+  prayerSubjectId,
   onClose,
   onActionComplete,
   onShare,
@@ -77,7 +79,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
 
   const onEditHandler = () => {
     onClose();
-    navigation.navigate('PrayerModal', { mode: 'edit', prayer });
+    navigation.navigate('PrayerModal', { mode: 'edit', prayer, prayerSubjectId });
   };
 
   const onDeleteHandler = async () => {

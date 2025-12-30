@@ -68,6 +68,7 @@ export interface CreatePrayerRequest {
   title: string;
   prayerDescription: string;
   isPrivate: boolean;
+  isAnswered?: boolean;
   prayerType: string;
   prayerSubjectId?: number;
 }

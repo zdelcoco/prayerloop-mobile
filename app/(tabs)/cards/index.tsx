@@ -27,6 +27,7 @@ import type { PrayerSubject } from '@/util/shared.types';
 
 type RootStackParamList = {
   PrayerModal: { mode: string; prayerSubjectId?: number };
+  AddPrayerCardModal: undefined;
   ContactDetail: { contact: string }; // Serialized PrayerSubject
 };
 

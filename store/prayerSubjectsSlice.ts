@@ -34,6 +34,8 @@ interface PrayerSubjectsState {
   error: string | null;
   searchQuery: string;
   typeFilter: SubjectTypeFilter;
+  // Used to pass newly created contact ID back to PrayerModal
+  pendingNewContactId: number | null;
 }
 
 const initialState: PrayerSubjectsState = {
@@ -42,6 +44,7 @@ const initialState: PrayerSubjectsState = {
   error: null,
   searchQuery: '',
   typeFilter: 'all',
+  pendingNewContactId: null,
 };
 
 const prayerSubjectsSlice = createSlice({
@@ -125,6 +128,12 @@ const prayerSubjectsSlice = createSlice({
       state.searchQuery = '';
       state.typeFilter = 'all';
     },
+    setPendingNewContactId: (state, action: PayloadAction<number | null>) => {
+      state.pendingNewContactId = action.payload;
+    },
+    clearPendingNewContactId: (state) => {
+      state.pendingNewContactId = null;
+    },
   },
 });
 
@@ -147,6 +156,8 @@ export const {
   setSearchQuery,
   setTypeFilter,
   clearSearchAndFilters,
+  setPendingNewContactId,
+  clearPendingNewContactId,
 } = prayerSubjectsSlice.actions;
 
 export type AppThunk<ReturnType = void> = ThunkAction<
@@ -385,5 +396,9 @@ export const selectTotalPrayerCount = createSelector(
   (subjects) =>
     subjects?.reduce((total, subject) => total + (subject.prayers?.length || 0), 0) || 0
 );
+
+// Selector for pending new contact ID (used when returning from AddPrayerCardModal)
+export const selectPendingNewContactId = (state: RootState) =>
+  state.prayerSubjects.pendingNewContactId;
 
 export default prayerSubjectsSlice.reducer;

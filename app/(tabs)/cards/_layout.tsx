@@ -13,13 +13,14 @@ export default function CardsLayout() {
       <Stack.Screen
         name='PrayerModal'
         options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name='AddPrayerCardModal'
+        options={{
+          headerShown: false,
           presentation: 'modal',
         }}
       />

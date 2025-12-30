@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
+import { selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
@@ -115,6 +116,8 @@ export default function ContactDetail() {
   const { prayers: allUserPrayers } = useAppSelector(
     (state: RootState) => state.userPrayers
   );
+  // Get fresh prayer subjects from Redux to reflect any updates
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
 
   // Prayer detail modal state
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
@@ -124,8 +127,11 @@ export default function ContactDetail() {
   const [members, setMembers] = useState<PrayerSubjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
-  // Deserialize the contact parameter
-  const contact: PrayerSubject = JSON.parse(route.params.contact);
+  // Get prayerSubjectId from route params, then find fresh data from Redux
+  const routeContact: PrayerSubject = JSON.parse(route.params.contact);
+  const contact: PrayerSubject = prayerSubjects?.find(
+    (s) => s.prayerSubjectId === routeContact.prayerSubjectId
+  ) || routeContact;
 
   const initials = getInitials(contact.prayerSubjectDisplayName);
   const avatarColor = getAvatarColor(contact.prayerSubjectDisplayName);
@@ -510,6 +516,7 @@ export default function ContactDetail() {
           userId={user?.userProfileId || 0}
           userToken={token || ''}
           prayer={selectedPrayer}
+          prayerSubjectId={contact.prayerSubjectId}
           onClose={handleModalClose}
           onActionComplete={handleActionComplete}
           onShare={() => {}}
