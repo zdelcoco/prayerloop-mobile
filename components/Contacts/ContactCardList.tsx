@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PrayerSubject } from '@/util/shared.types';
 import ContactCard from './ContactCard';
 
@@ -35,6 +37,8 @@ interface ContactCardListProps {
   onSearchChange?: (query: string) => void;
   showFilters?: boolean;
   emptyMessage?: string;
+  enableReorder?: boolean;
+  onReorder?: (reorderedContacts: PrayerSubject[]) => void;
 }
 
 // Sort contacts: user's own card first, then alphabetically by display name
@@ -115,16 +119,27 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
   onSearchChange,
   showFilters = true,
   emptyMessage = 'No contacts yet',
+  enableReorder = false,
+  onReorder,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [reorderedContacts, setReorderedContacts] = useState<PrayerSubject[] | null>(null);
 
-  // Clear search when search bar is hidden
-  React.useEffect(() => {
-    if (!searchVisible) {
-      setSearchQuery('');
+  // Compute local contacts for reorder mode (sorted by displaySequence when reordering)
+  const localContacts = useMemo(() => {
+    if (!enableReorder) {
+      return contacts;
     }
-  }, [searchVisible]);
+    // Use reordered state if available, otherwise sort by displaySequence
+    if (reorderedContacts) {
+      return reorderedContacts;
+    }
+    return [...contacts].sort((a, b) => a.displaySequence - b.displaySequence);
+  }, [contacts, enableReorder, reorderedContacts]);
+
+  // Use searchQuery directly, clearing is controlled by parent component
+  const currentSearchQuery = searchVisible ? searchQuery : '';
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
@@ -143,8 +158,8 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
     }
 
     // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+    if (currentSearchQuery.trim()) {
+      const query = currentSearchQuery.toLowerCase().trim();
       result = result.filter(
         (contact) =>
           contact.prayerSubjectDisplayName.toLowerCase().includes(query) ||
@@ -153,7 +168,7 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
     }
 
     return result;
-  }, [contacts, activeFilter, searchQuery]);
+  }, [contacts, activeFilter, currentSearchQuery]);
 
   // Sort filtered contacts: user's card first, then alphabetically
   const sortedContacts = useMemo(
@@ -173,6 +188,36 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
       onContactLongPress?.(contact);
     },
     [onContactLongPress]
+  );
+
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback(
+    (data: PrayerSubject[]) => {
+      setReorderedContacts(data);
+      onReorder?.(data);
+    },
+    [onReorder]
+  );
+
+  // Render item for draggable list
+  const renderDraggableItem = useCallback(
+    ({ item, drag, isActive, getIndex }: RenderItemParams<PrayerSubject>) => {
+      const index = getIndex() ?? 0;
+      const isLastItem = index === localContacts.length - 1;
+
+      return (
+        <ContactCard
+          contact={item}
+          isCurrentUser={currentUserId !== undefined && item.userProfileId === currentUserId}
+          onPress={() => handleContactPress(item)}
+          onLongPress={drag}
+          showSeparator={!isLastItem}
+          isDragging={isActive}
+          showDragHandle={true}
+        />
+      );
+    },
+    [currentUserId, localContacts.length, handleContactPress]
   );
 
   const renderItem = ({
@@ -225,7 +270,7 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
     <View style={styles.emptyContainer}>
       <FontAwesome name="users" size={48} color={SUBTLE_TEXT} />
       <Text style={styles.emptyText}>{emptyMessage}</Text>
-      {searchQuery.trim() && (
+      {currentSearchQuery.trim() && (
         <Text style={styles.emptySubtext}>
           Try adjusting your search or filters
         </Text>
@@ -279,13 +324,13 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
               style={styles.searchInput}
               placeholder="Search contacts..."
               placeholderTextColor={SUBTLE_TEXT}
-              value={searchQuery}
+              value={currentSearchQuery}
               onChangeText={handleSearchChange}
               autoCapitalize="none"
               autoCorrect={false}
               autoFocus={true}
             />
-            {searchQuery.length > 0 && (
+            {currentSearchQuery.length > 0 && (
               <Pressable
                 onPress={() => handleSearchChange('')}
                 style={styles.clearButton}
@@ -308,7 +353,23 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
       )}
 
       {/* Contact List */}
-      {useSectionList ? (
+      {enableReorder ? (
+        <GestureHandlerRootView style={styles.container}>
+          <DraggableFlatList
+            data={localContacts}
+            keyExtractor={(item) => item.prayerSubjectId.toString()}
+            renderItem={renderDraggableItem}
+            onDragEnd={({ data }) => handleDragEnd(data)}
+            ListEmptyComponent={renderEmptyComponent}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={
+              localContacts.length === 0
+                ? styles.emptyListContent
+                : styles.listContent
+            }
+          />
+        </GestureHandlerRootView>
+      ) : useSectionList ? (
         <SectionList
           sections={sections}
           keyExtractor={(item) => item.prayerSubjectId.toString()}

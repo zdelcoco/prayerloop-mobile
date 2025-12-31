@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SectionList,
   TextInput,
   RefreshControl,
   Pressable,
@@ -11,10 +10,16 @@ import {
 } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Prayer, PrayerSubject } from '@/util/shared.types';
 import PrayerDetailModal from './PrayerDetailModal';
 import { useAppDispatch } from '@/hooks/redux';
 import { fetchPrayerSubjects } from '@/store/prayerSubjectsSlice';
+import {
+  reorderPrayerSubjects,
+  ReorderPrayerSubjectsRequest,
+} from '@/util/reorderPrayerSubjects';
 
 // Color constants matching the app theme
 const ACTIVE_GREEN = '#2E7D32';
@@ -35,6 +40,7 @@ interface PrayerListProps {
   searchVisible?: boolean;
   showFilters?: boolean;
   emptyMessage?: string;
+  onContactPress?: (contact: PrayerSubject) => void;
 }
 
 type FilterType = 'all' | 'active' | 'answered';
@@ -99,10 +105,14 @@ const PrayerList: React.FC<PrayerListProps> = ({
   searchVisible = false,
   showFilters = true,
   emptyMessage = 'No prayers yet.',
+  onContactPress,
 }) => {
   const dispatch = useAppDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+
+  // Local state for reordering
+  const [localSections, setLocalSections] = useState<PrayerSection[]>([]);
 
   // Prayer detail modal state
   const [selectedPrayer, setSelectedPrayer] = useState<{ prayer: Prayer; subject: PrayerSubject } | null>(null);
@@ -112,7 +122,10 @@ const PrayerList: React.FC<PrayerListProps> = ({
   const sections = useMemo<PrayerSection[]>(() => {
     const result: PrayerSection[] = [];
 
-    for (const subject of subjects) {
+    // Sort subjects by displaySequence
+    const sortedSubjects = [...subjects].sort((a, b) => a.displaySequence - b.displaySequence);
+
+    for (const subject of sortedSubjects) {
       let prayers = subject.prayers || [];
 
       // Apply filter
@@ -121,6 +134,16 @@ const PrayerList: React.FC<PrayerListProps> = ({
       } else if (filter === 'answered') {
         prayers = prayers.filter(p => p.isAnswered);
       }
+
+      // Sort prayers: active first (by sequence), then answered (by sequence)
+      prayers = [...prayers].sort((a, b) => {
+        // Active prayers always come before answered
+        if (a.isAnswered !== b.isAnswered) {
+          return a.isAnswered ? 1 : -1;
+        }
+        // Within same category, sort by subjectDisplaySequence
+        return (a.subjectDisplaySequence ?? 0) - (b.subjectDisplaySequence ?? 0);
+      });
 
       // Apply search
       if (searchQuery.trim()) {
@@ -141,6 +164,11 @@ const PrayerList: React.FC<PrayerListProps> = ({
     return result;
   }, [subjects, filter, searchQuery]);
 
+  // Sync local sections when sections change
+  useEffect(() => {
+    setLocalSections(sections);
+  }, [sections]);
+
   // Handle prayer press
   const handlePrayerPress = useCallback((prayer: Prayer, subject: PrayerSubject) => {
     setSelectedPrayer({ prayer, subject });
@@ -157,6 +185,36 @@ const PrayerList: React.FC<PrayerListProps> = ({
   const handleActionComplete = useCallback(() => {
     dispatch(fetchPrayerSubjects());
   }, [dispatch]);
+
+  // Handle section reorder (drag entire sections)
+  const handleSectionReorder = useCallback(async (reorderedSections: PrayerSection[]) => {
+    // Update local state immediately for visual feedback
+    setLocalSections(reorderedSections);
+
+    if (!userToken || !currentUserId) return;
+
+    try {
+      const reorderData: ReorderPrayerSubjectsRequest = {
+        subjects: reorderedSections.map((section, index) => ({
+          prayerSubjectId: section.subject.prayerSubjectId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderPrayerSubjects(userToken, currentUserId, reorderData);
+
+      if (result.success) {
+        // Refresh Redux state so other views see the change
+        dispatch(fetchPrayerSubjects());
+      } else {
+        console.error('Failed to save section order:', result.error);
+        dispatch(fetchPrayerSubjects());
+      }
+    } catch (error) {
+      console.error('Error reordering sections:', error);
+      dispatch(fetchPrayerSubjects());
+    }
+  }, [userToken, currentUserId, dispatch]);
 
   // Render filter button
   const renderFilterButton = (type: FilterType, label: string) => (
@@ -180,14 +238,22 @@ const PrayerList: React.FC<PrayerListProps> = ({
   );
 
   // Render section header
-  const renderSectionHeader = useCallback(({ section }: { section: PrayerSection }) => {
-    const { subject } = section;
+  const renderSectionHeader = useCallback((
+    subject: PrayerSubject,
+    prayerCount: number,
+    isActive?: boolean
+  ) => {
     const initials = getInitials(subject.prayerSubjectDisplayName);
     const avatarColor = getAvatarColor(subject.prayerSubjectDisplayName);
     const hasPhoto = subject.photoS3Key !== null;
 
     return (
-      <View style={styles.sectionHeader}>
+      <View
+        style={[
+          styles.sectionHeader,
+          isActive && styles.sectionHeaderDragging,
+        ]}
+      >
         {/* Avatar */}
         <View style={styles.avatarContainer}>
           {hasPhoto ? (
@@ -220,20 +286,26 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
         {/* Prayer count */}
         <Text style={styles.prayerCount}>
-          {section.data.length} prayer{section.data.length !== 1 ? 's' : ''}
+          {prayerCount} prayer{prayerCount !== 1 ? 's' : ''}
         </Text>
       </View>
     );
   }, []);
 
-  // Render prayer item
-  const renderItem = useCallback(({ item, index, section }: { item: Prayer; index: number; section: PrayerSection }) => {
+  // Render prayer item (non-draggable, tap to view details)
+  const renderPrayerItem = useCallback((
+    prayer: Prayer,
+    subject: PrayerSubject,
+    index: number,
+    totalCount: number
+  ) => {
     const isFirst = index === 0;
-    const isLast = index === section.data.length - 1;
+    const isLast = index === totalCount - 1;
 
     return (
       <Pressable
-        onPress={() => handlePrayerPress(item, section.subject)}
+        key={prayer.prayerId}
+        onPress={() => handlePrayerPress(prayer, subject)}
         style={({ pressed }) => [
           styles.prayerItem,
           isFirst && styles.prayerItemFirst,
@@ -246,14 +318,14 @@ const PrayerList: React.FC<PrayerListProps> = ({
           {/* Prayer title */}
           <View style={styles.prayerHeader}>
             <Text style={styles.prayerTitle} numberOfLines={2}>
-              {item.title}
+              {prayer.title}
             </Text>
-            {item.isAnswered && (
+            {prayer.isAnswered && (
               <View style={styles.answeredBadge}>
                 <FontAwesome name="check" size={10} color="#FFFFFF" />
               </View>
             )}
-            {item.isPrivate && (
+            {prayer.isPrivate && (
               <Ionicons
                 name="lock-closed"
                 size={14}
@@ -265,15 +337,15 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
           {/* Prayer description */}
           <Text style={styles.prayerDescription} numberOfLines={3}>
-            {item.prayerDescription}
+            {prayer.prayerDescription}
           </Text>
 
           {/* Date row */}
           <Text style={styles.dateText}>
-            {formatDate(item.datetimeCreate)}
-            {item.isAnswered && item.datetimeAnswered && (
+            {formatDate(prayer.datetimeCreate)}
+            {prayer.isAnswered && prayer.datetimeAnswered && (
               <Text style={styles.answeredDate}>
-                {' · Answered '}{formatDate(item.datetimeAnswered)}
+                {' · Answered '}{formatDate(prayer.datetimeAnswered)}
               </Text>
             )}
           </Text>
@@ -290,6 +362,31 @@ const PrayerList: React.FC<PrayerListProps> = ({
     );
   }, [handlePrayerPress]);
 
+  // Render a complete section (header + prayers)
+  const renderSection = useCallback(({ item, drag, isActive }: RenderItemParams<PrayerSection>) => {
+    return (
+      <ScaleDecorator>
+        <View style={[styles.sectionContainer, isActive && styles.sectionContainerDragging]}>
+          {/* Section Header - tap to open contact, long press to drag */}
+          <Pressable
+            onPress={() => onContactPress?.(item.subject)}
+            onLongPress={drag}
+            disabled={isActive}
+          >
+            {renderSectionHeader(item.subject, item.data.length, isActive)}
+          </Pressable>
+
+          {/* Prayer List - regular pressable items */}
+          <View>
+            {item.data.map((prayer, index) =>
+              renderPrayerItem(prayer, item.subject, index, item.data.length)
+            )}
+          </View>
+        </View>
+      </ScaleDecorator>
+    );
+  }, [renderSectionHeader, renderPrayerItem, onContactPress]);
+
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -297,8 +394,15 @@ const PrayerList: React.FC<PrayerListProps> = ({
     </View>
   );
 
-  // Key extractor
-  const keyExtractor = useCallback((item: Prayer) => item.prayerId.toString(), []);
+  // Check if we should show empty state
+  const showEmpty = localSections.length === 0;
+
+  // Handle refresh for DraggableFlatList (wraps the async onRefresh)
+  const handleRefresh = useCallback(async () => {
+    if (onRefresh) {
+      await onRefresh();
+    }
+  }, [onRefresh]);
 
   return (
     <View style={styles.container}>
@@ -336,31 +440,31 @@ const PrayerList: React.FC<PrayerListProps> = ({
         </View>
       )}
 
-      {/* Prayer Section List */}
-      <SectionList
-        sections={sections}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        keyExtractor={keyExtractor}
-        contentContainerStyle={[
-          styles.listContent,
-          sections.length === 0 && styles.listContentEmpty,
-        ]}
-        ListEmptyComponent={renderEmptyState}
-        stickySectionHeadersEnabled={false}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={ACTIVE_GREEN}
-              colors={[ACTIVE_GREEN]}
-            />
-          ) : undefined
-        }
-        showsVerticalScrollIndicator={false}
-        SectionSeparatorComponent={() => <View style={styles.sectionSeparator} />}
-      />
+      {/* Prayer Sections List - Draggable by section */}
+      <GestureHandlerRootView style={styles.listContainer}>
+        {showEmpty ? (
+          renderEmptyState()
+        ) : (
+          <DraggableFlatList
+            data={localSections}
+            keyExtractor={(item) => item.subject.prayerSubjectId.toString()}
+            renderItem={renderSection}
+            onDragEnd={({ data }) => handleSectionReorder(data)}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  tintColor={ACTIVE_GREEN}
+                  colors={[ACTIVE_GREEN]}
+                />
+              ) : undefined
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </GestureHandlerRootView>
 
       {/* Prayer Detail Modal */}
       {selectedPrayer && (
@@ -470,11 +574,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 1,
   },
+  listContainer: {
+    flex: 1,
+  },
   listContent: {
     paddingBottom: 100,
-  },
-  listContentEmpty: {
-    flexGrow: 1,
   },
   prayerContent: {
     flex: 1,
@@ -500,7 +604,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     flexDirection: 'row',
-    marginHorizontal: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -553,23 +656,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  sectionContainer: {
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
+  sectionContainerDragging: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+    borderRadius: 16,
+  },
   sectionHeader: {
     alignItems: 'center',
     backgroundColor: 'transparent',
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 16,
     paddingHorizontal: 4,
     paddingVertical: 8,
+  },
+  sectionHeaderDragging: {
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
+    borderRadius: 8,
   },
   sectionHeaderText: {
     color: DARK_TEXT,
     flex: 1,
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 17,
-  },
-  sectionSeparator: {
-    height: 8,
   },
   typeBadge: {
     alignItems: 'center',

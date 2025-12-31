@@ -1,5 +1,7 @@
 import React, {
   useCallback,
+  useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -23,15 +25,15 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 import { RootState } from '@/store/store';
 import { selectPrayerSubjects, fetchPrayerSubjects } from '@/store/prayerSubjectsSlice';
-// TODO: Re-enable when subject_display_sequence is added to prayer table
-// import DraggableFlatList, {
-//   RenderItemParams,
-// } from 'react-native-draggable-flatlist';
-// import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import {
-//   reorderPrayerSubjectPrayers,
-//   ReorderPrayerSubjectPrayersRequest,
-// } from '@/util/reorderPrayerSubjectPrayers';
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+} from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  reorderPrayerSubjectPrayers,
+  ReorderPrayerSubjectPrayersRequest,
+} from '@/util/reorderPrayerSubjectPrayers';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
 import { getPrayerSubjectMembers, getPrayerSubjectParentGroups, ParentGroup } from '@/util/prayerSubjects';
@@ -53,9 +55,33 @@ type RootStackParamList = {
   EditPrayerCardModal: { contact: string };
 };
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AVATAR_SIZE = 120;
 const HEADER_HEIGHT = 100;
+
+// Item types for the list
+type SectionHeaderItem = {
+  type: 'section-header';
+  title: string;
+  key: string;
+};
+
+type EmptyStateItem = {
+  type: 'empty-state';
+  message: string;
+  key: string;
+};
+
+type PrayerItem = {
+  type: 'prayer';
+  prayer: Prayer;
+  isFirst: boolean;
+  isLast: boolean;
+  isAnswered: boolean;
+  key: string;
+};
+
+type ListItem = SectionHeaderItem | EmptyStateItem | PrayerItem;
 
 // Generate initials from display name
 const getInitials = (displayName: string): string => {
@@ -136,10 +162,9 @@ export default function ContactDetail() {
   const [parentGroups, setParentGroups] = useState<ParentGroup[]>([]);
   const [parentGroupsLoading, setParentGroupsLoading] = useState(false);
 
-  // TODO: Re-enable when subject_display_sequence is added to prayer table
   // Local prayers state for reordering
-  // const [localActivePrayers, setLocalActivePrayers] = useState<Prayer[]>([]);
-  // const [localAnsweredPrayers, setLocalAnsweredPrayers] = useState<Prayer[]>([]);
+  const [localPrayers, setLocalPrayers] = useState<Prayer[]>([]);
+  const isReorderingRef = useRef(false);
 
   // Get prayerSubjectId from route params, then find fresh data from Redux
   const routeContact: PrayerSubject = JSON.parse(route.params.contact);
@@ -151,16 +176,81 @@ export default function ContactDetail() {
   const avatarColor = getAvatarColor(contact.prayerSubjectDisplayName);
   const hasPhoto = contact.photoS3Key !== null;
 
-  // Filter prayers into active and answered
-  const activePrayers = contact.prayers?.filter((p) => !p.isAnswered) || [];
-  const answeredPrayers = contact.prayers?.filter((p) => p.isAnswered) || [];
-
-  // TODO: Re-enable when subject_display_sequence is added to prayer table
   // Sync local prayers when contact changes (for reordering)
-  // useEffect(() => {
-  //   setLocalActivePrayers(activePrayers);
-  //   setLocalAnsweredPrayers(answeredPrayers);
-  // }, [contact.prayers]);
+  // Combine active and answered, sorted: active first by sequence, then answered by sequence
+  // Skip sync if we're in the middle of a reorder operation
+  useEffect(() => {
+    if (isReorderingRef.current) {
+      return;
+    }
+    const prayers = contact.prayers || [];
+    const sorted = [...prayers].sort((a, b) => {
+      // Active prayers come before answered
+      if (a.isAnswered !== b.isAnswered) {
+        return a.isAnswered ? 1 : -1;
+      }
+      // Within same category, sort by subjectDisplaySequence
+      return (a.subjectDisplaySequence ?? 0) - (b.subjectDisplaySequence ?? 0);
+    });
+    setLocalPrayers(sorted);
+  }, [contact.prayers]);
+
+  // Build list items including section headers and all prayers
+  const activePrayers = useMemo(() => localPrayers.filter(p => !p.isAnswered), [localPrayers]);
+  const answeredPrayers = useMemo(() => localPrayers.filter(p => p.isAnswered), [localPrayers]);
+
+  const listItems = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [];
+
+    // Prayer Requests section header
+    items.push({
+      type: 'section-header',
+      title: 'Prayer Requests',
+      key: 'header-active',
+    });
+
+    // Active prayers or empty state
+    if (activePrayers.length === 0) {
+      items.push({
+        type: 'empty-state',
+        message: 'No active prayer requests.',
+        key: 'empty-active',
+      });
+    } else {
+      activePrayers.forEach((prayer, index) => {
+        items.push({
+          type: 'prayer',
+          prayer,
+          isFirst: index === 0,
+          isLast: index === activePrayers.length - 1,
+          isAnswered: false,
+          key: `prayer-${prayer.prayerId}`,
+        });
+      });
+    }
+
+    // Answered Prayers section (only if there are answered prayers)
+    if (answeredPrayers.length > 0) {
+      items.push({
+        type: 'section-header',
+        title: 'Answered Prayers',
+        key: 'header-answered',
+      });
+
+      answeredPrayers.forEach((prayer, index) => {
+        items.push({
+          type: 'prayer',
+          prayer,
+          isFirst: index === 0,
+          isLast: index === answeredPrayers.length - 1,
+          isAnswered: true,
+          key: `prayer-${prayer.prayerId}`,
+        });
+      });
+    }
+
+    return items;
+  }, [activePrayers, answeredPrayers]);
 
   // Calculate gradient end point based on header height
   const headerGradientEnd = headerHeight / SCREEN_HEIGHT;
@@ -222,10 +312,13 @@ export default function ContactDetail() {
   );
 
   // Hide tab bar completely when this screen is focused
+  // Also reset reordering ref so fresh data can load
   useFocusEffect(
     useCallback(() => {
       global.tabBarHidden = true;
       global.tabBarAddVisible = false;
+      // Reset reordering flag when screen gains focus so fresh data can be synced
+      isReorderingRef.current = false;
       return () => {
         global.tabBarHidden = false;
         global.tabBarAddVisible = true;
@@ -279,16 +372,11 @@ export default function ContactDetail() {
     extrapolate: 'clamp',
   });
 
-  const handleScroll = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: false }
-  );
-
   // Handle prayer press - show detail modal
-  const handlePrayerPress = (prayer: Prayer) => {
+  const handlePrayerPress = useCallback((prayer: Prayer) => {
     setSelectedPrayer(prayer);
     setPrayerModalVisible(true);
-  };
+  }, []);
 
   // Handle modal close
   const handleModalClose = () => {
@@ -302,89 +390,367 @@ export default function ContactDetail() {
     dispatch(fetchPrayerSubjects());
   };
 
-  // TODO: Re-enable when subject_display_sequence is added to prayer table
-  // Handle reorder completion
-  // const handleReorderEnd = async (section: 'active' | 'answered', reorderedPrayers: Prayer[]) => {
-  //   // Update local state immediately for visual feedback
-  //   if (section === 'active') {
-  //     setLocalActivePrayers(reorderedPrayers);
-  //   } else {
-  //     setLocalAnsweredPrayers(reorderedPrayers);
-  //   }
-  //
-  //   // Call API to persist the new order
-  //   if (!token) return;
-  //
-  //   try {
-  //     // Combine both sections with updated order
-  //     const allPrayers = section === 'active'
-  //       ? [...reorderedPrayers, ...localAnsweredPrayers]
-  //       : [...localActivePrayers, ...reorderedPrayers];
-  //
-  //     const reorderData: ReorderPrayerSubjectPrayersRequest = {
-  //       prayers: allPrayers.map((prayer, index) => ({
-  //         prayerId: prayer.prayerId,
-  //         displaySequence: index,
-  //       })),
-  //     };
-  //
-  //     const result = await reorderPrayerSubjectPrayers(
-  //       token,
-  //       contact.prayerSubjectId,
-  //       reorderData
-  //     );
-  //
-  //     if (!result.success) {
-  //       console.error('Failed to save prayer order');
-  //       // Revert on failure
-  //       dispatch(fetchPrayerSubjects());
-  //     }
-  //   } catch (error) {
-  //     console.error('Error reordering prayers:', error);
-  //     dispatch(fetchPrayerSubjects());
-  //   }
-  // };
+  // Handle reorder completion - validate section boundaries and save
+  const handleDragEnd = async (reorderedItems: ListItem[]) => {
+    // Validate the reorder: section headers must be in correct positions
+    // and prayers must stay within their sections
+    const activeHeaderIndex = reorderedItems.findIndex(
+      item => item.type === 'section-header' && item.key === 'header-active'
+    );
+    const answeredHeaderIndex = reorderedItems.findIndex(
+      item => item.type === 'section-header' && item.key === 'header-answered'
+    );
 
-  // Render a prayer item
-  const renderPrayerItem = (item: Prayer, index: number, list: Prayer[]) => (
-    <Pressable
-      key={item.prayerId}
-      onPress={() => handlePrayerPress(item)}
-      style={[
-        styles.prayerItem,
-        index < list.length - 1 && styles.prayerItemBorder,
-      ]}
-    >
-      <View style={styles.prayerHeader}>
-        <Text style={styles.prayerTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        {item.isAnswered && (
-          <View style={styles.answeredBadge}>
-            <FontAwesome name='check' size={10} color='#FFFFFF' />
+    // Active header must be first
+    if (activeHeaderIndex !== 0) {
+      // Force revert by updating state with current order
+      setLocalPrayers([...localPrayers]);
+      return;
+    }
+
+    // Check all prayer items are in their correct sections
+    let isValid = true;
+    for (let i = 1; i < reorderedItems.length; i++) {
+      const item = reorderedItems[i];
+      // Skip section headers and empty states
+      if (item.type === 'section-header' || item.type === 'empty-state') continue;
+
+      // Before answered header (or no answered header) = should be active
+      // After answered header = should be answered
+      const shouldBeAnswered = answeredHeaderIndex !== -1 && i > answeredHeaderIndex;
+      if (item.isAnswered !== shouldBeAnswered) {
+        isValid = false;
+        break;
+      }
+    }
+
+    if (!isValid) {
+      // Force revert by updating state with current order (new array reference triggers re-render)
+      setLocalPrayers([...localPrayers]);
+      return;
+    }
+
+    // Mark that we're reordering to prevent useEffect from overriding
+    isReorderingRef.current = true;
+
+    // Extract prayers in new order (skip section headers)
+    const reorderedPrayers = reorderedItems
+      .filter((item): item is PrayerItem => item.type === 'prayer')
+      .map(item => item.prayer);
+
+    // Update local state immediately for responsive UI
+    setLocalPrayers(reorderedPrayers);
+
+    // Call API to persist the new order
+    if (!token) {
+      isReorderingRef.current = false;
+      return;
+    }
+
+    try {
+      const reorderData: ReorderPrayerSubjectPrayersRequest = {
+        prayers: reorderedPrayers.map((prayer, index) => ({
+          prayerId: prayer.prayerId,
+          displaySequence: index,
+        })),
+      };
+
+      const result = await reorderPrayerSubjectPrayers(
+        token,
+        contact.prayerSubjectId,
+        reorderData
+      );
+
+      if (!result.success) {
+        console.error('Failed to save prayer order:', result.error);
+        // On failure, revert by fetching fresh data
+        isReorderingRef.current = false;
+        dispatch(fetchPrayerSubjects());
+      }
+    } catch (error) {
+      console.error('Error reordering prayers:', error);
+      // On error, revert by fetching fresh data
+      isReorderingRef.current = false;
+      dispatch(fetchPrayerSubjects());
+    }
+  };
+
+  // Render list item (section header, empty state, or prayer)
+  const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<ListItem>) => {
+    // Section header - NOT draggable
+    if (item.type === 'section-header') {
+      // First section header (Prayer Requests) doesn't need top margin
+      const isFirstHeader = item.key === 'header-active';
+      return (
+        <View style={isFirstHeader ? undefined : styles.section}>
+          <View style={styles.sectionLabelContainer}>
+            <Text style={styles.sectionLabel}>{item.title}</Text>
+            <View style={styles.sectionLabelLine} />
           </View>
-        )}
-        <FontAwesome
-          name='chevron-right'
-          size={12}
-          color={SUBTLE_TEXT}
-          style={styles.prayerChevron}
-        />
-      </View>
-      <Text style={styles.prayerDescription} numberOfLines={3}>
-        {item.prayerDescription}
-      </Text>
-      <Text style={styles.prayerDate}>
-        {formatDate(item.datetimeCreate)}
-        {item.isAnswered && item.datetimeAnswered && (
-          <Text style={styles.answeredDate}>
-            {' '}
-            · Answered {formatDate(item.datetimeAnswered)}
+        </View>
+      );
+    }
+
+    // Empty state - NOT draggable
+    if (item.type === 'empty-state') {
+      return (
+        <View style={styles.sectionCardSingle}>
+          <Text style={styles.emptyText}>{item.message}</Text>
+        </View>
+      );
+    }
+
+    // Prayer item - draggable
+    const { prayer, isFirst, isLast, isAnswered } = item;
+    return (
+      <ScaleDecorator>
+        <Pressable
+          onPress={() => handlePrayerPress(prayer)}
+          onLongPress={drag}
+          disabled={isActive}
+          style={[
+            styles.prayerItem,
+            isFirst && styles.prayerItemFirst,
+            isLast && styles.prayerItemLast,
+            !isLast && styles.prayerItemBorder,
+            isActive && styles.prayerItemDragging,
+          ]}
+        >
+          <View style={styles.prayerHeader}>
+            <Text style={styles.prayerTitle} numberOfLines={1}>
+              {prayer.title}
+            </Text>
+            {isAnswered && (
+              <View style={styles.answeredBadge}>
+                <FontAwesome name="check" size={10} color="#FFFFFF" />
+              </View>
+            )}
+            <FontAwesome
+              name='chevron-right'
+              size={12}
+              color={SUBTLE_TEXT}
+              style={styles.prayerChevron}
+            />
+          </View>
+          <Text style={styles.prayerDescription} numberOfLines={3}>
+            {prayer.prayerDescription}
           </Text>
-        )}
+          {isAnswered && prayer.datetimeAnswered ? (
+            <Text style={styles.answeredDate}>
+              Answered {formatDate(prayer.datetimeAnswered)}
+            </Text>
+          ) : (
+            <Text style={styles.prayerDate}>
+              {formatDate(prayer.datetimeCreate)}
+            </Text>
+          )}
+        </Pressable>
+      </ScaleDecorator>
+    );
+  }, [handlePrayerPress]);
+
+  // List header (avatar, name, notes)
+  const ListHeader = useMemo(() => (
+    <View style={[styles.listHeader, { paddingTop: insets.top + HEADER_HEIGHT }]}>
+      {/* Spacer for avatar */}
+      <View style={styles.avatarSpacer} />
+
+      {/* Display Name */}
+      <Text style={styles.displayName}>
+        {contact.prayerSubjectDisplayName}
       </Text>
-    </Pressable>
-  );
+
+      {/* Notes - displayed below name */}
+      {contact.notes && (
+        <Text style={styles.notesSubtitle}>{contact.notes}</Text>
+      )}
+
+      {/* Spacer before content */}
+      <View style={styles.contentSpacer} />
+    </View>
+  ), [contact.prayerSubjectDisplayName, contact.notes, insets.top]);
+
+  // List footer (members section, link status, padding)
+  const ListFooter = useMemo(() => (
+    <View style={styles.listFooter}>
+      {/* Member Of Section (for individual types with parent groups) */}
+      {contact.prayerSubjectType === 'individual' && (parentGroupsLoading || parentGroups.length > 0) && (
+        <View style={styles.section}>
+          <View style={styles.sectionLabelContainer}>
+            <Text style={styles.sectionLabel}>Member Of</Text>
+            <View style={styles.sectionLabelLine} />
+          </View>
+          <View style={styles.sectionCard}>
+            {parentGroupsLoading ? (
+              <Text style={styles.emptyText}>Loading groups...</Text>
+            ) : (
+              parentGroups.map((parent, index) => {
+                const parentSubject = prayerSubjects?.find(
+                  (s) => s.prayerSubjectId === parent.groupPrayerSubjectId
+                );
+                const isFirst = index === 0;
+                const isLast = index === parentGroups.length - 1;
+                return (
+                  <Pressable
+                    key={parent.prayerSubjectMembershipId}
+                    style={({ pressed }) => [
+                      styles.memberItem,
+                      isFirst && styles.memberItemFirst,
+                      isLast && styles.memberItemLast,
+                      !isLast && styles.memberItemBorder,
+                      pressed && styles.memberItemPressed,
+                    ]}
+                    onPress={() => {
+                      if (parentSubject) {
+                        navigation.push('ContactDetail', {
+                          contact: JSON.stringify(parentSubject),
+                        });
+                      }
+                    }}
+                    disabled={!parentSubject}
+                  >
+                    <View
+                      style={[
+                        styles.memberAvatar,
+                        {
+                          backgroundColor: getAvatarColor(parent.groupDisplayName),
+                        },
+                      ]}
+                    >
+                      <FontAwesome
+                        name={parent.groupType === 'family' ? 'home' : 'users'}
+                        size={14}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <Text style={styles.memberName}>
+                        {parent.groupDisplayName}
+                      </Text>
+                      <Text style={styles.memberRole}>
+                        {parent.groupType === 'family' ? 'Family' : 'Group'}
+                        {parent.membershipRole === 'leader' ? ' · Leader' : ''}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={SUBTLE_TEXT}
+                      style={styles.memberChevron}
+                    />
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Members Section (for family/group types) */}
+      {contact.prayerSubjectType !== 'individual' && (
+        <View style={styles.section}>
+          <View style={styles.sectionLabelContainer}>
+            <Text style={styles.sectionLabel}>Members</Text>
+            <View style={styles.sectionLabelLine} />
+          </View>
+          <View style={styles.sectionCard}>
+            {membersLoading ? (
+              <View style={styles.sectionCardSingle}>
+                <Text style={styles.emptyText}>Loading members...</Text>
+              </View>
+            ) : members.length > 0 ? (
+              members.map((member, index) => {
+                const memberSubject = prayerSubjects?.find(
+                  (s) => s.prayerSubjectId === member.memberPrayerSubjectId
+                );
+                const isFirst = index === 0;
+                const isLast = index === members.length - 1;
+                return (
+                  <Pressable
+                    key={member.prayerSubjectMembershipId}
+                    style={({ pressed }) => [
+                      styles.memberItem,
+                      isFirst && styles.memberItemFirst,
+                      isLast && styles.memberItemLast,
+                      !isLast && styles.memberItemBorder,
+                      pressed && styles.memberItemPressed,
+                    ]}
+                    onPress={() => {
+                      if (memberSubject) {
+                        navigation.push('ContactDetail', {
+                          contact: JSON.stringify(memberSubject),
+                        });
+                      }
+                    }}
+                    disabled={!memberSubject}
+                  >
+                    <View
+                      style={[
+                        styles.memberAvatar,
+                        {
+                          backgroundColor: getAvatarColor(
+                            member.memberDisplayName
+                          ),
+                        },
+                      ]}
+                    >
+                      <Text style={styles.memberInitials}>
+                        {getInitials(member.memberDisplayName)}
+                      </Text>
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <Text style={styles.memberName}>
+                        {member.memberDisplayName}
+                      </Text>
+                      <Text style={styles.memberRole}>
+                        {member.membershipRole === 'leader'
+                          ? 'Leader'
+                          : 'Member'}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={SUBTLE_TEXT}
+                      style={styles.memberChevron}
+                    />
+                  </Pressable>
+                );
+              })
+            ) : (
+              <View style={styles.sectionCardSingle}>
+                <Text style={styles.emptyText}>No members added yet.</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Link Status */}
+      {contact.linkStatus !== 'unlinked' && (
+        <View style={styles.section}>
+          <View style={styles.sectionLabelContainer}>
+            <Text style={styles.sectionLabel}>
+              {contact.linkStatus === 'linked'
+                ? 'Linked Account'
+                : 'Link Pending'}
+            </Text>
+            <View style={styles.sectionLabelLine} />
+          </View>
+          <View style={styles.sectionCardSingle}>
+            <Text style={styles.linkStatusText}>
+              {contact.linkStatus === 'linked'
+                ? 'This contact is linked to a Prayerloop user.'
+                : 'A link request has been sent to this user.'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Bottom padding for scroll */}
+      <View style={styles.bottomPadding} />
+    </View>
+  ), [contact, parentGroups, parentGroupsLoading, members, membersLoading, navigation, prayerSubjects]);
 
   return (
     <LinearGradient
@@ -429,236 +795,20 @@ export default function ContactDetail() {
         )}
       </Animated.View>
 
-      {/* Scrollable content */}
-      <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + HEADER_HEIGHT },
-        ]}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Spacer for avatar */}
-        <View style={{ height: AVATAR_SIZE + 20 }} />
-
-        {/* Display Name */}
-        <Text style={styles.displayName}>
-          {contact.prayerSubjectDisplayName}
-        </Text>
-
-        {/* Notes - displayed below name */}
-        {contact.notes && (
-          <Text style={styles.notesSubtitle}>{contact.notes}</Text>
-        )}
-
-        {/* Spacer before content */}
-        <View style={{ height: 20 }} />
-
-        {/* Active Prayers Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionLabelContainer}>
-            <Text style={styles.sectionLabel}>Prayer Requests</Text>
-            <View style={styles.sectionLabelLine} />
-          </View>
-          <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
-            <View style={styles.sectionContent}>
-              {activePrayers.length > 0 ? (
-                activePrayers.map((prayer, index) => renderPrayerItem(prayer, index, activePrayers))
-              ) : (
-                <Text style={styles.emptyText}>No active prayer requests.</Text>
-              )}
-            </View>
-          </BlurView>
-        </View>
-
-        {/* Answered Prayers Section - only show if there are answered prayers */}
-        {answeredPrayers.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionLabelContainer}>
-              <Text style={styles.sectionLabel}>Answered Prayers</Text>
-              <View style={styles.sectionLabelLine} />
-            </View>
-            <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                {answeredPrayers.map((prayer, index) => renderPrayerItem(prayer, index, answeredPrayers))}
-              </View>
-            </BlurView>
-          </View>
-        )}
-
-        {/* Member Of Section (for individual types with parent groups) */}
-        {contact.prayerSubjectType === 'individual' && (parentGroupsLoading || parentGroups.length > 0) && (
-          <View style={styles.section}>
-            <View style={styles.sectionLabelContainer}>
-              <Text style={styles.sectionLabel}>Member Of</Text>
-              <View style={styles.sectionLabelLine} />
-            </View>
-            <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                {parentGroupsLoading ? (
-                  <Text style={styles.emptyText}>Loading groups...</Text>
-                ) : (
-                  parentGroups.map((parent, index) => {
-                    const parentSubject = prayerSubjects?.find(
-                      (s) => s.prayerSubjectId === parent.groupPrayerSubjectId
-                    );
-                    return (
-                      <Pressable
-                        key={parent.prayerSubjectMembershipId}
-                        style={({ pressed }) => [
-                          styles.memberItem,
-                          index < parentGroups.length - 1 && styles.memberItemBorder,
-                          pressed && styles.memberItemPressed,
-                        ]}
-                        onPress={() => {
-                          if (parentSubject) {
-                            navigation.push('ContactDetail', {
-                              contact: JSON.stringify(parentSubject),
-                            });
-                          }
-                        }}
-                        disabled={!parentSubject}
-                      >
-                        <View
-                          style={[
-                            styles.memberAvatar,
-                            {
-                              backgroundColor: getAvatarColor(parent.groupDisplayName),
-                            },
-                          ]}
-                        >
-                          <FontAwesome
-                            name={parent.groupType === 'family' ? 'home' : 'users'}
-                            size={14}
-                            color="#FFFFFF"
-                          />
-                        </View>
-                        <View style={styles.memberInfo}>
-                          <Text style={styles.memberName}>
-                            {parent.groupDisplayName}
-                          </Text>
-                          <Text style={styles.memberRole}>
-                            {parent.groupType === 'family' ? 'Family' : 'Group'}
-                            {parent.membershipRole === 'leader' ? ' · Leader' : ''}
-                          </Text>
-                        </View>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={20}
-                          color={SUBTLE_TEXT}
-                          style={styles.memberChevron}
-                        />
-                      </Pressable>
-                    );
-                  })
-                )}
-              </View>
-            </BlurView>
-          </View>
-        )}
-
-        {/* Members Section (for family/group types) */}
-        {contact.prayerSubjectType !== 'individual' && (
-          <View style={styles.section}>
-            <View style={styles.sectionLabelContainer}>
-              <Text style={styles.sectionLabel}>Members</Text>
-              <View style={styles.sectionLabelLine} />
-            </View>
-            <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                {membersLoading ? (
-                  <Text style={styles.emptyText}>Loading members...</Text>
-                ) : members.length > 0 ? (
-                  members.map((member, index) => {
-                    const memberSubject = prayerSubjects?.find(
-                      (s) => s.prayerSubjectId === member.memberPrayerSubjectId
-                    );
-                    return (
-                      <Pressable
-                        key={member.prayerSubjectMembershipId}
-                        style={({ pressed }) => [
-                          styles.memberItem,
-                          index < members.length - 1 && styles.memberItemBorder,
-                          pressed && styles.memberItemPressed,
-                        ]}
-                        onPress={() => {
-                          if (memberSubject) {
-                            navigation.push('ContactDetail', {
-                              contact: JSON.stringify(memberSubject),
-                            });
-                          }
-                        }}
-                        disabled={!memberSubject}
-                      >
-                        <View
-                          style={[
-                            styles.memberAvatar,
-                            {
-                              backgroundColor: getAvatarColor(
-                                member.memberDisplayName
-                              ),
-                            },
-                          ]}
-                        >
-                          <Text style={styles.memberInitials}>
-                            {getInitials(member.memberDisplayName)}
-                          </Text>
-                        </View>
-                        <View style={styles.memberInfo}>
-                          <Text style={styles.memberName}>
-                            {member.memberDisplayName}
-                          </Text>
-                          <Text style={styles.memberRole}>
-                            {member.membershipRole === 'leader'
-                              ? 'Leader'
-                              : 'Member'}
-                          </Text>
-                        </View>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={20}
-                          color={SUBTLE_TEXT}
-                          style={styles.memberChevron}
-                        />
-                      </Pressable>
-                    );
-                  })
-                ) : (
-                  <Text style={styles.emptyText}>No members added yet.</Text>
-                )}
-              </View>
-            </BlurView>
-          </View>
-        )}
-
-        {/* Link Status */}
-        {contact.linkStatus !== 'unlinked' && (
-          <View style={styles.section}>
-            <View style={styles.sectionLabelContainer}>
-              <Text style={styles.sectionLabel}>
-                {contact.linkStatus === 'linked'
-                  ? 'Linked Account'
-                  : 'Link Pending'}
-              </Text>
-              <View style={styles.sectionLabelLine} />
-            </View>
-            <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                <Text style={styles.linkStatusText}>
-                  {contact.linkStatus === 'linked'
-                    ? 'This contact is linked to a Prayerloop user.'
-                    : 'A link request has been sent to this user.'}
-                </Text>
-              </View>
-            </BlurView>
-          </View>
-        )}
-
-        {/* Bottom padding for scroll */}
-        <View style={{ height: 150 }} />
-      </Animated.ScrollView>
+      {/* Single DraggableFlatList as the main scrollable container */}
+      <GestureHandlerRootView style={styles.gestureContainer}>
+        <DraggableFlatList
+          data={listItems}
+          keyExtractor={(item) => item.key}
+          renderItem={renderItem}
+          onDragEnd={({ data }) => handleDragEnd(data)}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={ListFooter}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onScrollOffsetChange={(offset) => scrollY.setValue(offset)}
+        />
+      </GestureHandlerRootView>
 
       {/* Prayer Detail Modal */}
       {selectedPrayer && (
@@ -709,12 +859,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
+  avatarSpacer: {
+    height: AVATAR_SIZE + 20,
+  },
   avatarWrapper: {
     alignItems: 'center',
     left: 0,
     position: 'absolute',
     right: 0,
     zIndex: 1,
+  },
+  bottomPadding: {
+    height: 150,
+  },
+  contentSpacer: {
+    height: 20,
   },
   displayName: {
     color: DARK_TEXT,
@@ -727,8 +886,13 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 15,
     fontStyle: 'italic',
+    paddingHorizontal: 16,
     paddingVertical: 12,
     textAlign: 'center',
+  },
+  gestureContainer: {
+    flex: 1,
+    zIndex: 2,
   },
   headerButton: {
     alignItems: 'center',
@@ -759,6 +923,17 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 15,
     lineHeight: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+  },
+  listFooter: {
+    marginTop: 8,
+  },
+  listHeader: {
+    alignItems: 'center',
   },
   memberAvatar: {
     alignItems: 'center',
@@ -781,8 +956,18 @@ const styles = StyleSheet.create({
   },
   memberItem: {
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     flexDirection: 'row',
+    paddingHorizontal: 16,
     paddingVertical: 10,
+  },
+  memberItemFirst: {
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  memberItemLast: {
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   memberItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
@@ -827,80 +1012,95 @@ const styles = StyleSheet.create({
   prayerHeader: {
     alignItems: 'center',
     flexDirection: 'row',
-  },  
+  },
   prayerItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 16,
     paddingVertical: 14,
   },
   prayerItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  // TODO: Re-enable when subject_display_sequence is added to prayer table
-  // prayerItemDragging: {
-  //   opacity: 0.7,
-  //   transform: [{ scale: 1.03 }],
-  // },
+  prayerItemDragging: {
+    backgroundColor: 'rgba(144, 197, 144, 0.4)',
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  prayerItemFirst: {
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  prayerItemLast: {
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
   prayerTitle: {
     color: DARK_TEXT,
     flex: 1,
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 17,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-  },
-  scrollView: {
-    flex: 1,
-    zIndex: 2,
-  },
   section: {
-    marginBottom: 24 ,
-  },  
+    marginTop: 24,
+  },
   sectionBlur: {
     borderColor: 'rgba(252, 251, 231, 0.58)',
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+  },
+  sectionCard: {
+    overflow: 'hidden',
+  },
+  sectionCardSingle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   sectionContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    paddingHorizontal: 16,
     paddingVertical: 8,
+  },
+  sectionHeaderContainer: {
+    marginBottom: 4,
+    marginTop: 8,
   },
   sectionLabel: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 13,
     letterSpacing: 0.5,
-    marginLeft: 12,
-    marginRight: 12,    
     textTransform: 'uppercase',
   },
   sectionLabelContainer: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
   sectionLabelLine: {
     backgroundColor: 'rgba(45, 62, 49, 0.2)',
     flex: 1,
     height: StyleSheet.hairlineWidth,
+    marginLeft: 12,
   },
   typeBadge: {
     alignItems: 'center',
     backgroundColor: ACTIVE_GREEN,
-    borderColor: '#FFFFFF',
+    borderColor: '#F6EDD9',
     borderRadius: 16,
     borderWidth: 3,
     bottom: 0,
     height: 32,
     justifyContent: 'center',
     position: 'absolute',
-    right: SCREEN_WIDTH / 2 - AVATAR_SIZE / 2 - 4,
+    right: '50%',
+    transform: [{ translateX: 45 }],
     width: 32,
   },
 });

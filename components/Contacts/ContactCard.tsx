@@ -22,6 +22,8 @@ interface ContactCardProps {
   onLongPress?: () => void;
   showSeparator?: boolean;
   isActive?: boolean;
+  isDragging?: boolean;
+  showDragHandle?: boolean;
 }
 
 // Generate initials from display name
@@ -73,6 +75,8 @@ const ContactCard: React.FC<ContactCardProps> = ({
   onLongPress,
   showSeparator = true,
   isActive = false,
+  isDragging = false,
+  showDragHandle = false,
 }) => {
   const initials = getInitials(contact.prayerSubjectDisplayName);
   const avatarColor = getAvatarColor(contact.prayerSubjectDisplayName);
@@ -94,13 +98,21 @@ const ContactCard: React.FC<ContactCardProps> = ({
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
+      disabled={isDragging}
       style={({ pressed }) => [
         styles.container,
         pressed && styles.pressed,
-        isActive && styles.active,
+        (isActive || isDragging) && styles.active,
       ]}
     >
       <View style={styles.cardContent}>
+        {/* Drag Handle */}
+        {showDragHandle && (
+          <View style={styles.dragHandle}>
+            <FontAwesome name="bars" size={16} color={SUBTLE_TEXT} />
+          </View>
+        )}
+
         {/* Avatar - Photo or Initials */}
         <View style={styles.avatarContainer}>
           {hasPhoto ? (
@@ -211,6 +223,11 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 17,
     marginBottom: 2,
+  },
+  dragHandle: {
+    marginRight: 12,
+    opacity: 0.5,
+    padding: 4,
   },
   infoContainer: {
     flex: 1,

@@ -245,6 +245,7 @@ export default function Cards() {
             searchVisible={searchVisible}
             showFilters={true}
             emptyMessage="No prayers yet. Tap + to add a prayer request!"
+            onContactPress={handleContactPress}
           />
         )}
       </View>

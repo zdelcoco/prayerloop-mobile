@@ -50,6 +50,8 @@ export interface Prayer {
   title: string;
   updatedBy: number;
   userProfileId: number;
+  displaySequence?: number;
+  subjectDisplaySequence?: number;
 }
 
 export interface Group {
