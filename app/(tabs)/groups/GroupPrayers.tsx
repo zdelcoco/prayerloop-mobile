@@ -162,7 +162,7 @@ export default function GroupPrayers() {
     return () => {
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: 'Groups',
+          headerTitle: 'Prayer Circles',
           headerLeft: null,
           headerRight: () => (
             <View style={styles.headerRightContainer}>
@@ -262,7 +262,7 @@ export default function GroupPrayers() {
     >
       <LoadingModal
         visible={status === 'loading' || loading}
-        message='Loading group prayers...'
+        message='Loading prayers...'
         onClose={toggleLoadingModal}
       />
       <PrayerSessionModal
@@ -301,8 +301,8 @@ export default function GroupPrayers() {
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
               <Text style={styles.emptyStateText}>
-                This group doesn't have any prayers yet. Tap the + button below
-                to add the first prayer to share with your group!
+                This prayer circle doesn't have any prayers yet. Tap the + button below
+                to add the first prayer to share with your circle!
               </Text>
             </View>
           ) : null

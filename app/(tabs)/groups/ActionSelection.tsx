@@ -87,14 +87,14 @@ export default function ActionSelection() {
           <View style={styles.handle} />
         </View>
         <View style={styles.content}>
-          <Text style={styles.title}>Group Actions</Text>
+          <Text style={styles.title}>Prayer Circle</Text>
 
           <Pressable onPress={createGroupHandler} style={styles.createButton}>
-            <Text style={styles.buttonText}>Create Group</Text>
+            <Text style={styles.buttonText}>Create a Prayer Circle</Text>
           </Pressable>
 
           <Pressable onPress={joinGroupHandler} style={styles.createButton}>
-            <Text style={styles.buttonText}>Join Group</Text>
+            <Text style={styles.buttonText}>Join a Prayer Circle</Text>
           </Pressable>
 
           <Pressable onPress={cancelHandler} style={styles.cancelButton}>

@@ -78,7 +78,7 @@ export default function JoinGroupModal() {
         // Success - refresh groups and navigate back
         await dispatch(fetchUserGroups());
 
-        Alert.alert('Success!', 'You have successfully joined the group!', [
+        Alert.alert('Success!', 'You have successfully joined the prayer circle!', [
           {
             text: 'OK',
             onPress: () => {
@@ -91,12 +91,12 @@ export default function JoinGroupModal() {
         Alert.alert(
           'Error',
           result.error?.message ||
-            'Failed to join group. Please check the invite code and try again.'
+            'Failed to join prayer circle. Please check the invite code and try again.'
         );
       }
     } catch (error) {
-      console.error('Error joining group:', error);
-      Alert.alert('Error', 'Failed to join group. Please try again.');
+      console.error('Error joining prayer circle:', error);
+      Alert.alert('Error', 'Failed to join prayer circle. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function JoinGroupModal() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.inputSection}>
-          <Text style={styles.title}>Join a Group</Text>
+          <Text style={styles.title}>Join a Prayer Circle</Text>
           <Text style={styles.subtitle}>
             Enter the invite code you received
           </Text>
@@ -149,7 +149,7 @@ export default function JoinGroupModal() {
               {loading ? (
                 <ActivityIndicator size='small' color='#fff' />
               ) : (
-                <Text style={styles.buttonText}>Join Group</Text>
+                <Text style={styles.buttonText}>Join Prayer Circle</Text>
               )}
             </Pressable>
           </View>

@@ -29,7 +29,7 @@ global.tabBarHidden = false;
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
   cards: { icon: 'vcard', label: 'Cards' },
   userProfile: { icon: 'home', label: 'Home' },
-  groups: { icon: 'users', label: 'Groups' },
+  groups: { icon: 'users', label: 'Prayer Circles' },
 };
 
 // Muted green for inactive states
@@ -304,7 +304,7 @@ export default function TabsLayout() {
         <Tabs.Screen
           name='groups'
           options={{
-            title: 'Groups',
+            title: 'Prayer Circles',
             headerRight: () => (
               <View style={styles.headerRightContainer}>
                 <ContextMenuButton type="groups" iconSize={20} />

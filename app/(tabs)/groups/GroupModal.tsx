@@ -52,12 +52,12 @@ export default function GroupModal() {
         navigation.goBack(); // Close ActionSelection
         // Show alert after modals are closed
         setTimeout(() => {
-          Alert.alert('Success', 'Group created successfully!');
+          Alert.alert('Success', 'Prayer circle created successfully!');
         }, 100);
       }, 100);
     } catch (error) {
       console.error('Error adding group:', error);
-      Alert.alert('Error', 'Something went wrong while adding the group.');
+      Alert.alert('Error', 'Something went wrong while creating the prayer circle.');
     }
   }, [dispatch, groupDescription, groupTitle, navigation]);
 
@@ -68,7 +68,7 @@ export default function GroupModal() {
     >
       <TextInput
         style={styles.input}
-        placeholder='Enter group title'
+        placeholder='Enter prayer circle name'
         placeholderTextColor='#888'
         value={groupTitle}
         onChangeText={onGroupTitleChange}
@@ -77,7 +77,7 @@ export default function GroupModal() {
       />
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholder='Enter group description'
+        placeholder='Enter prayer circle description'
         placeholderTextColor='#888'
         value={groupDescription}
         onChangeText={onGroupDescriptionChange}
