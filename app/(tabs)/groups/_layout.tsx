@@ -22,6 +22,17 @@ export default function GroupsLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="ContactDetail"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditCircle"
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name="GroupPrayers"
         options={{ headerShown: false }}
       />
@@ -56,13 +67,7 @@ export default function GroupsLayout() {
       <Stack.Screen
         name='PrayerModal'
         options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />

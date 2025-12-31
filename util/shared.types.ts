@@ -46,6 +46,8 @@ export interface Prayer {
   prayerAccessId: number;
   prayerId: number;
   prayerPriority: number;
+  prayerSubjectId?: number;
+  prayerSubjectDisplayName?: string;
   prayerType: string;
   title: string;
   updatedBy: number;

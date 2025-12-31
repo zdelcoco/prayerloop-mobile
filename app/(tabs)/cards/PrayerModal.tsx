@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,17 +13,19 @@ import {
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { addUserPrayer, putUserPrayer, fetchUserPrayers } from '@/store/userPrayersSlice';
 import { fetchPrayerSubjects, selectPrayerSubjects, selectPendingNewContactId, clearPendingNewContactId } from '@/store/prayerSubjectsSlice';
+import { selectUserGroups } from '@/store/groupsSlice';
+import { addGroupPrayer, fetchGroupPrayers } from '@/store/groupPrayersSlice';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { selectAuthState } from '@/store/authSlice';
 import PrayerSubjectPicker from '@/components/PrayerCards/PrayerSubjectPicker';
 
-import type { Prayer, PrayerSubject, CreatePrayerRequest } from '@/util/shared.types';
+import type { Prayer, PrayerSubject, CreatePrayerRequest, Group } from '@/util/shared.types';
 
 // Color constants matching the app theme
 const ACTIVE_GREEN = '#2E7D32';
@@ -36,7 +38,14 @@ const HEADER_HEIGHT = 56;
 
 type RootStackParamList = {
   AddPrayerCardModal: { returnToPrayer?: boolean };
-  PrayerModal: { mode: 'add' | 'edit'; prayer?: Prayer; prayerSubjectId?: number; newContactId?: number };
+  PrayerModal: {
+    mode: 'add' | 'edit';
+    prayer?: Prayer;
+    prayerSubjectId?: number;
+    newContactId?: number;
+    preselectedCircleId?: string;
+    preselectedCircleName?: string;
+  };
 };
 
 export default function PrayerModal() {
@@ -46,12 +55,20 @@ export default function PrayerModal() {
   const route = useRoute<{
     key: string;
     name: string;
-    params: { mode: 'add' | 'edit'; prayer?: Prayer; prayerSubjectId?: number; newContactId?: number };
+    params: {
+      mode: 'add' | 'edit';
+      prayer?: Prayer;
+      prayerSubjectId?: number;
+      newContactId?: number;
+      preselectedCircleId?: string;
+      preselectedCircleName?: string;
+    };
   }>();
 
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const pendingNewContactId = useAppSelector(selectPendingNewContactId);
   const auth = useAppSelector(selectAuthState);
+  const userGroups = useAppSelector(selectUserGroups);
 
   // Initialize state based on mode
   const [prayerTitle, setPrayerTitle] = useState(() => {
@@ -84,7 +101,26 @@ export default function PrayerModal() {
     }
     return null;
   });
+  const [selectedCircleIds, setSelectedCircleIds] = useState<number[]>(() => {
+    if (route.params?.preselectedCircleId) {
+      return [parseInt(route.params.preselectedCircleId, 10)];
+    }
+    return [];
+  });
+  const [showCirclePicker, setShowCirclePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Get the selected circle objects
+  const selectedCircles = useMemo(() => {
+    if (!userGroups || selectedCircleIds.length === 0) return [];
+    return userGroups.filter(g => selectedCircleIds.includes(g.groupId));
+  }, [selectedCircleIds, userGroups]);
+
+  // Get available circles (not already selected)
+  const availableCircles = useMemo(() => {
+    if (!userGroups) return [];
+    return userGroups.filter(g => !selectedCircleIds.includes(g.groupId));
+  }, [userGroups, selectedCircleIds]);
 
   const totalHeaderHeight = HEADER_HEIGHT + 12;
   const headerGradientEnd = totalHeaderHeight / SCREEN_HEIGHT;
@@ -137,7 +173,27 @@ export default function PrayerModal() {
       if (isEditMode && route.params.prayer) {
         await dispatch(putUserPrayer(route.params.prayer.prayerId, prayerData));
       } else {
+        // Create user prayer
         await dispatch(addUserPrayer(prayerData));
+
+        // If any prayer circles are selected, create group prayers for each
+        if (selectedCircleIds.length > 0) {
+          const groupPrayerData: CreatePrayerRequest = {
+            title: prayerTitle.trim(),
+            prayerDescription: prayerDescription.trim() || prayerTitle.trim(),
+            isPrivate: false, // Group prayers shouldn't be private
+            isAnswered,
+            prayerType: 'general',
+            prayerSubjectId: selectedSubjectId,
+          };
+
+          // Create group prayer for each selected circle
+          for (const circleId of selectedCircleIds) {
+            await dispatch(addGroupPrayer(circleId, groupPrayerData));
+            // Refresh group prayers for each
+            await dispatch(fetchGroupPrayers(circleId));
+          }
+        }
       }
 
       // Refresh data
@@ -157,6 +213,7 @@ export default function PrayerModal() {
     isPrivate,
     isAnswered,
     selectedSubjectId,
+    selectedCircleIds,
     isEditMode,
     route.params?.prayer,
     isSaving,
@@ -303,6 +360,100 @@ export default function PrayerModal() {
           </BlurView>
         </View>
 
+        {/* Prayer Circle Sharing Section - only show in add mode */}
+        {!isEditMode && (
+          <View style={styles.section}>
+            <View style={styles.sectionLabelContainer}>
+              <Text style={styles.sectionLabel}>Share with Prayer Circle</Text>
+              <View style={styles.sectionLabelLine} />
+            </View>
+            {/* Show BlurView when not picking or when there are selected circles */}
+            {(!showCirclePicker || selectedCircles.length > 0) && (
+              <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+                <View style={styles.sectionContent}>
+                  {/* Show all selected circles with remove buttons */}
+                  {selectedCircles.map((circle, index) => (
+                    <View key={circle.groupId}>
+                      {index > 0 && <View style={styles.inputRowBorder} />}
+                      <View style={styles.circleRow}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.removeCircleButton,
+                            pressed && styles.removeCircleButtonPressed,
+                          ]}
+                          onPress={() => setSelectedCircleIds(prev => prev.filter(id => id !== circle.groupId))}
+                        >
+                          <Ionicons name="remove-circle" size={24} color="#D32F2F" />
+                        </Pressable>
+                        <View style={styles.circleInfo}>
+                          <FontAwesome name="users" size={16} color={ACTIVE_GREEN} style={styles.circleIcon} />
+                          <Text style={styles.circleName}>{circle.groupName}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                  {/* Always show add button if there are available circles and not currently picking */}
+                  {!showCirclePicker && availableCircles.length > 0 && (
+                    <>
+                      {selectedCircles.length > 0 && <View style={styles.inputRowBorder} />}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.addCircleRow,
+                          pressed && styles.addCircleRowPressed,
+                        ]}
+                        onPress={() => setShowCirclePicker(true)}
+                      >
+                        <Ionicons
+                          name="add-circle"
+                          size={22}
+                          color={ACTIVE_GREEN}
+                          style={styles.addCircleIcon}
+                        />
+                        <Text style={styles.addCircleText}>share with prayer circle</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              </BlurView>
+            )}
+            {/* Show picker for available circles */}
+            {showCirclePicker && availableCircles.length > 0 && (
+              <BlurView intensity={8} tint="regular" style={[styles.sectionBlur, selectedCircles.length > 0 && { marginTop: 8 }]}>
+                <View style={styles.sectionContent}>
+                  {availableCircles.map((group, index) => (
+                    <View key={group.groupId}>
+                      {index > 0 && <View style={styles.inputRowBorder} />}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.circlePickerRow,
+                          pressed && styles.circlePickerRowPressed,
+                        ]}
+                        onPress={() => {
+                          setSelectedCircleIds(prev => [...prev, group.groupId]);
+                          setShowCirclePicker(false);
+                        }}
+                      >
+                        <FontAwesome name="users" size={16} color={ACTIVE_GREEN} style={styles.circleIcon} />
+                        <Text style={styles.circleName}>{group.groupName}</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                  <View style={styles.inputRowBorder} />
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.cancelRow,
+                      pressed && styles.cancelRowPressed,
+                    ]}
+                    onPress={() => setShowCirclePicker(false)}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </BlurView>
+            )}
+          </View>
+        )}
+
         {/* Bottom padding */}
         <View style={{ height: insets.bottom + 40 }} />
       </ScrollView>
@@ -425,6 +576,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 4,
   },
+  sectionLabel: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    letterSpacing: 0.5,
+    marginLeft: 12,
+    marginRight: 12,
+    textTransform: 'uppercase',
+  },
+  sectionLabelContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  sectionLabelLine: {
+    backgroundColor: 'rgba(45, 62, 49, 0.2)',
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
   switchLabel: {
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-Regular',
@@ -441,5 +611,66 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 17,
     paddingVertical: 4,
+  },
+  // Prayer Circle styles
+  addCircleIcon: {
+    marginRight: 8,
+  },
+  addCircleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  addCircleRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  addCircleText: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  cancelRow: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  cancelRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  cancelText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+  },
+  circleIcon: {
+    marginRight: 10,
+  },
+  circleInfo: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+  },
+  circleName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  circlePickerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  circlePickerRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  circleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  removeCircleButton: {
+    padding: 4,
+  },
+  removeCircleButtonPressed: {
+    opacity: 0.7,
   },
 });

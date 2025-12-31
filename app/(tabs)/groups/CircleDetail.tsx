@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import {
@@ -10,22 +9,22 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Animated,
+  RefreshControl,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 import { RootState } from '@/store/store';
-import {
-  fetchGroupPrayers,
-  selectFilteredGroupPrayers,
-} from '@/store/groupPrayersSlice';
+import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import { fetchPrayerSubjects, selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
+import { selectUserGroups } from '@/store/groupsSlice';
 import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
@@ -33,10 +32,10 @@ import DraggableFlatList, {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import { groupUsersCache } from '@/util/groupUsersCache';
+import { createPrayerSubject as createPrayerSubjectAPI } from '@/util/prayerSubjects';
 
-import type { Group, Prayer, User } from '@/util/shared.types';
+import type { Group, Prayer, User, PrayerSubject } from '@/util/shared.types';
 
 // Color constants matching the app theme
 const ACTIVE_GREEN = '#2E7D32';
@@ -46,65 +45,38 @@ const SUBTLE_TEXT = '#5a6b5e';
 
 type RootStackParamList = {
   CircleDetail: { group: string };
+  EditCircle: { group: string };
   PrayerModal: { mode: string; groupProfileId: number; groupName: string };
   UsersModal: { groupProfileId: number; groupName: string; groupCreatorId: string };
 };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const AVATAR_SIZE = 120;
-const HEADER_HEIGHT = 100;
 
-// Item types for the list
-type SectionHeaderItem = {
-  type: 'section-header';
-  title: string;
-  key: string;
-};
+// Section type for grouping prayers by prayer subject (who the prayer is FOR)
+interface PrayerSection {
+  subjectId: number;
+  subjectName: string;
+  submitter: User | null; // Who submitted the prayers (for avatar/display)
+  prayers: Prayer[];
+}
 
-type EmptyStateItem = {
-  type: 'empty-state';
-  message: string;
-  key: string;
-};
-
-type PrayerItem = {
-  type: 'prayer';
-  prayer: Prayer;
-  isFirst: boolean;
-  isLast: boolean;
-  isAnswered: boolean;
-  key: string;
-};
-
-type ListItem = SectionHeaderItem | EmptyStateItem | PrayerItem;
-
-// Generate initials from group name
-const getInitials = (groupName: string): string => {
-  const words = groupName.trim().split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[1][0]).toUpperCase();
-  }
-  return groupName.substring(0, 2).toUpperCase();
+// Generate initials from name
+const getInitials = (firstName?: string, lastName?: string): string => {
+  const first = firstName?.[0] || '';
+  const last = lastName?.[0] || '';
+  return (first + last).toUpperCase() || '??';
 };
 
 // Generate a consistent color based on the name
-const getAvatarColor = (groupName: string): string => {
+const getAvatarColor = (name: string): string => {
   const colors = [
-    '#4CAF50', // Green
-    '#2196F3', // Blue
-    '#9C27B0', // Purple
-    '#FF9800', // Orange
-    '#00BCD4', // Cyan
-    '#E91E63', // Pink
-    '#607D8B', // Blue Grey
-    '#795548', // Brown
+    '#4CAF50', '#2196F3', '#9C27B0', '#FF9800',
+    '#00BCD4', '#E91E63', '#607D8B', '#795548',
   ];
-
   let hash = 0;
-  for (let i = 0; i < groupName.length; i++) {
-    hash = groupName.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-
   return colors[Math.abs(hash) % colors.length];
 };
 
@@ -114,7 +86,6 @@ const formatDate = (dateString: string): string => {
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
   });
 };
 
@@ -124,7 +95,6 @@ export default function CircleDetail() {
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const scrollY = useRef(new Animated.Value(0)).current;
 
   // Auth state
   const { user, token } = useAppSelector((state: RootState) => state.auth);
@@ -132,121 +102,114 @@ export default function CircleDetail() {
   // Group prayers from Redux
   const { prayers, status } = useAppSelector((state: RootState) => state.groupPrayers);
 
+  // Prayer subjects from Redux
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
+
+  // Groups from Redux
+  const groups = useAppSelector(selectUserGroups);
+
   // Prayer detail modal state
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
   const [prayerModalVisible, setPrayerModalVisible] = useState(false);
 
   // Members state
   const [members, setMembers] = useState<User[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Local prayers state for display
-  const [localPrayers, setLocalPrayers] = useState<Prayer[]>([]);
-
-  // Parse group from route params
-  const group: Group = JSON.parse(route.params.group);
-
-  const initials = getInitials(group.groupName);
-  const avatarColor = getAvatarColor(group.groupName);
-
-  // Sync local prayers when prayers change
-  useEffect(() => {
-    if (prayers) {
-      // Filter out duplicates (backend issue)
-      const uniquePrayers = prayers.filter(
-        (prayer, index, self) =>
-          index === self.findIndex((p) => p.prayerId === prayer.prayerId)
-      );
-
-      const sorted = [...uniquePrayers].sort((a, b) => {
-        // Active prayers come before answered
-        if (a.isAnswered !== b.isAnswered) {
-          return a.isAnswered ? 1 : -1;
-        }
-        // Within same category, sort by creation date (newest first)
-        return new Date(b.datetimeCreate).getTime() - new Date(a.datetimeCreate).getTime();
-      });
-      setLocalPrayers(sorted);
-    }
-  }, [prayers]);
-
-  // Build list items including section headers and all prayers
-  const activePrayers = useMemo(() => localPrayers.filter(p => !p.isAnswered), [localPrayers]);
-  const answeredPrayers = useMemo(() => localPrayers.filter(p => p.isAnswered), [localPrayers]);
-
-  const listItems = useMemo<ListItem[]>(() => {
-    const items: ListItem[] = [];
-
-    // Prayer Requests section header
-    items.push({
-      type: 'section-header',
-      title: 'Prayer Requests',
-      key: 'header-active',
-    });
-
-    // Active prayers or empty state
-    if (activePrayers.length === 0) {
-      items.push({
-        type: 'empty-state',
-        message: 'No active prayer requests.',
-        key: 'empty-active',
-      });
-    } else {
-      activePrayers.forEach((prayer, index) => {
-        items.push({
-          type: 'prayer',
-          prayer,
-          isFirst: index === 0,
-          isLast: index === activePrayers.length - 1,
-          isAnswered: false,
-          key: `prayer-${prayer.prayerId}`,
-        });
-      });
-    }
-
-    // Answered Prayers section (only if there are answered prayers)
-    if (answeredPrayers.length > 0) {
-      items.push({
-        type: 'section-header',
-        title: 'Answered Prayers',
-        key: 'header-answered',
-      });
-
-      answeredPrayers.forEach((prayer, index) => {
-        items.push({
-          type: 'prayer',
-          prayer,
-          isFirst: index === 0,
-          isLast: index === answeredPrayers.length - 1,
-          isAnswered: true,
-          key: `prayer-${prayer.prayerId}`,
-        });
-      });
-    }
-
-    return items;
-  }, [activePrayers, answeredPrayers]);
+  // Parse group from route params as fallback, but prefer Redux store data
+  const routeGroup: Group = useMemo(() => JSON.parse(route.params.group), [route.params.group]);
+  const group: Group = useMemo(() => {
+    // Look up the current group data from Redux store (updated after edits)
+    const storeGroup = groups?.find(g => g.groupId === routeGroup.groupId);
+    return storeGroup || routeGroup;
+  }, [groups, routeGroup]);
 
   // Calculate gradient end point based on header height
   const headerGradientEnd = headerHeight / SCREEN_HEIGHT;
+
+  // Create a lookup map for members by userProfileId
+  const membersLookup = useMemo(() => {
+    const lookup: { [id: number]: User } = {};
+    members.forEach(m => {
+      lookup[m.userProfileId] = m;
+    });
+    return lookup;
+  }, [members]);
+
+  // Group prayers by prayer subject (who the prayer is FOR)
+  const sections = useMemo<PrayerSection[]>(() => {
+    if (!prayers || prayers.length === 0) return [];
+
+    // Group prayers by prayer subject
+    const grouped: { [subjectId: number]: { subjectName: string; prayers: Prayer[] } } = {};
+
+    prayers.forEach(prayer => {
+      // Use prayer subject info directly from the prayer object (returned by API)
+      if (prayer.prayerSubjectId && prayer.prayerSubjectDisplayName) {
+        const subjectId = prayer.prayerSubjectId;
+        const subjectName = prayer.prayerSubjectDisplayName;
+        if (!grouped[subjectId]) {
+          grouped[subjectId] = { subjectName, prayers: [] };
+        }
+        grouped[subjectId].prayers.push(prayer);
+      } else {
+        // Fallback: no subject found, group by creator as "Unknown Subject"
+        // Use negative createdBy to avoid collision with real subject IDs
+        const fallbackId = -prayer.createdBy;
+        const creator = membersLookup[prayer.createdBy];
+        const fallbackName = creator
+          ? `${creator.firstName} ${creator.lastName}`
+          : 'Unknown';
+
+        if (!grouped[fallbackId]) {
+          grouped[fallbackId] = { subjectName: fallbackName, prayers: [] };
+        }
+        grouped[fallbackId].prayers.push(prayer);
+      }
+    });
+
+    // Convert to sections array
+    const result: PrayerSection[] = [];
+
+    Object.entries(grouped).forEach(([subjectIdStr, data]) => {
+      const subjectId = parseInt(subjectIdStr, 10);
+
+      // Sort prayers: active first, then by date
+      const sortedPrayers = [...data.prayers].sort((a, b) => {
+        if (a.isAnswered !== b.isAnswered) return a.isAnswered ? 1 : -1;
+        return new Date(b.datetimeCreate).getTime() - new Date(a.datetimeCreate).getTime();
+      });
+
+      // Get submitter info from the first prayer's creator
+      const firstCreatorId = sortedPrayers[0]?.createdBy;
+      const submitter = firstCreatorId ? membersLookup[firstCreatorId] || null : null;
+
+      result.push({
+        subjectId,
+        subjectName: data.subjectName,
+        submitter,
+        prayers: sortedPrayers,
+      });
+    });
+
+    // Sort sections by subject name
+    result.sort((a, b) => a.subjectName.toLowerCase().localeCompare(b.subjectName.toLowerCase()));
+
+    return result;
+  }, [prayers, membersLookup]);
 
   // Fetch members
   useFocusEffect(
     useCallback(() => {
       const fetchMembers = async () => {
         if (!token) return;
-
-        setMembersLoading(true);
         try {
           const users = await groupUsersCache.fetchGroupUsers(token, group.groupId);
           setMembers(users);
         } catch (error) {
           console.error('Failed to fetch members:', error);
-        } finally {
-          setMembersLoading(false);
         }
       };
-
       fetchMembers();
     }, [group.groupId, token])
   );
@@ -258,7 +221,7 @@ export default function CircleDetail() {
     }, [dispatch, group.groupId])
   );
 
-  // Hide tab bar completely when this screen is focused
+  // Hide tab bar when focused
   useFocusEffect(
     useCallback(() => {
       global.tabBarHidden = true;
@@ -270,17 +233,18 @@ export default function CircleDetail() {
     }, [])
   );
 
-  // Set up custom header
+  // Set up custom header - edit button only, no add button
   useFocusEffect(
     useCallback(() => {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: '',
+          headerTitle: group.groupName,
           headerLeft: () => (
             <Pressable
               style={({ pressed }) => [
-                [styles.headerButton, { paddingRight: 2 }],
+                styles.headerButton,
+                { paddingRight: 2 },
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={() => navigation.goBack()}
@@ -296,38 +260,36 @@ export default function CircleDetail() {
                   pressed && styles.headerButtonPressed,
                 ]}
                 onPress={() => {
-                  navigation.navigate('PrayerModal', {
-                    mode: 'add',
-                    groupProfileId: group.groupId,
-                    groupName: group.groupName,
+                  navigation.navigate('EditCircle', {
+                    group: JSON.stringify(group),
                   });
                 }}
               >
-                <FontAwesome name='plus' size={20} color={DARK_TEXT} />
+                <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
               </Pressable>
-              <ContextMenuButton
-                type='groupDetail'
-                groupId={group.groupId}
-                groupName={group.groupName}
-                groupCreatorId={group.createdBy}
-                prayerCount={localPrayers?.length || 0}
-                iconSize={20}
-              />
             </View>
           ),
         });
       }
-    }, [navigation, group, localPrayers])
+    }, [navigation, group])
   );
 
-  // Avatar opacity - fades out as user scrolls
-  const avatarOpacity = scrollY.interpolate({
-    inputRange: [0, 80],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  // Handle refresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      groupUsersCache.clear();
+      const users = await groupUsersCache.fetchGroupUsers(token || '', group.groupId);
+      setMembers(users);
+      await dispatch(fetchGroupPrayers(group.groupId));
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch, group.groupId, token]);
 
-  // Handle prayer press - show detail modal
+  // Handle prayer press
   const handlePrayerPress = useCallback((prayer: Prayer) => {
     setSelectedPrayer(prayer);
     setPrayerModalVisible(true);
@@ -339,114 +301,216 @@ export default function CircleDetail() {
     setSelectedPrayer(null);
   };
 
-  // Handle action complete (after edit/delete)
+  // Handle action complete
   const handleActionComplete = () => {
     dispatch(fetchGroupPrayers(group.groupId));
   };
 
-  // Handle member press - navigate to UsersModal
-  const handleMembersPress = () => {
-    navigation.navigate('UsersModal', {
-      groupProfileId: group.groupId,
-      groupName: group.groupName,
-      groupCreatorId: group.createdBy?.toString() || '',
+  // Handle member press - navigate to contact detail or create prayer_subject
+  const handleMemberPress = useCallback(async (member: User) => {
+    if (!token || !user) return;
+
+    // Check if a prayer_subject already exists for this user
+    const existingSubject = prayerSubjects?.find(
+      s => s.userProfileId === member.userProfileId
+    );
+
+    if (existingSubject) {
+      // Navigate to existing contact detail (stay within groups tab)
+      router.push({
+        pathname: '/(tabs)/groups/ContactDetail',
+        params: { contact: JSON.stringify(existingSubject) },
+      });
+    } else {
+      // Create a new prayer_subject linked to this user
+      try {
+        const result = await createPrayerSubjectAPI(token, user.userProfileId, {
+          prayerSubjectType: 'individual',
+          prayerSubjectDisplayName: `${member.firstName} ${member.lastName}`,
+          userProfileId: member.userProfileId,
+        });
+
+        if (result.success && result.data) {
+          // Refresh prayer subjects to get the new one
+          await dispatch(fetchPrayerSubjects());
+
+          // Navigate to the new contact detail (stay within groups tab)
+          router.push({
+            pathname: '/(tabs)/groups/ContactDetail',
+            params: { contact: JSON.stringify(result.data) },
+          });
+        } else {
+          Alert.alert('Error', 'Failed to create prayer card for this member.');
+        }
+      } catch (error) {
+        console.error('Error creating prayer subject:', error);
+        Alert.alert('Error', 'Failed to create prayer card for this member.');
+      }
+    }
+  }, [token, user, prayerSubjects, dispatch]);
+
+  // Handle FAB press - open new prayer modal (stay within groups tab)
+  const handleAddPrayer = useCallback(() => {
+    router.push({
+      pathname: '/(tabs)/groups/PrayerModal',
+      params: {
+        mode: 'add',
+        preselectedCircleId: group.groupId.toString(),
+        preselectedCircleName: group.groupName,
+      },
     });
-  };
+  }, [group]);
 
-  // Render list item (section header, empty state, or prayer)
-  const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<ListItem>) => {
-    // Section header - NOT draggable
-    if (item.type === 'section-header') {
-      const isFirstHeader = item.key === 'header-active';
-      return (
-        <View style={isFirstHeader ? undefined : styles.section}>
-          <View style={styles.sectionLabelContainer}>
-            <Text style={styles.sectionLabel}>{item.title}</Text>
-            <View style={styles.sectionLabelLine} />
-          </View>
-        </View>
-      );
-    }
+  // Render section header (prayer subject info - who the prayer is FOR)
+  const renderSectionHeader = useCallback((subjectName: string, prayerCount: number, isActive?: boolean) => {
+    // Parse subject name for initials (handle "First Last" format)
+    const nameParts = subjectName.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+    const initials = getInitials(firstName, lastName);
+    const avatarColor = getAvatarColor(subjectName);
 
-    // Empty state - NOT draggable
-    if (item.type === 'empty-state') {
-      return (
-        <View style={styles.sectionCardSingle}>
-          <Text style={styles.emptyText}>{item.message}</Text>
-        </View>
-      );
-    }
-
-    // Prayer item
-    const { prayer, isFirst, isLast, isAnswered } = item;
     return (
-      <ScaleDecorator>
-        <Pressable
-          onPress={() => handlePrayerPress(prayer)}
-          disabled={isActive}
-          style={[
-            styles.prayerItem,
-            isFirst && styles.prayerItemFirst,
-            isLast && styles.prayerItemLast,
-            !isLast && styles.prayerItemBorder,
-            isActive && styles.prayerItemDragging,
-          ]}
-        >
-          <View style={styles.prayerHeader}>
-            <Text style={styles.prayerTitle} numberOfLines={1}>
-              {prayer.title}
-            </Text>
-            {isAnswered && (
-              <View style={styles.answeredBadge}>
-                <FontAwesome name="check" size={10} color="#FFFFFF" />
-              </View>
-            )}
-            <FontAwesome
-              name='chevron-right'
-              size={12}
-              color={SUBTLE_TEXT}
-              style={styles.prayerChevron}
-            />
+      <View style={[styles.sectionHeader, isActive && styles.sectionHeaderDragging]}>
+        <View style={styles.sectionAvatarContainer}>
+          <View style={[styles.sectionAvatar, { backgroundColor: avatarColor }]}>
+            <Text style={styles.sectionAvatarText}>{initials}</Text>
           </View>
-          <Text style={styles.prayerDescription} numberOfLines={3}>
-            {prayer.prayerDescription}
+        </View>
+        <Text style={styles.sectionHeaderText} numberOfLines={1}>
+          Pray for {subjectName}
+        </Text>
+        <Text style={styles.prayerCount}>
+          {prayerCount} prayer{prayerCount !== 1 ? 's' : ''}
+        </Text>
+      </View>
+    );
+  }, []);
+
+  // Render prayer item
+  const renderPrayerItem = useCallback((
+    prayer: Prayer,
+    creator: User,
+    index: number,
+    totalCount: number
+  ) => {
+    const isFirst = index === 0;
+    const isLast = index === totalCount - 1;
+    const initials = getInitials(creator.firstName, creator.lastName);
+    const avatarColor = getAvatarColor(`${creator.firstName} ${creator.lastName}`);
+
+    return (
+      <Pressable
+        key={prayer.prayerId}
+        onPress={() => handlePrayerPress(prayer)}
+        style={({ pressed }) => [
+          styles.prayerItem,
+          isFirst && styles.prayerItemFirst,
+          isLast && styles.prayerItemLast,
+          !isLast && styles.prayerItemBorder,
+          pressed && styles.prayerItemPressed,
+        ]}
+      >
+        {/* Prayer Header */}
+        <View style={styles.prayerHeader}>
+          <Text style={styles.prayerTitle} numberOfLines={2}>
+            {prayer.title}
           </Text>
-          {isAnswered && prayer.datetimeAnswered ? (
-            <Text style={styles.answeredDate}>
-              Answered {formatDate(prayer.datetimeAnswered)}
-            </Text>
-          ) : (
-            <Text style={styles.prayerDate}>
-              {formatDate(prayer.datetimeCreate)}
-            </Text>
+          {prayer.isAnswered && (
+            <View style={styles.answeredBadge}>
+              <FontAwesome name="check" size={10} color="#FFFFFF" />
+            </View>
           )}
-        </Pressable>
-      </ScaleDecorator>
+          <FontAwesome
+            name="chevron-right"
+            size={12}
+            color={SUBTLE_TEXT}
+            style={styles.prayerChevron}
+          />
+        </View>
+
+        {/* Prayer Description */}
+        <Text style={styles.prayerDescription} numberOfLines={3}>
+          {prayer.prayerDescription}
+        </Text>
+
+        {/* Footer: Submitter avatar + name + date */}
+        <View style={styles.prayerFooter}>
+          <View style={[styles.submitterAvatar, { backgroundColor: avatarColor }]}>
+            <Text style={styles.submitterAvatarText}>{initials}</Text>
+          </View>
+          <Text style={styles.submitterName}>
+            {creator.firstName} {creator.lastName?.[0]}.
+          </Text>
+          <Text style={styles.dateText}>
+            · {formatDate(prayer.datetimeCreate)}
+            {prayer.isAnswered && prayer.datetimeAnswered && (
+              <Text style={styles.answeredDate}>
+                {' · Answered '}{formatDate(prayer.datetimeAnswered)}
+              </Text>
+            )}
+          </Text>
+        </View>
+      </Pressable>
     );
   }, [handlePrayerPress]);
 
-  // List header (avatar, name, description)
-  const ListHeader = useMemo(() => (
-    <View style={[styles.listHeader, { paddingTop: insets.top + HEADER_HEIGHT }]}>
-      {/* Spacer for avatar */}
-      <View style={styles.avatarSpacer} />
+  // Render a complete section
+  const renderSection = useCallback(({ item, drag, isActive }: RenderItemParams<PrayerSection>) => {
+    return (
+      <ScaleDecorator>
+        <View style={[styles.sectionContainer, isActive && styles.sectionContainerDragging]}>
+          {/* Section Header */}
+          <Pressable onLongPress={drag} disabled={isActive}>
+            {renderSectionHeader(item.subjectName, item.prayers.length, isActive)}
+          </Pressable>
 
-      {/* Display Name */}
-      <Text style={styles.displayName}>
-        {group.groupName}
+          {/* Prayer List */}
+          <View>
+            {item.prayers.map((prayer, index) => {
+              // Get the creator for this specific prayer (for footer display)
+              const creator = membersLookup[prayer.createdBy] || {
+                userProfileId: prayer.createdBy,
+                firstName: 'Unknown',
+                lastName: 'User',
+                email: '',
+              } as User;
+              return renderPrayerItem(prayer, creator, index, item.prayers.length);
+            })}
+          </View>
+        </View>
+      </ScaleDecorator>
+    );
+  }, [renderSectionHeader, renderPrayerItem, membersLookup]);
+
+  // Render empty state
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <FontAwesome name="comments-o" size={48} color={SUBTLE_TEXT} />
+      <Text style={styles.emptyTitle}>No Prayers Yet</Text>
+      <Text style={styles.emptyText}>
+        Be the first to share a prayer request with your circle!
       </Text>
+    </View>
+  );
 
-      {/* Description - displayed below name */}
+  // Render header component (description like notes style)
+  const ListHeader = useMemo(() => (
+    <View style={styles.listHeader}>
+      {/* Description - displayed like notes (not in a section card) */}
       {group.groupDescription && (
         <Text style={styles.notesSubtitle}>{group.groupDescription}</Text>
       )}
 
-      {/* Spacer before content */}
-      <View style={styles.contentSpacer} />
+      {/* Section divider */}
+      <View style={styles.sectionDivider}>
+        <Text style={styles.sectionDividerText}>Prayer Requests</Text>
+        <View style={styles.sectionDividerLine} />
+      </View>
     </View>
-  ), [group.groupName, group.groupDescription, insets.top]);
+  ), [group.groupDescription]);
 
-  // List footer (members section)
+  // Render footer component (members section at bottom)
   const ListFooter = useMemo(() => (
     <View style={styles.listFooter}>
       {/* Members Section */}
@@ -455,78 +519,58 @@ export default function CircleDetail() {
           <Text style={styles.sectionLabel}>Members</Text>
           <View style={styles.sectionLabelLine} />
         </View>
-        <Pressable
-          onPress={handleMembersPress}
-          style={({ pressed }) => [
-            styles.membersCard,
-            pressed && styles.membersCardPressed,
-          ]}
-        >
-          {membersLoading ? (
-            <Text style={styles.emptyText}>Loading members...</Text>
-          ) : members.length > 0 ? (
-            <View style={styles.membersRow}>
-              <View style={styles.memberAvatarsRow}>
-                {members.slice(0, 4).map((member, index) => (
-                  <View
-                    key={member.userProfileId}
-                    style={[
-                      styles.memberAvatar,
-                      {
-                        backgroundColor: getAvatarColor(
-                          `${member.firstName} ${member.lastName}`
-                        ),
-                        marginLeft: index > 0 ? -8 : 0,
-                        zIndex: 10 - index,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.memberInitials}>
-                      {(member.firstName?.[0] || '') + (member.lastName?.[0] || '')}
+        <View style={styles.sectionCard}>
+          {members.length > 0 ? (
+            members.map((member, index) => {
+              const isFirst = index === 0;
+              const isLast = index === members.length - 1;
+              const initials = getInitials(member.firstName, member.lastName);
+              const avatarColor = getAvatarColor(`${member.firstName} ${member.lastName}`);
+
+              return (
+                <Pressable
+                  key={member.userProfileId}
+                  style={({ pressed }) => [
+                    styles.memberItem,
+                    isFirst && styles.memberItemFirst,
+                    isLast && styles.memberItemLast,
+                    !isLast && styles.memberItemBorder,
+                    pressed && styles.memberItemPressed,
+                  ]}
+                  onPress={() => handleMemberPress(member)}
+                >
+                  <View style={[styles.memberAvatar, { backgroundColor: avatarColor }]}>
+                    <Text style={styles.memberInitials}>{initials}</Text>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>
+                      {member.firstName} {member.lastName}
                     </Text>
+                    {member.userProfileId === group.createdBy && (
+                      <Text style={styles.memberRole}>Creator</Text>
+                    )}
                   </View>
-                ))}
-                {members.length > 4 && (
-                  <View
-                    style={[
-                      styles.memberAvatar,
-                      styles.memberAvatarMore,
-                      { marginLeft: -8 },
-                    ]}
-                  >
-                    <Text style={styles.memberMoreText}>+{members.length - 4}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.membersCount}>
-                {members.length} member{members.length !== 1 ? 's' : ''}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={SUBTLE_TEXT}
-                style={styles.memberChevron}
-              />
-            </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={SUBTLE_TEXT}
+                    style={styles.memberChevron}
+                  />
+                </Pressable>
+              );
+            })
           ) : (
-            <View style={styles.membersRow}>
-              <FontAwesome name="user-plus" size={16} color={SUBTLE_TEXT} />
-              <Text style={styles.emptyText}>Tap to manage members</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={SUBTLE_TEXT}
-                style={styles.memberChevron}
-              />
+            <View style={styles.sectionCardSingle}>
+              <Text style={styles.emptyMemberText}>No members yet.</Text>
             </View>
           )}
-        </Pressable>
+        </View>
       </View>
 
       {/* Bottom padding for scroll */}
       <View style={styles.bottomPadding} />
     </View>
-  ), [members, membersLoading, handleMembersPress]);
+  ), [members, group.createdBy, handleMemberPress]);
 
   return (
     <LinearGradient
@@ -535,49 +579,45 @@ export default function CircleDetail() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
-      {/* Static Avatar at top - stays in place, fades out and goes behind content */}
-      <Animated.View
-        style={[
-          styles.avatarWrapper,
-          {
-            top: insets.top + HEADER_HEIGHT,
-            opacity: avatarOpacity,
-          },
-        ]}
-      >
-        <View
-          style={[
-            styles.avatar,
-            styles.avatarInitials,
-            { backgroundColor: avatarColor },
-          ]}
-        >
-          <Text style={styles.initialsText}>{initials}</Text>
-        </View>
-
-        {/* Type badge */}
-        <View style={styles.typeBadge}>
-          <FontAwesome
-            name="users"
-            size={14}
-            color='#FFFFFF'
+      <GestureHandlerRootView style={[styles.container, { paddingTop: headerHeight }]}>
+        {sections.length === 0 && status !== 'loading' ? (
+          <View style={styles.emptyWrapper}>
+            {ListHeader}
+            {renderEmptyState()}
+            {ListFooter}
+          </View>
+        ) : (
+          <DraggableFlatList
+            data={sections}
+            keyExtractor={(item) => item.subjectId.toString()}
+            renderItem={renderSection}
+            ListHeaderComponent={ListHeader}
+            ListFooterComponent={ListFooter}
+            contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={ACTIVE_GREEN}
+                colors={[ACTIVE_GREEN]}
+              />
+            }
+            showsVerticalScrollIndicator={false}
           />
-        </View>
-      </Animated.View>
-
-      {/* Single DraggableFlatList as the main scrollable container */}
-      <GestureHandlerRootView style={styles.gestureContainer}>
-        <DraggableFlatList
-          data={listItems}
-          keyExtractor={(item) => item.key}
-          renderItem={renderItem}
-          ListHeaderComponent={ListHeader}
-          ListFooterComponent={ListFooter}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onScrollOffsetChange={(offset) => scrollY.setValue(offset)}
-        />
+        )}
       </GestureHandlerRootView>
+
+      {/* Floating Action Button for adding prayers */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: insets.bottom + 20 },
+          pressed && styles.fabPressed,
+        ]}
+        onPress={handleAddPrayer}
+      >
+        <FontAwesome name="plus" size={24} color="#FFFFFF" />
+      </Pressable>
 
       {/* Prayer Detail Modal */}
       {selectedPrayer && (
@@ -608,59 +648,67 @@ const styles = StyleSheet.create({
   },
   answeredDate: {
     color: ACTIVE_GREEN,
-    fontFamily: 'InstrumentSans-Regular',
-    fontSize: 12,
-  },
-  avatar: {
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 4,
-    height: AVATAR_SIZE,
-    width: AVATAR_SIZE,
-  },
-  avatarInitials: {
-    alignItems: 'center',
-    elevation: 4,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  avatarSpacer: {
-    height: AVATAR_SIZE + 20,
-  },
-  avatarWrapper: {
-    alignItems: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    zIndex: 1,
   },
   bottomPadding: {
-    height: 150,
+    height: 100,
   },
-  contentSpacer: {
-    height: 20,
+  container: {
+    flex: 1,
   },
-  displayName: {
-    color: DARK_TEXT,
-    fontFamily: 'InstrumentSans-Bold',
-    fontSize: 28,
+  dateText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 40,
+  },
+  emptyMemberText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 15,
+    fontStyle: 'italic',
+    paddingVertical: 8,
     textAlign: 'center',
   },
   emptyText: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 15,
-    fontStyle: 'italic',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginTop: 8,
     textAlign: 'center',
   },
-  gestureContainer: {
+  emptyTitle: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
+    marginTop: 16,
+  },
+  emptyWrapper: {
     flex: 1,
-    zIndex: 2,
+  },
+  fab: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    borderRadius: 28,
+    elevation: 6,
+    height: 56,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    width: 56,
+  },
+  fabPressed: {
+    backgroundColor: '#1B5E20',
+    transform: [{ scale: 0.95 }],
   },
   headerButton: {
     alignItems: 'center',
@@ -685,83 +733,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  initialsText: {
-    color: '#FFFFFF',
-    fontFamily: 'InstrumentSans-Bold',
-    fontSize: 42,
-    letterSpacing: 2,
-  },
   listContent: {
-    paddingHorizontal: 16,
+    paddingBottom: 20,
   },
   listFooter: {
-    marginTop: 8,
+    marginTop: 16,
   },
   listHeader: {
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   memberAvatar: {
     alignItems: 'center',
-    borderColor: '#F6EDD9',
-    borderRadius: 18,
-    borderWidth: 2,
-    height: 36,
+    borderRadius: 20,
+    height: 40,
     justifyContent: 'center',
-    width: 36,
-  },
-  memberAvatarMore: {
-    backgroundColor: SUBTLE_TEXT,
-  },
-  memberAvatarsRow: {
-    flexDirection: 'row',
+    marginRight: 12,
+    width: 40,
   },
   memberChevron: {
     marginLeft: 'auto',
   },
+  memberInfo: {
+    flex: 1,
+  },
   memberInitials: {
     color: '#FFFFFF',
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 12,
+    fontSize: 14,
   },
-  memberMoreText: {
-    color: '#FFFFFF',
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 11,
-  },
-  membersCard: {
+  memberItem: {
+    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 12,
+    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  membersCardPressed: {
+  memberItemBorder: {
+    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  memberItemFirst: {
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  memberItemLast: {
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  memberItemPressed: {
     backgroundColor: 'rgba(144, 197, 144, 0.3)',
   },
-  membersCount: {
+  memberName: {
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 15,
-    marginLeft: 12,
+    fontSize: 16,
   },
-  membersRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
+  memberRole: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    marginTop: 2,
   },
   notesSubtitle: {
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
-    marginTop: 4,
+    lineHeight: 24,
+    marginBottom: 16,
     textAlign: 'center',
   },
   prayerChevron: {
     marginLeft: 8,
   },
-  prayerDate: {
+  prayerCount: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
-    fontSize: 13,
-    marginTop: 4,
+    fontSize: 14,
+    marginLeft: 'auto',
   },
   prayerDescription: {
     color: DARK_TEXT,
@@ -769,6 +818,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginTop: 4,
+  },
+  prayerFooter: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 10,
   },
   prayerHeader: {
     alignItems: 'center',
@@ -783,15 +837,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  prayerItemDragging: {
-    backgroundColor: 'rgba(144, 197, 144, 0.4)',
-    borderRadius: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
   prayerItemFirst: {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
@@ -799,6 +844,9 @@ const styles = StyleSheet.create({
   prayerItemLast: {
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+  },
+  prayerItemPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
   },
   prayerTitle: {
     color: DARK_TEXT,
@@ -808,12 +856,82 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 24,
+    paddingHorizontal: 16,
+  },
+  sectionAvatar: {
+    alignItems: 'center',
+    borderRadius: 22,
+    elevation: 2,
+    height: 44,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    width: 44,
+  },
+  sectionAvatarContainer: {
+    marginRight: 12,
+  },
+  sectionAvatarText: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  sectionCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   sectionCardSingle: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  sectionContainer: {
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
+  sectionContainerDragging: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+    borderRadius: 16,
+  },
+  sectionDivider: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  sectionDividerLine: {
+    backgroundColor: 'rgba(45, 62, 49, 0.2)',
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 12,
+  },
+  sectionDividerText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+  },
+  sectionHeaderDragging: {
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
+    borderRadius: 8,
+  },
+  sectionHeaderText: {
+    color: DARK_TEXT,
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
   },
   sectionLabel: {
     color: SUBTLE_TEXT,
@@ -825,8 +943,7 @@ const styles = StyleSheet.create({
   sectionLabelContainer: {
     alignItems: 'center',
     flexDirection: 'row',
-    marginBottom: 4,
-    paddingHorizontal: 4,
+    marginBottom: 8,
   },
   sectionLabelLine: {
     backgroundColor: 'rgba(45, 62, 49, 0.2)',
@@ -834,18 +951,23 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     marginLeft: 12,
   },
-  typeBadge: {
+  submitterAvatar: {
     alignItems: 'center',
-    backgroundColor: ACTIVE_GREEN,
-    borderColor: '#F6EDD9',
-    borderRadius: 16,
-    borderWidth: 3,
-    bottom: 0,
-    height: 32,
+    borderRadius: 12,
+    height: 24,
     justifyContent: 'center',
-    position: 'absolute',
-    right: '50%',
-    transform: [{ translateX: 45 }],
-    width: 32,
+    marginRight: 6,
+    width: 24,
+  },
+  submitterAvatarText: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 10,
+  },
+  submitterName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    marginRight: 4,
   },
 });
