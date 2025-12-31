@@ -314,50 +314,46 @@ const PrayerList: React.FC<PrayerListProps> = ({
           pressed && styles.prayerItemPressed,
         ]}
       >
-        <View style={styles.prayerContent}>
-          {/* Prayer title */}
-          <View style={styles.prayerHeader}>
-            <Text style={styles.prayerTitle} numberOfLines={2}>
-              {prayer.title}
-            </Text>
-            {prayer.isAnswered && (
-              <View style={styles.answeredBadge}>
-                <FontAwesome name="check" size={10} color="#FFFFFF" />
-              </View>
-            )}
-            {prayer.isPrivate && (
-              <Ionicons
-                name="lock-closed"
-                size={14}
-                color={SUBTLE_TEXT}
-                style={styles.privateIcon}
-              />
-            )}
-          </View>
-
-          {/* Prayer description */}
-          <Text style={styles.prayerDescription} numberOfLines={3}>
-            {prayer.prayerDescription}
+        {/* Prayer title row with icons and chevron */}
+        <View style={styles.prayerHeader}>
+          <Text style={styles.prayerTitle} numberOfLines={2}>
+            {prayer.title}
           </Text>
-
-          {/* Date row */}
-          <Text style={styles.dateText}>
-            {formatDate(prayer.datetimeCreate)}
-            {prayer.isAnswered && prayer.datetimeAnswered && (
-              <Text style={styles.answeredDate}>
-                {' · Answered '}{formatDate(prayer.datetimeAnswered)}
-              </Text>
-            )}
-          </Text>
+          {prayer.isAnswered && (
+            <View style={styles.answeredBadge}>
+              <FontAwesome name="check" size={10} color="#FFFFFF" />
+            </View>
+          )}
+          {prayer.isPrivate && (
+            <Ionicons
+              name="lock-closed"
+              size={14}
+              color={SUBTLE_TEXT}
+              style={styles.privateIcon}
+            />
+          )}
+          <FontAwesome
+            name="chevron-right"
+            size={12}
+            color={SUBTLE_TEXT}
+            style={styles.prayerChevron}
+          />
         </View>
 
-        {/* Chevron */}
-        <FontAwesome
-          name="chevron-right"
-          size={14}
-          color={SUBTLE_TEXT}
-          style={styles.chevron}
-        />
+        {/* Prayer description */}
+        <Text style={styles.prayerDescription} numberOfLines={3}>
+          {prayer.prayerDescription}
+        </Text>
+
+        {/* Date row */}
+        <Text style={styles.dateText}>
+          {formatDate(prayer.datetimeCreate)}
+          {prayer.isAnswered && prayer.datetimeAnswered && (
+            <Text style={styles.answeredDate}>
+              {' · Answered '}{formatDate(prayer.datetimeAnswered)}
+            </Text>
+          )}
+        </Text>
       </Pressable>
     );
   }, [handlePrayerPress]);
@@ -519,8 +515,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     width: 44,
   },
-  chevron: {
-    marginLeft: 12,
+  prayerChevron: {
+    marginLeft: 8,
   },
   container: {
     flex: 1,
@@ -580,9 +576,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 100,
   },
-  prayerContent: {
-    flex: 1,
-  },
   prayerCount: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
@@ -601,9 +594,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   prayerItem: {
-    alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },

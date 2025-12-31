@@ -174,6 +174,35 @@ export default function ContactDetail() {
     (s) => s.prayerSubjectId === routeContact.prayerSubjectId
   ) || routeContact;
 
+  // Smart navigation: go back if contact exists in stack, otherwise push new screen
+  const navigateToContact = useCallback((targetContact: PrayerSubject) => {
+    const state = navigation.getState();
+    const currentIndex = state.index;
+
+    // Search backwards through the stack for this contact
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      const stackRoute = state.routes[i];
+      if (stackRoute.name === 'ContactDetail' && stackRoute.params) {
+        try {
+          const stackContact = JSON.parse((stackRoute.params as { contact: string }).contact);
+          if (stackContact.prayerSubjectId === targetContact.prayerSubjectId) {
+            // Found the contact in the stack - pop back to it
+            const popCount = currentIndex - i;
+            navigation.pop(popCount);
+            return;
+          }
+        } catch {
+          // Skip if params can't be parsed
+        }
+      }
+    }
+
+    // Contact not in stack - push new screen
+    navigation.push('ContactDetail', {
+      contact: JSON.stringify(targetContact),
+    });
+  }, [navigation]);
+
   const initials = getInitials(contact.prayerSubjectDisplayName);
   const avatarColor = getAvatarColor(contact.prayerSubjectDisplayName);
   const hasPhoto = contact.photoS3Key !== null;
@@ -604,9 +633,7 @@ export default function ContactDetail() {
                     ]}
                     onPress={() => {
                       if (parentSubject) {
-                        navigation.push('ContactDetail', {
-                          contact: JSON.stringify(parentSubject),
-                        });
+                        navigateToContact(parentSubject);
                       }
                     }}
                     disabled={!parentSubject}
@@ -679,9 +706,7 @@ export default function ContactDetail() {
                     ]}
                     onPress={() => {
                       if (memberSubject) {
-                        navigation.push('ContactDetail', {
-                          contact: JSON.stringify(memberSubject),
-                        });
+                        navigateToContact(memberSubject);
                       }
                     }}
                     disabled={!memberSubject}

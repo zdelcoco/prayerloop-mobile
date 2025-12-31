@@ -196,7 +196,7 @@ export default function Cards() {
                   viewMode === 'contact' && styles.segmentButtonTextActive,
                 ]}
               >
-                By Contact
+                Contacts
               </Text>
             </Pressable>
             <Pressable
@@ -213,7 +213,7 @@ export default function Cards() {
                   viewMode === 'prayer' && styles.segmentButtonTextActive,
                 ]}
               >
-                By Prayer
+                Prayers
               </Text>
             </Pressable>
           </View>
