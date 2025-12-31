@@ -34,7 +34,7 @@ import { selectPrayerSubjects, fetchPrayerSubjects } from '@/store/prayerSubject
 // } from '@/util/reorderPrayerSubjectPrayers';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
-import { getPrayerSubjectMembers } from '@/util/prayerSubjects';
+import { getPrayerSubjectMembers, getPrayerSubjectParentGroups, ParentGroup } from '@/util/prayerSubjects';
 
 import type {
   PrayerSubject,
@@ -132,6 +132,10 @@ export default function ContactDetail() {
   const [members, setMembers] = useState<PrayerSubjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
+  // Parent groups state (for individual types)
+  const [parentGroups, setParentGroups] = useState<ParentGroup[]>([]);
+  const [parentGroupsLoading, setParentGroupsLoading] = useState(false);
+
   // TODO: Re-enable when subject_display_sequence is added to prayer table
   // Local prayers state for reordering
   // const [localActivePrayers, setLocalActivePrayers] = useState<Prayer[]>([]);
@@ -186,6 +190,34 @@ export default function ContactDetail() {
       };
 
       fetchMembers();
+    }, [contact.prayerSubjectId, contact.prayerSubjectType, token])
+  );
+
+  // Fetch parent groups for individual types - refetch when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const fetchParentGroups = async () => {
+        if (contact.prayerSubjectType !== 'individual' || !token) {
+          return;
+        }
+
+        setParentGroupsLoading(true);
+        try {
+          const result = await getPrayerSubjectParentGroups(
+            token,
+            contact.prayerSubjectId
+          );
+          if (result.success && result.data) {
+            setParentGroups(result.data.parents);
+          }
+        } catch (error) {
+          console.error('Failed to fetch parent groups:', error);
+        } finally {
+          setParentGroupsLoading(false);
+        }
+      };
+
+      fetchParentGroups();
     }, [contact.prayerSubjectId, contact.prayerSubjectType, token])
   );
 
@@ -456,6 +488,77 @@ export default function ContactDetail() {
           </View>
         )}
 
+        {/* Member Of Section (for individual types with parent groups) */}
+        {contact.prayerSubjectType === 'individual' && (parentGroupsLoading || parentGroups.length > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionLabelContainer}>
+              <Text style={styles.sectionLabel}>Member Of</Text>
+              <View style={styles.sectionLabelLine} />
+            </View>
+            <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
+              <View style={styles.sectionContent}>
+                {parentGroupsLoading ? (
+                  <Text style={styles.emptyText}>Loading groups...</Text>
+                ) : (
+                  parentGroups.map((parent, index) => {
+                    const parentSubject = prayerSubjects?.find(
+                      (s) => s.prayerSubjectId === parent.groupPrayerSubjectId
+                    );
+                    return (
+                      <Pressable
+                        key={parent.prayerSubjectMembershipId}
+                        style={({ pressed }) => [
+                          styles.memberItem,
+                          index < parentGroups.length - 1 && styles.memberItemBorder,
+                          pressed && styles.memberItemPressed,
+                        ]}
+                        onPress={() => {
+                          if (parentSubject) {
+                            navigation.push('ContactDetail', {
+                              contact: JSON.stringify(parentSubject),
+                            });
+                          }
+                        }}
+                        disabled={!parentSubject}
+                      >
+                        <View
+                          style={[
+                            styles.memberAvatar,
+                            {
+                              backgroundColor: getAvatarColor(parent.groupDisplayName),
+                            },
+                          ]}
+                        >
+                          <FontAwesome
+                            name={parent.groupType === 'family' ? 'home' : 'users'}
+                            size={14}
+                            color="#FFFFFF"
+                          />
+                        </View>
+                        <View style={styles.memberInfo}>
+                          <Text style={styles.memberName}>
+                            {parent.groupDisplayName}
+                          </Text>
+                          <Text style={styles.memberRole}>
+                            {parent.groupType === 'family' ? 'Family' : 'Group'}
+                            {parent.membershipRole === 'leader' ? ' · Leader' : ''}
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={SUBTLE_TEXT}
+                          style={styles.memberChevron}
+                        />
+                      </Pressable>
+                    );
+                  })
+                )}
+              </View>
+            </BlurView>
+          </View>
+        )}
+
         {/* Members Section (for family/group types) */}
         {contact.prayerSubjectType !== 'individual' && (
           <View style={styles.section}>
@@ -711,7 +814,7 @@ const styles = StyleSheet.create({
   prayerDate: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 8,
   },
   prayerDescription: {
@@ -726,7 +829,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },  
   prayerItem: {
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   prayerItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
@@ -741,7 +844,7 @@ const styles = StyleSheet.create({
     color: DARK_TEXT,
     flex: 1,
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
+    fontSize: 17,
   },
   scrollContent: {
     paddingHorizontal: 16,
@@ -764,7 +867,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionContent: {
-    backgroundColor: 'rgba(192, 181, 106, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 8,
   },

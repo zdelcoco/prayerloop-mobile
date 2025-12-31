@@ -623,6 +623,8 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   prayerDescInput: {
+    fontSize: 15,
+    lineHeight: 22,
     marginTop: 4,
     minHeight: 40,
   },
@@ -637,7 +639,7 @@ const styles = StyleSheet.create({
   prayerTitleInput: {
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
+    fontSize: 17,
     paddingVertical: 4,
   },
   removeButton: {
@@ -668,7 +670,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionContent: {
-    backgroundColor: 'rgba(192, 181, 106, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 4,
   },

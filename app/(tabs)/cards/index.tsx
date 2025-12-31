@@ -25,8 +25,11 @@ import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
 import { ContactCardList } from '@/components/Contacts';
+import { PrayerList } from '@/components/PrayerCards';
 
 import type { PrayerSubject } from '@/util/shared.types';
+
+type ViewMode = 'contact' | 'prayer';
 
 type RootStackParamList = {
   PrayerModal: { mode: string; prayerSubjectId?: number };
@@ -38,7 +41,7 @@ export default function Cards() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
 
-  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { user, token } = useAppSelector((state: RootState) => state.auth);
 
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const { status: subjectsStatus, error: subjectsError } = useAppSelector(
@@ -51,6 +54,7 @@ export default function Cards() {
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('contact');
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -174,17 +178,75 @@ export default function Cards() {
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {subjectsError && <Text style={styles.text}>Error: {subjectsError}</Text>}
-        <ContactCardList
-          contacts={prayerSubjects || []}
-          currentUserId={user?.userProfileId}
-          onContactPress={handleContactPress}
-          onContactLongPress={handleContactLongPress}
-          onRefresh={onRefresh}
-          refreshing={refreshing}
-          searchVisible={searchVisible}
-          showFilters={true}
-          emptyMessage="No prayer contacts yet. Tap + to add someone you're praying for!"
-        />
+
+        {/* View Mode Segmented Control */}
+        <View style={styles.segmentedControlContainer}>
+          <View style={styles.segmentedControl}>
+            <Pressable
+              onPress={() => setViewMode('contact')}
+              style={[
+                styles.segmentButton,
+                styles.segmentButtonLeft,
+                viewMode === 'contact' && styles.segmentButtonActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.segmentButtonText,
+                  viewMode === 'contact' && styles.segmentButtonTextActive,
+                ]}
+              >
+                By Contact
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setViewMode('prayer')}
+              style={[
+                styles.segmentButton,
+                styles.segmentButtonRight,
+                viewMode === 'prayer' && styles.segmentButtonActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.segmentButtonText,
+                  viewMode === 'prayer' && styles.segmentButtonTextActive,
+                ]}
+              >
+                By Prayer
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Contact View */}
+        {viewMode === 'contact' && (
+          <ContactCardList
+            contacts={prayerSubjects || []}
+            currentUserId={user?.userProfileId}
+            onContactPress={handleContactPress}
+            onContactLongPress={handleContactLongPress}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            searchVisible={searchVisible}
+            showFilters={true}
+            emptyMessage="No prayer contacts yet. Tap + to add someone you're praying for!"
+          />
+        )}
+
+        {/* Prayer View */}
+        {viewMode === 'prayer' && (
+          <PrayerList
+            subjects={prayerSubjects || []}
+            currentUserId={user?.userProfileId}
+            userToken={token || undefined}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            searchVisible={searchVisible}
+            showFilters={true}
+            emptyMessage="No prayers yet. Tap + to add a prayer request!"
+          />
+        )}
       </View>
     </LinearGradient>
   );
@@ -217,6 +279,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginRight: 8,
+  },
+  segmentButton: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  segmentButtonActive: {
+    backgroundColor: '#2E7D32',
+  },
+  segmentButtonLeft: {
+    borderBottomLeftRadius: 8,
+    borderTopLeftRadius: 8,
+  },
+  segmentButtonRight: {
+    borderBottomRightRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  segmentButtonText: {
+    color: '#2d3e31',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 14,
+  },
+  segmentButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  segmentedControl: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(46, 125, 50, 0.3)',
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+  },
+  segmentedControlContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   text: {
     color: '#000',

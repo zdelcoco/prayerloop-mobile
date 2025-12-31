@@ -1540,7 +1540,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionContent: {
-    backgroundColor: 'rgba(192, 181, 106, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 4,
   },

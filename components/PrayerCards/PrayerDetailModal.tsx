@@ -13,7 +13,7 @@ import {
   Share,
   Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Card from './PrayerCard';
 import { useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -214,37 +214,42 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
               </Card>
             </View>
           </ScrollView>
-          <View style={styles.buttonRow}>
+          <View style={styles.actionRow}>
             {canShare() && (
               <Pressable
-                style={[styles.button, styles.shareButton]}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.actionButtonPressed,
+                ]}
                 onPress={onShareHandler}
               >
-                <Text style={styles.buttonText}>Share</Text>
+                <Ionicons name="share-outline" size={20} color="#2E7D32" />
+                <Text style={styles.actionButtonText}>Share</Text>
               </Pressable>
             )}
-            {canEditAndDelete() ? (
+            {canEditAndDelete() && (
               <>
                 <Pressable
-                  style={styles.button}
-                  onPress={() => {
-                    onEditHandler();
-                  }}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
+                  ]}
+                  onPress={onEditHandler}
                 >
-                  <Text style={styles.buttonText}>Edit</Text>
+                  <Ionicons name="pencil-outline" size={20} color="#2E7D32" />
+                  <Text style={styles.actionButtonText}>Edit</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.button, styles.deleteButton]}
-                  onPress={() => {
-                    onDeleteHandler();
-                  }}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.deleteActionButton,
+                    pressed && styles.deleteActionButtonPressed,
+                  ]}
+                  onPress={onDeleteHandler}
                 >
-                  <Text style={styles.buttonText}>Delete</Text>
+                  <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+                  <Text style={styles.deleteActionButtonText}>Delete</Text>
                 </Pressable>
-              </>
-            ) : (
-              <>
-                {!canShare() && <View style={styles.spacer} />}
               </>
             )}
           </View>
@@ -393,27 +398,56 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  actionButtonPressed: {
+    backgroundColor: 'rgba(46, 125, 50, 0.15)',
+  },
+  actionButtonText: {
+    color: '#2E7D32',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 15,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+    marginTop: 12,
+    width: '100%',
+  },
   button: {
     alignItems: 'center',
-    backgroundColor: '#008000',
-    borderRadius: 5,
+    backgroundColor: '#2E7D32',
+    borderRadius: 12,
     flex: 1,
     marginHorizontal: 5,
-    padding: 10,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    width: '100%',
+    padding: 12,
   },
   buttonText: {
     color: '#fff',
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: 'bold',
   },
   cancelButton: {
     backgroundColor: '#6c757d',
+  },
+  deleteActionButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  deleteActionButtonPressed: {
+    backgroundColor: 'rgba(211, 47, 47, 0.15)',
+  },
+  deleteActionButtonText: {
+    color: '#D32F2F',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 15,
   },
   cardStyle: {
     marginHorizontal: 0,
@@ -422,9 +456,6 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     flex: 1,
-  },
-  deleteButton: {
-    backgroundColor: '#cc0000',
   },
   detailContainer: {
     backgroundColor: 'transparent',
@@ -526,9 +557,6 @@ const styles = StyleSheet.create({
   scrollableContentContainer: {
     flexGrow: 1,
   },
-  shareButton: {
-    backgroundColor: '#007AFF',
-  },
   shareButtonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -580,10 +608,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
-  },
-  spacer: {
-    flex: 1,
-    marginHorizontal: 5,
   },
   text: {
     fontSize: 16,

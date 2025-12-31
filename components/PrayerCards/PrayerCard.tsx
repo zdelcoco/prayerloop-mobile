@@ -6,7 +6,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Prayer, User } from '@/util/shared.types';
 import { formatPrayerDateTime } from '@/util/dateFormat';
@@ -68,8 +68,8 @@ const Card = ({
             {prayer.title}
           </Text>
           {prayer.isPrivate && (
-            <FontAwesome
-              name="eye-slash"
+            <Ionicons
+              name="lock-closed"
               size={16}
               color="#666"
               style={styles.privateIcon}
@@ -84,7 +84,9 @@ const Card = ({
         </View>
         <View style={styles.footer}>
           <Text style={styles.status}>
-            {prayer.isAnswered ? 'Answered?' : ''}
+            {prayer.isAnswered
+              ? `Answered ${prayer.datetimeAnswered ? formatPrayerDateTime(prayer.datetimeAnswered) : ''}`
+              : ''}
           </Text>
           <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
             Created by {getCreatorText()} on {formatPrayerDateTime(prayer.datetimeCreate)}

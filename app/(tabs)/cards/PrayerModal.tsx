@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -248,7 +248,7 @@ export default function PrayerModal() {
             <View style={styles.sectionContent}>
               <View style={styles.inputRow}>
                 <TextInput
-                  style={styles.input}
+                  style={styles.titleInput}
                   placeholder="Prayer title"
                   placeholderTextColor={SUBTLE_TEXT}
                   value={prayerTitle}
@@ -260,7 +260,7 @@ export default function PrayerModal() {
               <View style={styles.inputRowBorder} />
               <View style={styles.inputRow}>
                 <TextInput
-                  style={[styles.input, styles.multilineInput]}
+                  style={[styles.descriptionInput, styles.multilineInput]}
                   placeholder="Prayer description (optional)"
                   placeholderTextColor={SUBTLE_TEXT}
                   value={prayerDescription}
@@ -323,6 +323,13 @@ export default function PrayerModal() {
 }
 
 const styles = StyleSheet.create({
+  descriptionInput: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 15,
+    lineHeight: 22,
+    paddingVertical: 4,
+  },
   extraLargeSpinner: {
     transform: [{ scale: 2 }],
   },
@@ -357,12 +364,6 @@ const styles = StyleSheet.create({
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-Bold',
     fontSize: 18,
-  },
-  input: {
-    color: DARK_TEXT,
-    fontFamily: 'InstrumentSans-Regular',
-    fontSize: 16,
-    paddingVertical: 4,
   },
   inputRow: {
     paddingVertical: 10,
@@ -420,7 +421,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   sectionContent: {
-    backgroundColor: 'rgba(192, 181, 106, 0.09)',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 4,
   },
@@ -434,5 +435,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 10,
+  },
+  titleInput: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
+    paddingVertical: 4,
   },
 });
