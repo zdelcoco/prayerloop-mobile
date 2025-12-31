@@ -81,11 +81,17 @@ export const createPrayerSubject = async (
       prayerSubject
     );
 
+    // Handle both response formats from backend:
+    // 1. { prayerSubjectId: N } - partial success (couldn't fetch created subject)
+    // 2. { prayerSubject: {...} } - full success (includes full object with prayerSubjectId)
+    const prayerSubjectId = response.data.prayerSubjectId
+      ?? response.data.prayerSubject?.prayerSubjectId;
+
     return {
       success: true,
       data: {
         message: response.data.message,
-        prayerSubjectId: response.data.prayerSubjectId,
+        prayerSubjectId,
       },
     };
   } catch (error: unknown) {
@@ -215,6 +221,126 @@ export const getPrayerSubjectMembers = async (
       data: {
         message: response.data.message,
         members: response.data.members,
+      },
+    };
+  } catch (error: unknown) {
+    return defaultNetworkCatch(error);
+  }
+};
+
+export interface ParentGroup {
+  prayerSubjectMembershipId: number;
+  groupPrayerSubjectId: number;
+  membershipRole: string | null;
+  datetimeCreate: string;
+  createdBy: number;
+  groupDisplayName: string;
+  groupType: 'family' | 'group';
+  groupPhotoS3Key: string | null;
+}
+
+export interface GetSubjectParentGroupsResponse {
+  message: string;
+  parents: ParentGroup[];
+}
+
+export const getPrayerSubjectParentGroups = async (
+  token: string,
+  prayerSubjectId: number
+): Promise<Result<GetSubjectParentGroupsResponse>> => {
+  if (!token) {
+    return {
+      success: false,
+      error: {
+        type: 'Unauthorized',
+        message: 'Unauthorized access. Please log in.',
+      },
+    };
+  }
+
+  try {
+    const response = await apiClient.get(
+      `/prayer-subjects/${prayerSubjectId}/parents`
+    );
+
+    return {
+      success: true,
+      data: {
+        message: response.data.message,
+        parents: response.data.parents,
+      },
+    };
+  } catch (error: unknown) {
+    return defaultNetworkCatch(error);
+  }
+};
+
+export interface AddMemberToSubjectRequest {
+  memberPrayerSubjectId: number;
+}
+
+export interface AddMemberToSubjectResponse {
+  message: string;
+  membershipId: number;
+}
+
+export const addMemberToSubject = async (
+  token: string,
+  prayerSubjectId: number,
+  memberPrayerSubjectId: number
+): Promise<Result<AddMemberToSubjectResponse>> => {
+  if (!token) {
+    return {
+      success: false,
+      error: {
+        type: 'Unauthorized',
+        message: 'Unauthorized access. Please log in.',
+      },
+    };
+  }
+
+  try {
+    const response = await apiClient.post(
+      `/prayer-subjects/${prayerSubjectId}/members`,
+      { memberPrayerSubjectId }
+    );
+
+    return {
+      success: true,
+      data: {
+        message: response.data.message,
+        membershipId: response.data.membershipId,
+      },
+    };
+  } catch (error: unknown) {
+    return defaultNetworkCatch(error);
+  }
+};
+
+export const removeMemberFromSubject = async (
+  token: string,
+  prayerSubjectId: number,
+  memberPrayerSubjectId: number
+): Promise<Result> => {
+  if (!token) {
+    return {
+      success: false,
+      error: {
+        type: 'Unauthorized',
+        message: 'Unauthorized access. Please log in.',
+      },
+    };
+  }
+
+  try {
+    const response = await apiClient.delete(
+      `/prayer-subjects/${prayerSubjectId}/members/${memberPrayerSubjectId}`
+    );
+
+    return {
+      success: true,
+      data: {
+        message: response.data.message,
       },
     };
   } catch (error: unknown) {

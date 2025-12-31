@@ -114,6 +114,7 @@ export interface CreatePrayerSubjectRequest {
 
 export interface UpdatePrayerSubjectRequest {
   prayerSubjectDisplayName?: string;
+  prayerSubjectType?: 'individual' | 'family' | 'group';
   notes?: string;
   photoS3Key?: string;
   useLinkedUserPhoto?: boolean;

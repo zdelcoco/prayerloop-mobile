@@ -1,9 +1,7 @@
 import React, {
-  useLayoutEffect,
   useCallback,
   useRef,
   useState,
-  useEffect,
 } from 'react';
 import {
   View,
@@ -22,11 +20,19 @@ import { BlurView } from 'expo-blur';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useAppSelector } from '@/hooks/redux';
+import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 import { RootState } from '@/store/store';
-import { selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
+import { selectPrayerSubjects, fetchPrayerSubjects } from '@/store/prayerSubjectsSlice';
+// TODO: Re-enable when subject_display_sequence is added to prayer table
+// import DraggableFlatList, {
+//   RenderItemParams,
+// } from 'react-native-draggable-flatlist';
+// import { GestureHandlerRootView } from 'react-native-gesture-handler';
+// import {
+//   reorderPrayerSubjectPrayers,
+//   ReorderPrayerSubjectPrayersRequest,
+// } from '@/util/reorderPrayerSubjectPrayers';
 
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
 import { getPrayerSubjectMembers } from '@/util/prayerSubjects';
 
@@ -44,6 +50,7 @@ const SUBTLE_TEXT = '#5a6b5e';
 
 type RootStackParamList = {
   ContactDetail: { contact: string }; // Serialized contact as string
+  EditPrayerCardModal: { contact: string };
 };
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -107,15 +114,13 @@ const formatDate = (dateString: string): string => {
 export default function ContactDetail() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'ContactDetail'>>();
+  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const scrollY = useRef(new Animated.Value(0)).current;
 
   // Auth state for prayer modal
   const { user, token } = useAppSelector((state: RootState) => state.auth);
-  const { prayers: allUserPrayers } = useAppSelector(
-    (state: RootState) => state.userPrayers
-  );
   // Get fresh prayer subjects from Redux to reflect any updates
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
 
@@ -126,6 +131,11 @@ export default function ContactDetail() {
   // Members state
   const [members, setMembers] = useState<PrayerSubjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
+
+  // TODO: Re-enable when subject_display_sequence is added to prayer table
+  // Local prayers state for reordering
+  // const [localActivePrayers, setLocalActivePrayers] = useState<Prayer[]>([]);
+  // const [localAnsweredPrayers, setLocalAnsweredPrayers] = useState<Prayer[]>([]);
 
   // Get prayerSubjectId from route params, then find fresh data from Redux
   const routeContact: PrayerSubject = JSON.parse(route.params.contact);
@@ -141,34 +151,43 @@ export default function ContactDetail() {
   const activePrayers = contact.prayers?.filter((p) => !p.isAnswered) || [];
   const answeredPrayers = contact.prayers?.filter((p) => p.isAnswered) || [];
 
+  // TODO: Re-enable when subject_display_sequence is added to prayer table
+  // Sync local prayers when contact changes (for reordering)
+  // useEffect(() => {
+  //   setLocalActivePrayers(activePrayers);
+  //   setLocalAnsweredPrayers(answeredPrayers);
+  // }, [contact.prayers]);
+
   // Calculate gradient end point based on header height
   const headerGradientEnd = headerHeight / SCREEN_HEIGHT;
 
-  // Fetch members for family/group types
-  useEffect(() => {
-    const fetchMembers = async () => {
-      if (contact.prayerSubjectType === 'individual' || !token) {
-        return;
-      }
-
-      setMembersLoading(true);
-      try {
-        const result = await getPrayerSubjectMembers(
-          token,
-          contact.prayerSubjectId
-        );
-        if (result.success && result.data) {
-          setMembers(result.data.members);
+  // Fetch members for family/group types - refetch when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const fetchMembers = async () => {
+        if (contact.prayerSubjectType === 'individual' || !token) {
+          return;
         }
-      } catch (error) {
-        console.error('Failed to fetch members:', error);
-      } finally {
-        setMembersLoading(false);
-      }
-    };
 
-    fetchMembers();
-  }, [contact.prayerSubjectId, contact.prayerSubjectType, token]);
+        setMembersLoading(true);
+        try {
+          const result = await getPrayerSubjectMembers(
+            token,
+            contact.prayerSubjectId
+          );
+          if (result.success && result.data) {
+            setMembers(result.data.members);
+          }
+        } catch (error) {
+          console.error('Failed to fetch members:', error);
+        } finally {
+          setMembersLoading(false);
+        }
+      };
+
+      fetchMembers();
+    }, [contact.prayerSubjectId, contact.prayerSubjectType, token])
+  );
 
   // Hide tab bar completely when this screen is focused
   useFocusEffect(
@@ -182,74 +201,44 @@ export default function ContactDetail() {
     }, [])
   );
 
-  // Set up custom header
-  useLayoutEffect(() => {
-    const parentNavigation = navigation.getParent();
-    if (parentNavigation) {
-      parentNavigation.setOptions({
-        headerTitle: '',
-        headerLeft: () => (
-          <Pressable
-            style={({ pressed }) => [
-              [styles.headerButton, { paddingRight: 2}],
-              pressed && styles.headerButtonPressed,
-            ]}
-            onPress={() => navigation.goBack()}
-          >
-            <FontAwesome name='angle-left' size={28} color={DARK_TEXT} />
-          </Pressable>
-        ),
-        headerRight: () => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.headerButton,
-              pressed && styles.headerButtonPressed,
-            ]}
-            onPress={() => {
-              console.log(
-                'Edit contact pressed:',
-                contact.prayerSubjectDisplayName
-              );
-            }}
-          >
-            <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
-          </Pressable>
-        ),
-      });
-    }
-
-    return () => {
-      // Restore header when leaving - must restore all header options
+  // Set up custom header - use useFocusEffect so it re-runs when navigating back
+  useFocusEffect(
+    useCallback(() => {
+      const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: 'Prayer Cards',
-          headerLeft: null,
+          headerTitle: '',
+          headerLeft: () => (
+            <Pressable
+              style={({ pressed }) => [
+                [styles.headerButton, { paddingRight: 2}],
+                pressed && styles.headerButtonPressed,
+              ]}
+              onPress={() => navigation.goBack()}
+            >
+              <FontAwesome name='angle-left' size={28} color={DARK_TEXT} />
+            </Pressable>
+          ),
           headerRight: () => (
-            <View style={styles.headerRightContainer}>
-              <Pressable
-                onPress={() => {
-                  if ((global as any).cardsToggleSearch) {
-                    (global as any).cardsToggleSearch();
-                  }
-                }}
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-              >
-                <Ionicons name='search' size={20} color={DARK_TEXT} />
-              </Pressable>
-              <ContextMenuButton
-                type='cards'
-                prayerCount={allUserPrayers?.length || 0}
-                iconSize={20}
-              />
-            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.headerButtonPressed,
+              ]}
+              onPress={() => {
+                navigation.navigate('EditPrayerCardModal', {
+                  contact: JSON.stringify(contact),
+                });
+              }}
+            >
+              <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
+            </Pressable>
           ),
         });
       }
-    };
-  }, [navigation, contact, allUserPrayers]);
+      // No cleanup needed - each screen sets up its own header when focused
+    }, [navigation, contact])
+  );
 
   // Avatar opacity - fades out as user scrolls
   const avatarOpacity = scrollY.interpolate({
@@ -277,25 +266,68 @@ export default function ContactDetail() {
 
   // Handle action complete (after edit/delete)
   const handleActionComplete = () => {
-    // Could refresh data here if needed
+    // Refresh prayer subjects to get updated data
+    dispatch(fetchPrayerSubjects());
   };
 
-  // Render a prayer card within the section
-  const renderPrayerItem = (prayer: Prayer, index: number, list: Prayer[]) => (
+  // TODO: Re-enable when subject_display_sequence is added to prayer table
+  // Handle reorder completion
+  // const handleReorderEnd = async (section: 'active' | 'answered', reorderedPrayers: Prayer[]) => {
+  //   // Update local state immediately for visual feedback
+  //   if (section === 'active') {
+  //     setLocalActivePrayers(reorderedPrayers);
+  //   } else {
+  //     setLocalAnsweredPrayers(reorderedPrayers);
+  //   }
+  //
+  //   // Call API to persist the new order
+  //   if (!token) return;
+  //
+  //   try {
+  //     // Combine both sections with updated order
+  //     const allPrayers = section === 'active'
+  //       ? [...reorderedPrayers, ...localAnsweredPrayers]
+  //       : [...localActivePrayers, ...reorderedPrayers];
+  //
+  //     const reorderData: ReorderPrayerSubjectPrayersRequest = {
+  //       prayers: allPrayers.map((prayer, index) => ({
+  //         prayerId: prayer.prayerId,
+  //         displaySequence: index,
+  //       })),
+  //     };
+  //
+  //     const result = await reorderPrayerSubjectPrayers(
+  //       token,
+  //       contact.prayerSubjectId,
+  //       reorderData
+  //     );
+  //
+  //     if (!result.success) {
+  //       console.error('Failed to save prayer order');
+  //       // Revert on failure
+  //       dispatch(fetchPrayerSubjects());
+  //     }
+  //   } catch (error) {
+  //     console.error('Error reordering prayers:', error);
+  //     dispatch(fetchPrayerSubjects());
+  //   }
+  // };
+
+  // Render a prayer item
+  const renderPrayerItem = (item: Prayer, index: number, list: Prayer[]) => (
     <Pressable
-      key={prayer.prayerId}
-      onPress={() => handlePrayerPress(prayer)}
-      style={({ pressed }) => [
+      key={item.prayerId}
+      onPress={() => handlePrayerPress(item)}
+      style={[
         styles.prayerItem,
         index < list.length - 1 && styles.prayerItemBorder,
-        pressed && styles.prayerItemPressed,
       ]}
     >
       <View style={styles.prayerHeader}>
         <Text style={styles.prayerTitle} numberOfLines={1}>
-          {prayer.title}
+          {item.title}
         </Text>
-        {prayer.isAnswered && (
+        {item.isAnswered && (
           <View style={styles.answeredBadge}>
             <FontAwesome name='check' size={10} color='#FFFFFF' />
           </View>
@@ -308,14 +340,14 @@ export default function ContactDetail() {
         />
       </View>
       <Text style={styles.prayerDescription} numberOfLines={3}>
-        {prayer.prayerDescription}
+        {item.prayerDescription}
       </Text>
       <Text style={styles.prayerDate}>
-        {formatDate(prayer.datetimeCreate)}
-        {prayer.isAnswered && prayer.datetimeAnswered && (
+        {formatDate(item.datetimeCreate)}
+        {item.isAnswered && item.datetimeAnswered && (
           <Text style={styles.answeredDate}>
             {' '}
-            · Answered {formatDate(prayer.datetimeAnswered)}
+            · Answered {formatDate(item.datetimeAnswered)}
           </Text>
         )}
       </Text>
@@ -401,9 +433,7 @@ export default function ContactDetail() {
           <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
             <View style={styles.sectionContent}>
               {activePrayers.length > 0 ? (
-                activePrayers.map((prayer, index) =>
-                  renderPrayerItem(prayer, index, activePrayers)
-                )
+                activePrayers.map((prayer, index) => renderPrayerItem(prayer, index, activePrayers))
               ) : (
                 <Text style={styles.emptyText}>No active prayer requests.</Text>
               )}
@@ -420,9 +450,7 @@ export default function ContactDetail() {
             </View>
             <BlurView intensity={8} tint='regular' style={styles.sectionBlur}>
               <View style={styles.sectionContent}>
-                {answeredPrayers.map((prayer, index) =>
-                  renderPrayerItem(prayer, index, answeredPrayers)
-                )}
+                {answeredPrayers.map((prayer, index) => renderPrayerItem(prayer, index, answeredPrayers))}
               </View>
             </BlurView>
           </View>
@@ -440,40 +468,60 @@ export default function ContactDetail() {
                 {membersLoading ? (
                   <Text style={styles.emptyText}>Loading members...</Text>
                 ) : members.length > 0 ? (
-                  members.map((member, index) => (
-                    <View
-                      key={member.prayerSubjectMembershipId}
-                      style={[
-                        styles.memberItem,
-                        index < members.length - 1 && styles.memberItemBorder,
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.memberAvatar,
-                          {
-                            backgroundColor: getAvatarColor(
-                              member.memberDisplayName
-                            ),
-                          },
+                  members.map((member, index) => {
+                    const memberSubject = prayerSubjects?.find(
+                      (s) => s.prayerSubjectId === member.memberPrayerSubjectId
+                    );
+                    return (
+                      <Pressable
+                        key={member.prayerSubjectMembershipId}
+                        style={({ pressed }) => [
+                          styles.memberItem,
+                          index < members.length - 1 && styles.memberItemBorder,
+                          pressed && styles.memberItemPressed,
                         ]}
+                        onPress={() => {
+                          if (memberSubject) {
+                            navigation.push('ContactDetail', {
+                              contact: JSON.stringify(memberSubject),
+                            });
+                          }
+                        }}
+                        disabled={!memberSubject}
                       >
-                        <Text style={styles.memberInitials}>
-                          {getInitials(member.memberDisplayName)}
-                        </Text>
-                      </View>
-                      <View style={styles.memberInfo}>
-                        <Text style={styles.memberName}>
-                          {member.memberDisplayName}
-                        </Text>
-                        <Text style={styles.memberRole}>
-                          {member.membershipRole === 'leader'
-                            ? 'Leader'
-                            : 'Member'}
-                        </Text>
-                      </View>
-                    </View>
-                  ))
+                        <View
+                          style={[
+                            styles.memberAvatar,
+                            {
+                              backgroundColor: getAvatarColor(
+                                member.memberDisplayName
+                              ),
+                            },
+                          ]}
+                        >
+                          <Text style={styles.memberInitials}>
+                            {getInitials(member.memberDisplayName)}
+                          </Text>
+                        </View>
+                        <View style={styles.memberInfo}>
+                          <Text style={styles.memberName}>
+                            {member.memberDisplayName}
+                          </Text>
+                          <Text style={styles.memberRole}>
+                            {member.membershipRole === 'leader'
+                              ? 'Leader'
+                              : 'Member'}
+                          </Text>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color={SUBTLE_TEXT}
+                          style={styles.memberChevron}
+                        />
+                      </Pressable>
+                    );
+                  })
                 ) : (
                   <Text style={styles.emptyText}>No members added yet.</Text>
                 )}
@@ -597,12 +645,6 @@ const styles = StyleSheet.create({
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
   },
-  headerRightContainer: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8,
-    marginRight: 8,
-  },
   initialsText: {
     color: '#FFFFFF',
     fontFamily: 'InstrumentSans-Bold',
@@ -623,6 +665,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
     width: 36,
   },
+  memberChevron: {
+    marginLeft: 'auto',
+  },
   memberInfo: {
     flex: 1,
   },
@@ -639,6 +684,9 @@ const styles = StyleSheet.create({
   memberItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  memberItemPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.15)',
   },
   memberName: {
     color: DARK_TEXT,
@@ -684,9 +732,11 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  prayerItemPressed: {
-    backgroundColor: 'rgba(144, 197, 144, 0.2)',
-  },
+  // TODO: Re-enable when subject_display_sequence is added to prayer table
+  // prayerItemDragging: {
+  //   opacity: 0.7,
+  //   transform: [{ scale: 1.03 }],
+  // },
   prayerTitle: {
     color: DARK_TEXT,
     flex: 1,

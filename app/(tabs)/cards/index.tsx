@@ -1,14 +1,17 @@
-import React, { useLayoutEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   Text,
   View,
   StyleSheet,
   Dimensions,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
+import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, setFilters, selectFilters } from '@/store/userPrayersSlice';
 import {
@@ -72,6 +75,37 @@ export default function Cards() {
         global.tabBarAddHandler = null;
       };
     }, [navigation])
+  );
+
+  // Restore header when this screen gains focus (after navigating back from ContactDetail)
+  useFocusEffect(
+    useCallback(() => {
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.setOptions({
+          headerTitle: 'Prayer Cards',
+          headerLeft: null,
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <Pressable
+                onPress={() => setSearchVisible((prev) => !prev)}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons name='search' size={20} color='#2d3e31' />
+              </Pressable>
+              <ContextMenuButton
+                type='cards'
+                prayerCount={prayerSubjects?.flatMap(s => s.prayers).length || 0}
+                iconSize={20}
+              />
+            </View>
+          ),
+        });
+      }
+    }, [navigation, prayerSubjects])
   );
 
   // Expose functions to global for tab layout to access
@@ -160,6 +194,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
+  },
+  headerButton: {
+    alignItems: 'center',
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 25,
+    borderWidth: 1,
+    height: 50,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 50,
+  },
+  headerButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerRightContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
   },
   text: {
     color: '#000',

@@ -24,6 +24,13 @@ export default function CardsLayout() {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen
+        name='EditPrayerCardModal'
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }
