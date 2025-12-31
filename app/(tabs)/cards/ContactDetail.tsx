@@ -165,6 +165,8 @@ export default function ContactDetail() {
   // Local prayers state for reordering
   const [localPrayers, setLocalPrayers] = useState<Prayer[]>([]);
   const isReorderingRef = useRef(false);
+  // Key to force DraggableFlatList remount when reverting invalid drags
+  const [listKey, setListKey] = useState(0);
 
   // Get prayerSubjectId from route params, then find fresh data from Redux
   const routeContact: PrayerSubject = JSON.parse(route.params.contact);
@@ -403,8 +405,8 @@ export default function ContactDetail() {
 
     // Active header must be first
     if (activeHeaderIndex !== 0) {
-      // Force revert by updating state with current order
-      setLocalPrayers([...localPrayers]);
+      // Force revert by incrementing key to remount the list
+      setListKey(prev => prev + 1);
       return;
     }
 
@@ -425,8 +427,8 @@ export default function ContactDetail() {
     }
 
     if (!isValid) {
-      // Force revert by updating state with current order (new array reference triggers re-render)
-      setLocalPrayers([...localPrayers]);
+      // Force revert by incrementing key to remount the list
+      setListKey(prev => prev + 1);
       return;
     }
 
@@ -798,6 +800,7 @@ export default function ContactDetail() {
       {/* Single DraggableFlatList as the main scrollable container */}
       <GestureHandlerRootView style={styles.gestureContainer}>
         <DraggableFlatList
+          key={listKey}
           data={listItems}
           keyExtractor={(item) => item.key}
           renderItem={renderItem}
