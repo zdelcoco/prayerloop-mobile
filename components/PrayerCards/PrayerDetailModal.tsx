@@ -201,6 +201,12 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     return (
       <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1}>
         <View style={[styles.detailContainer, { maxHeight: maxContentHeight }]}>
+          {prayer.prayerSubjectDisplayName && (
+            <View style={styles.subjectHeader}>
+              <Text style={styles.subjectLabel}>Praying for</Text>
+              <Text style={styles.subjectName}>{prayer.prayerSubjectDisplayName}</Text>
+            </View>
+          )}
           <ScrollView
             style={[styles.scrollableContent, { maxHeight: scrollViewMaxHeight }]}
             contentContainerStyle={styles.scrollableContentContainer}
@@ -547,7 +553,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(50, 70, 55, 0.9)',
+    backgroundColor: 'rgba(20, 40, 25, 0.95)',
     flex: 1,
     justifyContent: 'center',
   },
@@ -556,6 +562,21 @@ const styles = StyleSheet.create({
   },
   scrollableContentContainer: {
     flexGrow: 1,
+  },
+  subjectHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subjectLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subjectName: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 20,
   },
   shareButtonRow: {
     flexDirection: 'row',

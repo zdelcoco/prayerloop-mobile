@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useMemo,
   useState,
+  useRef,
 } from 'react';
 import {
   View,
@@ -13,6 +14,7 @@ import {
   Alert,
   FlatList,
   TextInput,
+  Share,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -30,8 +32,10 @@ import { BlurView } from 'expo-blur';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import HeaderTitleActionDropdown, { ActionOption } from '@/components/ui/HeaderTitleActionDropdown';
 import { groupUsersCache } from '@/util/groupUsersCache';
 import { createPrayerSubject as createPrayerSubjectAPI } from '@/util/prayerSubjects';
+import { createGroupInvite } from '@/util/createGroupInvite';
 
 import type { Group, Prayer, User, PrayerSubject } from '@/util/shared.types';
 
@@ -48,7 +52,16 @@ type RootStackParamList = {
   UsersModal: { groupProfileId: number; groupName: string; groupCreatorId: string };
 };
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Max width for header title (screen width minus back button, right buttons, and padding)
+const HEADER_TITLE_MAX_WIDTH = SCREEN_WIDTH - 220;
+
+// Dropdown action options
+const CIRCLE_ACTION_OPTIONS: ActionOption[] = [
+  { value: 'add_prayer', label: 'Add Prayer', icon: 'add-outline' },
+  { value: 'invite', label: 'Invite to Circle', icon: 'person-add-outline' },
+];
 
 // Section type for grouping prayers by prayer subject (who the prayer is FOR)
 interface PrayerSection {
@@ -120,6 +133,9 @@ export default function CircleDetail() {
   // Search state
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Track if navigating to a modal (to prevent tab bar flash)
+  const isNavigatingToModal = useRef(false);
 
   // Filter state
   type FilterType = 'all' | 'active' | 'answered';
@@ -262,25 +278,84 @@ export default function CircleDetail() {
     }, [dispatch, group.groupId])
   );
 
+  // Handle add prayer - open new prayer modal (stay within groups tab)
+  const handleAddPrayer = useCallback(() => {
+    // Mark that we're navigating to a modal to prevent tab bar flash
+    isNavigatingToModal.current = true;
+    router.push({
+      pathname: '/(tabs)/groups/PrayerModal',
+      params: {
+        mode: 'add',
+        preselectedCircleId: group.groupId.toString(),
+        preselectedCircleName: group.groupName,
+      },
+    });
+  }, [group]);
+
+  // Handle invite to circle - create invite link and share
+  const handleInviteToCircle = useCallback(async () => {
+    if (!token) return;
+
+    try {
+      const result = await createGroupInvite(token, group.groupId);
+      if (result.success && result.data) {
+        const inviteCode = result.data.inviteCode;
+        const inviteLink = `prayerloop://join?code=${inviteCode}`;
+        const message = `Join my prayer circle "${group.groupName}" on PrayerLoop!\n\nUse invite code: ${inviteCode}\n\nOr tap this link: ${inviteLink}`;
+
+        await Share.share({
+          message,
+          title: `Join ${group.groupName} on PrayerLoop`,
+        });
+      } else {
+        Alert.alert('Error', 'Failed to create invite link. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating invite:', error);
+      Alert.alert('Error', 'Failed to create invite link. Please try again.');
+    }
+  }, [token, group]);
+
+  // Handle dropdown action selection
+  const handleCircleAction = useCallback((value: string) => {
+    if (value === 'add_prayer') {
+      handleAddPrayer();
+    } else if (value === 'invite') {
+      handleInviteToCircle();
+    }
+  }, [handleAddPrayer, handleInviteToCircle]);
+
   // Hide tab bar when focused
   useFocusEffect(
     useCallback(() => {
+      // Reset the modal navigation flag when we regain focus
+      isNavigatingToModal.current = false;
       global.tabBarHidden = true;
       global.tabBarAddVisible = false;
       return () => {
-        global.tabBarHidden = false;
-        global.tabBarAddVisible = true;
+        // Don't show tab bar if navigating to a modal (prevents flash)
+        if (!isNavigatingToModal.current) {
+          global.tabBarHidden = false;
+          global.tabBarAddVisible = true;
+        }
       };
     }, [])
   );
 
-  // Set up custom header - edit button only, no add button
+  // Set up custom header with dropdown
   useFocusEffect(
     useCallback(() => {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: group.groupName,
+          headerTitle: () => (
+            <HeaderTitleActionDropdown
+              title={group.groupName}
+              options={CIRCLE_ACTION_OPTIONS}
+              onSelect={handleCircleAction}
+              maxWidth={HEADER_TITLE_MAX_WIDTH}
+            />
+          ),
           headerLeft: () => (
             <Pressable
               style={({ pressed }) => [
@@ -330,7 +405,7 @@ export default function CircleDetail() {
           ),
         });
       }
-    }, [navigation, group, searchVisible])
+    }, [navigation, group, searchVisible, handleCircleAction])
   );
 
   // Handle refresh
@@ -407,18 +482,6 @@ export default function CircleDetail() {
       }
     }
   }, [token, user, prayerSubjects, dispatch]);
-
-  // Handle FAB press - open new prayer modal (stay within groups tab)
-  const handleAddPrayer = useCallback(() => {
-    router.push({
-      pathname: '/(tabs)/groups/PrayerModal',
-      params: {
-        mode: 'add',
-        preselectedCircleId: group.groupId.toString(),
-        preselectedCircleName: group.groupName,
-      },
-    });
-  }, [group]);
 
   // Render section header (prayer subject info - who the prayer is FOR)
   const renderSectionHeader = useCallback((subjectName: string, prayerCount: number) => {
@@ -724,18 +787,6 @@ export default function CircleDetail() {
         )}
       </View>
 
-      {/* Floating Action Button for adding prayers */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: insets.bottom + 20 },
-          pressed && styles.fabPressed,
-        ]}
-        onPress={handleAddPrayer}
-      >
-        <FontAwesome name="plus" size={24} color="#FFFFFF" />
-      </Pressable>
-
       {/* Prayer Detail Modal */}
       {selectedPrayer && (
         <PrayerDetailModal
@@ -821,25 +872,6 @@ const styles = StyleSheet.create({
   },
   emptyWrapper: {
     flex: 1,
-  },
-  fab: {
-    alignItems: 'center',
-    backgroundColor: ACTIVE_GREEN,
-    borderRadius: 28,
-    elevation: 6,
-    height: 56,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    width: 56,
-  },
-  fabPressed: {
-    backgroundColor: '#1B5E20',
-    transform: [{ scale: 0.95 }],
   },
   filterButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.5)',

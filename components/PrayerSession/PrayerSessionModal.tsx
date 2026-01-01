@@ -58,11 +58,7 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
     return null;
   }
 
-  const sessionTitle = contextTitle
-    ? contextTitle === 'Personal Prayers'
-      ? contextTitle
-      : `Praying for ${contextTitle}`
-    : 'Prayer Session';
+  const headerTitle = contextTitle || 'Prayer Session';
 
   return (
     <Modal
@@ -75,7 +71,7 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
         <View style={styles.container}>
           {/* Header - Top 1/4 */}
           <View style={styles.header}>
-            <Text style={styles.title}>{sessionTitle}</Text>
+            <Text style={styles.title}>{headerTitle}</Text>
             <Pressable
               style={({ pressed }) => [
                 styles.closeButton,
@@ -89,6 +85,13 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
 
           {/* Card Container - Center 1/2 */}
           <View style={styles.cardContainer}>
+            {/* Praying for subject name */}
+            {currentPrayer.prayerSubjectDisplayName && (
+              <View style={styles.subjectHeader}>
+                <Text style={styles.subjectLabel}>Praying for</Text>
+                <Text style={styles.subjectName}>{currentPrayer.prayerSubjectDisplayName}</Text>
+              </View>
+            )}
             <View style={styles.prayerCard}>
               <Text style={styles.prayerTitle}>
                 {currentPrayer.title}
@@ -237,11 +240,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   prayerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F1FDED',
     borderRadius: 20,
     padding: 32,
     width: '100%',
-    height: '80%', // Consistent height regardless of content
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
@@ -288,6 +291,21 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
     marginBottom: 12,
+  },
+  subjectHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subjectLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subjectName: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 20,
   },
   title: {
     color: 'rgba(255, 255, 255, 0.5)',

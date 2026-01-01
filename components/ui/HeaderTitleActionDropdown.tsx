@@ -20,6 +20,7 @@ interface HeaderTitleActionDropdownProps {
   title: string;
   options: ActionOption[];
   onSelect: (value: string) => void;
+  maxWidth?: number;
 }
 
 const DARK_TEXT = '#2d3e31';
@@ -29,6 +30,7 @@ export default function HeaderTitleActionDropdown({
   title,
   options,
   onSelect,
+  maxWidth,
 }: HeaderTitleActionDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -78,11 +80,14 @@ export default function HeaderTitleActionDropdown({
         onPress={handlePress}
         style={({ pressed }) => [
           styles.titleContainer,
-          pressed && styles.titleContainerPressed,
+          maxWidth ? { maxWidth } : undefined,
+          pressed ? styles.titleContainerPressed : undefined,
         ]}
       >
-        <Text style={styles.titleText}>{title}</Text>
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
+        <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
+          {title}
+        </Text>
+        <Animated.View style={{ transform: [{ rotate: rotation }], flexShrink: 0 }}>
           <Ionicons name="chevron-down" size={18} color={DARK_TEXT} />
         </Animated.View>
       </Pressable>
@@ -184,6 +189,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     color: DARK_TEXT,
+    flexShrink: 1,
     fontFamily: 'InstrumentSans-Bold',
     fontSize: 21.6, // ms(18) from _layout.tsx
   },
