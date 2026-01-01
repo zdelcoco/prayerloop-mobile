@@ -12,6 +12,7 @@ import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import ProfileButton from '@/components/ui/ProfileButton';
+import HeaderTitleActionDropdown, { ActionOption } from '@/components/ui/HeaderTitleActionDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups, reorderGroups } from '@/store/groupsSlice';
 import { RootState } from '@/store/store';
@@ -25,9 +26,14 @@ import { groupUsersCache } from '@/util/groupUsersCache';
 import { useEffect, useRef } from 'react';
 
 type RootStackParamList = {
-  ActionSelection: undefined;
   CircleDetail: { group: string };
+  PrayerModal: { mode: string };
 };
+
+const CIRCLE_ACTION_OPTIONS: ActionOption[] = [
+  { value: 'create', label: 'Create Prayer Circle', icon: 'add-outline' },
+  { value: 'join', label: 'Join Prayer Circle', icon: 'enter-outline' },
+];
 
 export default function Groups() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -62,6 +68,14 @@ export default function Groups() {
     }
   }, [token]);
 
+  const handleCircleAction = useCallback((value: string) => {
+    if (value === 'create') {
+      router.push('/groups/GroupModal');
+    } else if (value === 'join') {
+      router.push('/groups/JoinGroupModal');
+    }
+  }, []);
+
   const fetchData = useCallback(() => {
     // Debounce fetches to prevent duplicate calls within 500ms
     const now = Date.now();
@@ -81,17 +95,18 @@ export default function Groups() {
   );
 
   // Register tab bar add button handler when this screen is focused
+  // Tab bar + always adds a prayer (no group context from the groups list)
   useFocusEffect(
     useCallback(() => {
       global.tabBarAddVisible = true;
       global.tabBarAddHandler = () => {
-        router.push({ pathname: '/groups/ActionSelection' });
+        navigation.navigate('PrayerModal', { mode: 'add' });
       };
       return () => {
         // Cleanup when screen loses focus
         global.tabBarAddHandler = null;
       };
-    }, [])
+    }, [navigation])
   );
 
   // Restore header when this screen gains focus
@@ -100,7 +115,13 @@ export default function Groups() {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: 'Prayer Circles',
+          headerTitle: () => (
+            <HeaderTitleActionDropdown
+              title="Prayer Circles"
+              options={CIRCLE_ACTION_OPTIONS}
+              onSelect={handleCircleAction}
+            />
+          ),
           headerLeft: () => (
             <View style={styles.headerLeftContainer}>
               <ContextMenuButton
@@ -130,7 +151,7 @@ export default function Groups() {
           ),
         });
       }
-    }, [navigation, user])
+    }, [navigation, user, handleCircleAction])
   );
 
   // Expose functions to global for tab layout to access

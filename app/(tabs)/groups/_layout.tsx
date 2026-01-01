@@ -9,15 +9,6 @@ export default function GroupsLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ActionSelection"
-        options={{
-          headerShown: false,
-          presentation: 'transparentModal',
-          animation: 'slide_from_bottom',
-          gestureEnabled: true,
-        }}
-      />
-      <Stack.Screen
         name="CircleDetail"
         options={{ headerShown: false }}
       />
@@ -39,28 +30,14 @@ export default function GroupsLayout() {
       <Stack.Screen
         name="GroupModal"
         options={{
-          title: "Create a Prayer Circle",
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />
       <Stack.Screen
         name="JoinGroupModal"
         options={{
-          title: "Join a Prayer Circle",
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />
