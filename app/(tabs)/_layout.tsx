@@ -313,9 +313,9 @@ export default function TabsLayout() {
             options={{
               title: 'Home',
               href: null, // Hide from tab bar but keep route for compatibility
-              headerRight: () => (
-                <View style={styles.headerRightContainer}>
-                  <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={18} />
+              headerLeft: () => (
+                <View style={styles.headerLeftContainer}>
+                  <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={18} buttonSize={36} />
                 </View>
               ),
             }}

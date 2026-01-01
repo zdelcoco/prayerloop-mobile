@@ -309,26 +309,27 @@ const StartPrayerSessionCard = () => {
   );
 };
 
+// Color constants matching the app theme
+const ACTIVE_GREEN = '#2E7D32';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
+
 const styles = StyleSheet.create({
   cancelButton: {
-    color: '#999',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
   },
   cardContainer: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 10,
-    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 6,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   checkbox: {
     alignItems: 'center',
-    borderColor: '#ccc',
+    borderColor: SUBTLE_TEXT,
     borderRadius: 12,
     borderWidth: 2,
     height: 24,
@@ -336,8 +337,8 @@ const styles = StyleSheet.create({
     width: 24,
   },
   checkboxSelected: {
-    backgroundColor: '#008000',
-    borderColor: '#008000',
+    backgroundColor: ACTIVE_GREEN,
+    borderColor: ACTIVE_GREEN,
   },
   checkmark: {
     color: '#fff',
@@ -345,7 +346,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   description: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 16,
@@ -355,7 +357,8 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   loadingText: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
     marginTop: 16,
   },
@@ -376,13 +379,13 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalTitle: {
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 18,
-    fontWeight: '600',
   },
   selectionSummary: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '500',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -390,13 +393,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sourceName: {
-    color: '#333',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '500',
     marginBottom: 4,
   },
   sourceNameSelected: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
   },
   sourceRow: {
     alignItems: 'center',
@@ -410,37 +413,38 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   sourceRowSelected: {
-    backgroundColor: '#E8F5E8',
-    borderColor: '#008000',
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
+    borderColor: ACTIVE_GREEN,
   },
   sourceType: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
   },
   startButton: {
     alignItems: 'center',
-    backgroundColor: '#008000',
+    backgroundColor: ACTIVE_GREEN,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   startButtonText: {
     color: '#fff',
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
   },
   startSessionButton: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
   },
   startSessionButtonDisabled: {
     color: '#ccc',
   },
   title: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
     marginBottom: 8,
   },
 });

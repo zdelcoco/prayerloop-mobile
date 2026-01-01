@@ -17,7 +17,7 @@ import {
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -29,6 +29,7 @@ import { selectUserGroups } from '@/store/groupsSlice';
 import { BlurView } from 'expo-blur';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 import { groupUsersCache } from '@/util/groupUsersCache';
 import { createPrayerSubject as createPrayerSubjectAPI } from '@/util/prayerSubjects';
 
@@ -108,6 +109,9 @@ export default function CircleDetail() {
   // Prayer detail modal state
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
   const [prayerModalVisible, setPrayerModalVisible] = useState(false);
+
+  // Prayer session modal state
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
 
   // Members state
   const [members, setMembers] = useState<User[]>([]);
@@ -291,6 +295,15 @@ export default function CircleDetail() {
           ),
           headerRight: () => (
             <View style={styles.headerRightContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+                onPress={() => setPrayerSessionVisible(true)}
+              >
+                <Text style={{ fontSize: 18 }}>🙏</Text>
+              </Pressable>
               <Pressable
                 style={({ pressed }) => [
                   styles.headerButton,
@@ -737,6 +750,16 @@ export default function CircleDetail() {
           context='groups'
         />
       )}
+
+      {/* Prayer Session Modal */}
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={(prayers || []).filter(p => !p.isAnswered)}
+        currentUserId={user?.userProfileId || 0}
+        usersLookup={membersLookup}
+        onClose={() => setPrayerSessionVisible(false)}
+        contextTitle={group.groupName}
+      />
     </LinearGradient>
   );
 }

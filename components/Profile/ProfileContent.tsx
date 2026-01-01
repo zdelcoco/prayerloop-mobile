@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Constants from 'expo-constants';
 
-import UserCard from '@/components/Home/UserCard';
+import UserProfileCard from '@/components/Home/UserProfileCard';
 import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
 import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
 import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
@@ -33,13 +33,7 @@ interface ProfileContentProps {
 export default function ProfileContent({ user, onUserUpdate, containerStyle }: ProfileContentProps) {
   return (
     <View style={[styles.container, containerStyle]}>
-      <UserCard
-        user={user}
-        onUserUpdate={(updatedUser) => {
-          console.log('User updated successfully:', updatedUser);
-          onUserUpdate?.(updatedUser);
-        }}
-      />
+      <UserProfileCard user={user} />
 
       <StartPrayerSessionCard />
       <PrayerReminderCard />
@@ -63,8 +57,9 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   versionText: {
-    color: '#666',
+    color: '#5a6b5e',
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 12,
-    opacity: 0.6,
+    opacity: 0.8,
   },
 });

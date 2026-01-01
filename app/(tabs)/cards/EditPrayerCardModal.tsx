@@ -14,11 +14,13 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { BlurView } from 'expo-blur';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchPrayerSubjects } from '@/store/prayerSubjectsSlice';
 import { fetchUserPrayers } from '@/store/userPrayersSlice';
+import { updateUserProfileSuccess, logout } from '@/store/authSlice';
 import {
   updatePrayerSubject as updatePrayerSubjectAPI,
   deletePrayerSubject as deletePrayerSubjectAPI,
@@ -33,7 +35,12 @@ import PrayerSubjectPicker from '@/components/PrayerCards/PrayerSubjectPicker';
 import { createUserPrayer } from '@/util/createUserPrayer';
 import { updateUserPrayer } from '@/util/updateUserPrayer';
 import { removePrayerAccess } from '@/util/removePrayerAccess';
+import { updateUserProfile } from '@/util/updateUserProfile';
+import { changeUserPassword } from '@/util/changeUserPassword';
+import { deleteUserAccount } from '@/util/deleteUserAccount';
+import { formatPhoneNumberInput } from '@/util/phoneFormatter';
 import { RootState } from '@/store/store';
+import ChangePasswordModal from '@/components/Home/ChangePasswordModal';
 import type { PrayerSubject, PrayerSubjectMember, UpdatePrayerSubjectRequest, CreatePrayerRequest } from '@/util/shared.types';
 
 // Color constants matching the app theme
@@ -118,7 +125,7 @@ const TYPE_OPTIONS: { value: PrayerSubjectType; label: string; icon: 'user' | 'h
 const HEADER_HEIGHT = 56;
 
 type RootStackParamList = {
-  EditPrayerCardModal: { contact: string };
+  EditPrayerCardModal: { contact: string; returnTo?: string };
   ContactDetail: { contact: string };
 };
 
@@ -151,6 +158,7 @@ export default function EditPrayerCardModal() {
 
   // Parse the contact from route params
   const contact: PrayerSubject = JSON.parse(route.params.contact);
+  const returnTo = route.params.returnTo;
 
   // Check if this is the user's own card (linked to their profile)
   const isOwnCard = contact.userProfileId === user?.userProfileId;
@@ -189,6 +197,14 @@ export default function EditPrayerCardModal() {
   const [memberDropdownVisible, setMemberDropdownVisible] = useState(false);
   const [groupDropdownVisible, setGroupDropdownVisible] = useState(false);
   const [membershipChanged, setMembershipChanged] = useState(false);
+
+  // Account settings state (only used when isOwnCard)
+  const [email, setEmail] = useState(user?.email || '');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
 
   // Fetch members for family/group types to check if type can be changed
   useEffect(() => {
@@ -340,23 +356,40 @@ export default function EditPrayerCardModal() {
       await dispatch(fetchPrayerSubjects());
       await dispatch(fetchUserPrayers());
 
-      // Go back to the contact detail screen
-      navigation.goBack();
+      // Go back to the appropriate screen
+      if (returnTo === 'home') {
+        navigation.goBack();
+        setTimeout(() => {
+          router.navigate('/userProfile');
+        }, 50);
+      } else {
+        navigation.goBack();
+      }
     } catch (error) {
       console.error('Error updating prayer card:', error);
       Alert.alert('Error', 'Failed to update prayer card. Please try again.');
     } finally {
       setIsSaving(false);
     }
-  }, [displayName, notes, subjectType, prayers, deletedPrayers, contact, isSaving, token, user, dispatch, navigation]);
+  }, [displayName, notes, subjectType, prayers, deletedPrayers, contact, isSaving, token, user, dispatch, navigation, returnTo]);
 
-  const handleClose = useCallback(async () => {
-    const closeAndRefresh = async () => {
+  const handleClose = useCallback(() => {
+    const closeAndRefresh = () => {
       // Refresh prayer subjects if membership was changed
       if (membershipChanged) {
-        await dispatch(fetchPrayerSubjects());
+        dispatch(fetchPrayerSubjects());
       }
-      navigation.goBack();
+
+      // Close the modal first, then navigate if needed
+      if (returnTo === 'home') {
+        navigation.goBack();
+        // Navigate to home after a short delay to ensure modal is closed
+        setTimeout(() => {
+          router.navigate('/userProfile');
+        }, 50);
+      } else {
+        navigation.goBack();
+      }
     };
 
     if (hasChanges) {
@@ -369,9 +402,9 @@ export default function EditPrayerCardModal() {
         ]
       );
     } else {
-      await closeAndRefresh();
+      closeAndRefresh();
     }
-  }, [hasChanges, membershipChanged, dispatch, navigation]);
+  }, [hasChanges, membershipChanged, dispatch, navigation, returnTo]);
 
   const handleAddPhoto = () => {
     Alert.alert('Coming Soon', 'Photo upload will be available in a future update.');
@@ -488,6 +521,157 @@ export default function EditPrayerCardModal() {
       'User linking will be available in a future update.'
     );
   };
+
+  // Account settings handlers (only used when isOwnCard)
+  const handlePhoneNumberChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    setPhoneNumber(cleaned);
+  };
+
+  const handleSaveAccountSettings = async () => {
+    if (!token || !user) {
+      Alert.alert('Error', 'You must be logged in to update your profile.');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !emailRegex.test(email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address.');
+      return;
+    }
+
+    setIsSavingAccount(true);
+
+    try {
+      const updateData: { email?: string; phoneNumber?: string } = {};
+
+      if (email !== user.email) {
+        updateData.email = email;
+      }
+      if (phoneNumber !== (user.phoneNumber || '')) {
+        updateData.phoneNumber = phoneNumber;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        // No changes
+        return;
+      }
+
+      const result = await updateUserProfile(token, user.userProfileId, updateData);
+
+      if (result.success && result.data) {
+        dispatch(updateUserProfileSuccess(result.data.user));
+        Alert.alert('Success', 'Account settings updated successfully!');
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to update account settings. Please try again.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error updating account settings:', error);
+    } finally {
+      setIsSavingAccount(false);
+    }
+  };
+
+  const handleChangePasswordSave = async (currentPassword: string, newPassword: string) => {
+    if (!token || !user) {
+      Alert.alert('Error', 'You must be logged in to change your password.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const result = await changeUserPassword(token, user.userProfileId, {
+        oldPassword: currentPassword,
+        newPassword: newPassword,
+      });
+
+      if (result.success) {
+        Alert.alert('Success', 'Your password has been changed successfully!');
+        setShowChangePasswordModal(false);
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to change password. Please try again.'
+        );
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error changing password:', error);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Deleting your account will permanently delete all your data, including prayers, groups, and preferences. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Final Warning',
+              'This action is irreversible. Your account and all associated data will be permanently deleted. Continue?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Forever',
+                  style: 'destructive',
+                  onPress: confirmDeleteAccount,
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!token || !user) {
+      Alert.alert('Error', 'You must be logged in to delete your account.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const result = await deleteUserAccount(token, user.userProfileId);
+
+      if (result.success) {
+        navigation.popToTop();
+        dispatch(logout());
+        setTimeout(() => {
+          Alert.alert('Account Deleted', 'Your account has been permanently deleted.');
+        }, 500);
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to delete account. Please try again.'
+        );
+        setIsDeletingAccount(false);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      console.error('Error deleting account:', error);
+      setIsDeletingAccount(false);
+    }
+  };
+
+  // Check if account settings have changes
+  const hasAccountChanges = useMemo(() => {
+    if (!isOwnCard || !user) return false;
+    return email !== user.email || phoneNumber !== (user.phoneNumber || '');
+  }, [isOwnCard, user, email, phoneNumber]);
 
   // Handle adding a member to the group/family
   const handleAddMember = async (memberSubject: PrayerSubject | null) => {
@@ -1176,53 +1360,160 @@ export default function EditPrayerCardModal() {
           </View>
         )}
 
-        {/* Link to User Section */}
-        <View style={styles.section}>
-          <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
-            <View style={styles.sectionContent}>
-              {linkedUserId && (
-                <>
-                  <View style={styles.linkedUserRow}>
-                    <Text style={styles.linkedUserText}>
-                      {contact.linkStatus === 'linked'
-                        ? 'Linked to Prayerloop user'
-                        : contact.linkStatus === 'pending'
-                        ? 'Link request pending'
-                        : `Linked to user #${linkedUserId}`}
-                    </Text>
-                    {contact.linkStatus !== 'linked' && (
-                      <Pressable
-                        onPress={() => setLinkedUserId(null)}
-                        style={({ pressed }) => [
-                          styles.removeButton,
-                          pressed && styles.removeButtonPressed,
-                        ]}
-                      >
-                        <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
-                      </Pressable>
-                    )}
-                  </View>
-                  <View style={styles.inputRowBorder} />
-                </>
-              )}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.addRow,
-                  pressed && styles.addRowPressed,
-                ]}
-                onPress={handleLinkUser}
-              >
-                <Ionicons
-                  name="add-circle"
-                  size={22}
-                  color={ACTIVE_GREEN}
-                  style={styles.addIcon}
-                />
-                <Text style={styles.addRowText}>link card to prayerloop user</Text>
-              </Pressable>
+        {/* Link to User Section - only show for non-own cards */}
+        {!isOwnCard && (
+          <View style={styles.section}>
+            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+              <View style={styles.sectionContent}>
+                {linkedUserId && (
+                  <>
+                    <View style={styles.linkedUserRow}>
+                      <Text style={styles.linkedUserText}>
+                        {contact.linkStatus === 'linked'
+                          ? 'Linked to Prayerloop user'
+                          : contact.linkStatus === 'pending'
+                          ? 'Link request pending'
+                          : `Linked to user #${linkedUserId}`}
+                      </Text>
+                      {contact.linkStatus !== 'linked' && (
+                        <Pressable
+                          onPress={() => setLinkedUserId(null)}
+                          style={({ pressed }) => [
+                            styles.removeButton,
+                            pressed && styles.removeButtonPressed,
+                          ]}
+                        >
+                          <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
+                        </Pressable>
+                      )}
+                    </View>
+                    <View style={styles.inputRowBorder} />
+                  </>
+                )}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.addRow,
+                    pressed && styles.addRowPressed,
+                  ]}
+                  onPress={handleLinkUser}
+                >
+                  <Ionicons
+                    name="add-circle"
+                    size={22}
+                    color={ACTIVE_GREEN}
+                    style={styles.addIcon}
+                  />
+                  <Text style={styles.addRowText}>link card to prayerloop user</Text>
+                </Pressable>
+              </View>
+            </BlurView>
+          </View>
+        )}
+
+        {/* Account Settings Section - only show for user's own card */}
+        {isOwnCard && (
+          <View style={styles.section}>
+            <View style={styles.sectionLabelContainer}>
+              <Text style={styles.sectionLabel}>Account Settings</Text>
+              <View style={styles.sectionLabelLine} />
             </View>
-          </BlurView>
-        </View>
+            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+              <View style={styles.sectionContent}>
+                {/* Email Field */}
+                <View style={styles.inputRow}>
+                  <View style={styles.accountFieldRow}>
+                    <Ionicons name="mail-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
+                    <TextInput
+                      style={[styles.input, styles.accountInput]}
+                      placeholder="Email"
+                      placeholderTextColor={SUBTLE_TEXT}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </View>
+                <View style={styles.inputRowBorder} />
+                {/* Phone Field */}
+                <View style={styles.inputRow}>
+                  <View style={styles.accountFieldRow}>
+                    <Ionicons name="call-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
+                    <TextInput
+                      style={[styles.input, styles.accountInput]}
+                      placeholder="Phone Number"
+                      placeholderTextColor={SUBTLE_TEXT}
+                      value={formatPhoneNumberInput(phoneNumber)}
+                      onChangeText={handlePhoneNumberChange}
+                      keyboardType="phone-pad"
+                      maxLength={14}
+                    />
+                  </View>
+                </View>
+                {/* Save Account Settings Button - only show if there are changes */}
+                {hasAccountChanges && (
+                  <>
+                    <View style={styles.inputRowBorder} />
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.saveAccountButton,
+                        pressed && styles.saveAccountButtonPressed,
+                      ]}
+                      onPress={handleSaveAccountSettings}
+                      disabled={isSavingAccount}
+                    >
+                      {isSavingAccount ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.saveAccountButtonText}>Save Changes</Text>
+                      )}
+                    </Pressable>
+                  </>
+                )}
+                <View style={styles.inputRowBorder} />
+                {/* Change Password Button */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.accountActionRow,
+                    pressed && styles.accountActionRowPressed,
+                  ]}
+                  onPress={() => setShowChangePasswordModal(true)}
+                >
+                  <Ionicons name="key-outline" size={20} color={ACTIVE_GREEN} style={styles.accountFieldIcon} />
+                  <Text style={styles.accountActionText}>Change Password</Text>
+                  <FontAwesome name="chevron-right" size={14} color={SUBTLE_TEXT} />
+                </Pressable>
+              </View>
+            </BlurView>
+          </View>
+        )}
+
+        {/* Delete Account Section - only show for user's own card */}
+        {isOwnCard && (
+          <View style={styles.section}>
+            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+              <View style={styles.sectionContent}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.deleteRow,
+                    pressed && styles.deleteRowPressed,
+                  ]}
+                  onPress={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={DANGER_RED}
+                    style={styles.deleteIcon}
+                  />
+                  <Text style={styles.deleteText}>Delete Account</Text>
+                </Pressable>
+              </View>
+            </BlurView>
+          </View>
+        )}
 
         {/* Delete Section - only show if not user's own card */}
         {!isOwnCard && (
@@ -1255,23 +1546,56 @@ export default function EditPrayerCardModal() {
       </ScrollView>
 
       {/* Loading Overlay */}
-      {(isSaving || isDeleting) && (
+      {(isSaving || isDeleting || isDeletingAccount) && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContainer}>
             <View style={styles.extraLargeSpinner}>
               <ActivityIndicator size="large" color="#b2d8b2" />
             </View>
             <Text style={styles.loadingText}>
-              {isDeleting ? 'Deleting...' : 'Saving...'}
+              {isDeleting ? 'Deleting...' : isDeletingAccount ? 'Deleting Account...' : 'Saving...'}
             </Text>
           </View>
         </View>
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        visible={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSave={handleChangePasswordSave}
+        isSaving={isChangingPassword}
+      />
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  accountActionRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 14,
+  },
+  accountActionRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  accountActionText: {
+    color: ACTIVE_GREEN,
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  accountFieldIcon: {
+    marginRight: 12,
+    width: 24,
+  },
+  accountFieldRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  accountInput: {
+    flex: 1,
+  },
   addIcon: {
     marginRight: 8,
   },
@@ -1518,6 +1842,22 @@ const styles = StyleSheet.create({
   },
   removeButtonPressed: {
     opacity: 0.7,
+  },
+  saveAccountButton: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    borderRadius: 8,
+    marginBottom: 4,
+    marginTop: 12,
+    paddingVertical: 12,
+  },
+  saveAccountButtonPressed: {
+    opacity: 0.8,
+  },
+  saveAccountButtonText: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
   },
   scrollContent: {
     paddingHorizontal: 16,

@@ -6,7 +6,7 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation, router } from 'expo-router';
@@ -113,6 +113,15 @@ export default function Cards() {
           ),
           headerRight: () => (
             <View style={styles.headerRightContainer}>
+              <Pressable
+                onPress={() => setPrayerSessionVisible(true)}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Text style={{ fontSize: 18 }}>🙏</Text>
+              </Pressable>
               <Pressable
                 onPress={() => setSearchVisible((prev) => !prev)}
                 style={({ pressed }) => [

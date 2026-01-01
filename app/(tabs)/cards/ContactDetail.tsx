@@ -17,7 +17,7 @@ import {
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ import {
 } from '@/util/reorderPrayerSubjectPrayers';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 import { getPrayerSubjectMembers, getPrayerSubjectParentGroups, ParentGroup } from '@/util/prayerSubjects';
 
 import type {
@@ -153,6 +154,9 @@ export default function ContactDetail() {
   // Prayer detail modal state
   const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
   const [prayerModalVisible, setPrayerModalVisible] = useState(false);
+
+  // Prayer session modal state
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
 
   // Members state
   const [members, setMembers] = useState<PrayerSubjectMember[]>([]);
@@ -367,7 +371,7 @@ export default function ContactDetail() {
           headerLeft: () => (
             <Pressable
               style={({ pressed }) => [
-                [styles.headerButton, { paddingRight: 2}],
+                [styles.headerButton, { paddingRight: 2, marginHorizontal: 12 }],
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={() => navigation.goBack()}
@@ -376,19 +380,30 @@ export default function ContactDetail() {
             </Pressable>
           ),
           headerRight: () => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.headerButton,
-                pressed && styles.headerButtonPressed,
-              ]}
-              onPress={() => {
-                navigation.navigate('EditPrayerCardModal', {
-                  contact: JSON.stringify(contact),
-                });
-              }}
-            >
-              <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
-            </Pressable>
+            <View style={styles.headerRightContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+                onPress={() => setPrayerSessionVisible(true)}
+              >
+                <Text style={{ fontSize: 18 }}>🙏</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+                onPress={() => {
+                  navigation.navigate('EditPrayerCardModal', {
+                    contact: JSON.stringify(contact),
+                  });
+                }}
+              >
+                <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
+              </Pressable>
+            </View>
           ),
         });
       }
@@ -852,6 +867,15 @@ export default function ContactDetail() {
           context='cards'
         />
       )}
+
+      {/* Prayer Session Modal */}
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={localPrayers.filter(p => !p.isAnswered)}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => setPrayerSessionVisible(false)}
+        contextTitle={contact.prayerSubjectDisplayName}
+      />
     </LinearGradient>
   );
 }
@@ -930,7 +954,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
-    marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -939,6 +962,12 @@ const styles = StyleSheet.create({
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerRightContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
   },
   initialsText: {
     color: '#FFFFFF',
