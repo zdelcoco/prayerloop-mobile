@@ -13,6 +13,7 @@ import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import ProfileButton from '@/components/ui/ProfileButton';
+import HeaderDropdown from '@/components/ui/HeaderDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, setFilters, selectFilters } from '@/store/userPrayersSlice';
 import {
@@ -31,6 +32,11 @@ import { PrayerList } from '@/components/PrayerCards';
 import type { PrayerSubject } from '@/util/shared.types';
 
 type ViewMode = 'contact' | 'prayer';
+
+const VIEW_MODE_OPTIONS = [
+  { value: 'prayer', label: 'Prayer Cards' },
+  { value: 'contact', label: 'Contact Cards' },
+];
 
 type RootStackParamList = {
   PrayerModal: { mode: string; prayerSubjectId?: number };
@@ -55,7 +61,7 @@ export default function Cards() {
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('contact');
+  const [viewMode, setViewMode] = useState<ViewMode>('prayer');
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
@@ -88,7 +94,13 @@ export default function Cards() {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          headerTitle: 'Prayer Cards',
+          headerTitle: () => (
+            <HeaderDropdown
+              options={VIEW_MODE_OPTIONS}
+              selectedValue={viewMode}
+              onSelect={(value) => setViewMode(value as ViewMode)}
+            />
+          ),
           headerLeft: () => (
             <View style={styles.headerLeftContainer}>
               <ContextMenuButton
@@ -119,7 +131,7 @@ export default function Cards() {
           ),
         });
       }
-    }, [navigation, prayerSubjects, user])
+    }, [navigation, prayerSubjects, user, viewMode])
   );
 
   // Expose functions to global for tab layout to access
@@ -189,46 +201,6 @@ export default function Cards() {
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {subjectsError && <Text style={styles.text}>Error: {subjectsError}</Text>}
 
-        {/* View Mode Segmented Control */}
-        <View style={styles.segmentedControlContainer}>
-          <View style={styles.segmentedControl}>
-            <Pressable
-              onPress={() => setViewMode('contact')}
-              style={[
-                styles.segmentButton,
-                styles.segmentButtonLeft,
-                viewMode === 'contact' && styles.segmentButtonActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segmentButtonText,
-                  viewMode === 'contact' && styles.segmentButtonTextActive,
-                ]}
-              >
-                Contacts
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => setViewMode('prayer')}
-              style={[
-                styles.segmentButton,
-                styles.segmentButtonRight,
-                viewMode === 'prayer' && styles.segmentButtonActive,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segmentButtonText,
-                  viewMode === 'prayer' && styles.segmentButtonTextActive,
-                ]}
-              >
-                Prayers
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
         {/* Contact View */}
         {viewMode === 'contact' && (
           <ContactCardList
@@ -297,43 +269,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginRight: 8,
-  },
-  segmentButton: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  segmentButtonActive: {
-    backgroundColor: '#2E7D32',
-  },
-  segmentButtonLeft: {
-    borderBottomLeftRadius: 8,
-    borderTopLeftRadius: 8,
-  },
-  segmentButtonRight: {
-    borderBottomRightRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  segmentButtonText: {
-    color: '#2d3e31',
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 14,
-  },
-  segmentButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  segmentedControl: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderColor: 'rgba(46, 125, 50, 0.3)',
-    borderRadius: 10,
-    borderWidth: 1,
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  segmentedControlContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
   },
   text: {
     color: '#000',
