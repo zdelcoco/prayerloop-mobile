@@ -199,6 +199,8 @@ export default function Groups() {
           refreshing={refreshing}
           searchVisible={searchVisible}
           emptyMessage="No prayer circles yet. Tap + to create or join a prayer circle!"
+          enableReorder={true}
+          onReorder={handleReorder}
         />
       </View>
     </LinearGradient>

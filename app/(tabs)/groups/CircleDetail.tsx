@@ -1,6 +1,5 @@
 import React, {
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -12,6 +11,8 @@ import {
   RefreshControl,
   Dimensions,
   Alert,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -25,11 +26,7 @@ import { RootState } from '@/store/store';
 import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
 import { fetchPrayerSubjects, selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 import { selectUserGroups } from '@/store/groupsSlice';
-import DraggableFlatList, {
-  RenderItemParams,
-  ScaleDecorator,
-} from 'react-native-draggable-flatlist';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BlurView } from 'expo-blur';
 
 import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
 import { groupUsersCache } from '@/util/groupUsersCache';
@@ -116,6 +113,14 @@ export default function CircleDetail() {
   const [members, setMembers] = useState<User[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Search state
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter state
+  type FilterType = 'all' | 'active' | 'answered';
+  const [filter, setFilter] = useState<FilterType>('all');
+
   // Parse group from route params as fallback, but prefer Redux store data
   const routeGroup: Group = useMemo(() => JSON.parse(route.params.group), [route.params.group]);
   const group: Group = useMemo(() => {
@@ -198,6 +203,38 @@ export default function CircleDetail() {
     return result;
   }, [prayers, membersLookup]);
 
+  // Filter sections by search query and active/answered filter
+  const filteredSections = useMemo(() => {
+    let result = sections;
+
+    // Apply active/answered filter
+    if (filter !== 'all') {
+      result = result.map(section => {
+        const filteredPrayers = section.prayers.filter(prayer =>
+          filter === 'active' ? !prayer.isAnswered : prayer.isAnswered
+        );
+        return { ...section, prayers: filteredPrayers };
+      }).filter(section => section.prayers.length > 0);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(section => {
+        // Match on subject name
+        if (section.subjectName.toLowerCase().includes(query)) return true;
+        // Match on any prayer title or description
+        return section.prayers.some(
+          prayer =>
+            prayer.title.toLowerCase().includes(query) ||
+            prayer.prayerDescription.toLowerCase().includes(query)
+        );
+      });
+    }
+
+    return result;
+  }, [sections, searchQuery, filter]);
+
   // Fetch members
   useFocusEffect(
     useCallback(() => {
@@ -244,7 +281,7 @@ export default function CircleDetail() {
             <Pressable
               style={({ pressed }) => [
                 styles.headerButton,
-                { paddingRight: 2 },
+                { paddingRight: 2, marginLeft: 12, marginRight: 8 },
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={() => navigation.goBack()}
@@ -254,6 +291,15 @@ export default function CircleDetail() {
           ),
           headerRight: () => (
             <View style={styles.headerRightContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+                onPress={() => setSearchVisible(prev => !prev)}
+              >
+                <Ionicons name='search' size={20} color={DARK_TEXT} />
+              </Pressable>
               <Pressable
                 style={({ pressed }) => [
                   styles.headerButton,
@@ -271,7 +317,7 @@ export default function CircleDetail() {
           ),
         });
       }
-    }, [navigation, group])
+    }, [navigation, group, searchVisible])
   );
 
   // Handle refresh
@@ -362,7 +408,7 @@ export default function CircleDetail() {
   }, [group]);
 
   // Render section header (prayer subject info - who the prayer is FOR)
-  const renderSectionHeader = useCallback((subjectName: string, prayerCount: number, isActive?: boolean) => {
+  const renderSectionHeader = useCallback((subjectName: string, prayerCount: number) => {
     // Parse subject name for initials (handle "First Last" format)
     const nameParts = subjectName.trim().split(/\s+/);
     const firstName = nameParts[0] || '';
@@ -371,7 +417,7 @@ export default function CircleDetail() {
     const avatarColor = getAvatarColor(subjectName);
 
     return (
-      <View style={[styles.sectionHeader, isActive && styles.sectionHeaderDragging]}>
+      <View style={styles.sectionHeader}>
         <View style={styles.sectionAvatarContainer}>
           <View style={[styles.sectionAvatar, { backgroundColor: avatarColor }]}>
             <Text style={styles.sectionAvatarText}>{initials}</Text>
@@ -456,30 +502,26 @@ export default function CircleDetail() {
   }, [handlePrayerPress]);
 
   // Render a complete section
-  const renderSection = useCallback(({ item, drag, isActive }: RenderItemParams<PrayerSection>) => {
+  const renderSection = useCallback(({ item }: { item: PrayerSection }) => {
     return (
-      <ScaleDecorator>
-        <View style={[styles.sectionContainer, isActive && styles.sectionContainerDragging]}>
-          {/* Section Header */}
-          <Pressable onLongPress={drag} disabled={isActive}>
-            {renderSectionHeader(item.subjectName, item.prayers.length, isActive)}
-          </Pressable>
+      <View style={styles.sectionContainer}>
+        {/* Section Header */}
+        {renderSectionHeader(item.subjectName, item.prayers.length)}
 
-          {/* Prayer List */}
-          <View>
-            {item.prayers.map((prayer, index) => {
-              // Get the creator for this specific prayer (for footer display)
-              const creator = membersLookup[prayer.createdBy] || {
-                userProfileId: prayer.createdBy,
-                firstName: 'Unknown',
-                lastName: 'User',
-                email: '',
-              } as User;
-              return renderPrayerItem(prayer, creator, index, item.prayers.length);
-            })}
-          </View>
+        {/* Prayer List */}
+        <View>
+          {item.prayers.map((prayer, index) => {
+            // Get the creator for this specific prayer (for footer display)
+            const creator = membersLookup[prayer.createdBy] || {
+              userProfileId: prayer.createdBy,
+              firstName: 'Unknown',
+              lastName: 'User',
+              email: '',
+            } as User;
+            return renderPrayerItem(prayer, creator, index, item.prayers.length);
+          })}
         </View>
-      </ScaleDecorator>
+      </View>
     );
   }, [renderSectionHeader, renderPrayerItem, membersLookup]);
 
@@ -497,6 +539,68 @@ export default function CircleDetail() {
   // Render header component (description like notes style)
   const ListHeader = useMemo(() => (
     <View style={styles.listHeader}>
+      {/* Search Bar */}
+      {searchVisible && (
+        <>
+          <View style={styles.searchContainer}>
+            <BlurView intensity={60} tint="light" style={styles.searchBlur}>
+              <FontAwesome
+                name="search"
+                size={16}
+                color={SUBTLE_TEXT}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search prayers..."
+                placeholderTextColor={SUBTLE_TEXT}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus={true}
+              />
+              {searchQuery.length > 0 && (
+                <Pressable
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearButton}
+                >
+                  <FontAwesome name="times-circle" size={16} color={SUBTLE_TEXT} />
+                </Pressable>
+              )}
+            </BlurView>
+          </View>
+
+          {/* Filter Buttons */}
+          <View style={styles.filterContainer}>
+            <Pressable
+              onPress={() => setFilter('all')}
+              style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
+            >
+              <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
+                All
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setFilter('active')}
+              style={[styles.filterButton, filter === 'active' && styles.filterButtonActive]}
+            >
+              <Text style={[styles.filterButtonText, filter === 'active' && styles.filterButtonTextActive]}>
+                Active
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setFilter('answered')}
+              style={[styles.filterButton, filter === 'answered' && styles.filterButtonActive]}
+            >
+              <Text style={[styles.filterButtonText, filter === 'answered' && styles.filterButtonTextActive]}>
+                Answered
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
+
       {/* Description - displayed like notes (not in a section card) */}
       {group.groupDescription && (
         <Text style={styles.notesSubtitle}>{group.groupDescription}</Text>
@@ -508,7 +612,7 @@ export default function CircleDetail() {
         <View style={styles.sectionDividerLine} />
       </View>
     </View>
-  ), [group.groupDescription]);
+  ), [group.groupDescription, searchVisible, searchQuery, filter]);
 
   // Render footer component (members section at bottom)
   const ListFooter = useMemo(() => (
@@ -579,16 +683,16 @@ export default function CircleDetail() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
-      <GestureHandlerRootView style={[styles.container, { paddingTop: headerHeight }]}>
-        {sections.length === 0 && status !== 'loading' ? (
+      <View style={[styles.container, { paddingTop: headerHeight }]}>
+        {filteredSections.length === 0 && status !== 'loading' ? (
           <View style={styles.emptyWrapper}>
             {ListHeader}
             {renderEmptyState()}
             {ListFooter}
           </View>
         ) : (
-          <DraggableFlatList
-            data={sections}
+          <FlatList
+            data={filteredSections}
             keyExtractor={(item) => item.subjectId.toString()}
             renderItem={renderSection}
             ListHeaderComponent={ListHeader}
@@ -605,7 +709,7 @@ export default function CircleDetail() {
             showsVerticalScrollIndicator={false}
           />
         )}
-      </GestureHandlerRootView>
+      </View>
 
       {/* Floating Action Button for adding prayers */}
       <Pressable
@@ -626,6 +730,7 @@ export default function CircleDetail() {
           userId={user?.userProfileId || 0}
           userToken={token || ''}
           prayer={selectedPrayer}
+          prayerSubjectId={selectedPrayer.prayerSubjectId}
           onClose={handleModalClose}
           onActionComplete={handleActionComplete}
           onShare={() => {}}
@@ -651,6 +756,9 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  clearButton: {
+    padding: 4,
   },
   container: {
     flex: 1,
@@ -710,6 +818,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B5E20',
     transform: [{ scale: 0.95 }],
   },
+  filterButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  filterButtonActive: {
+    backgroundColor: ACTIVE_GREEN,
+  },
+  filterButtonText: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 14,
+  },
+  filterButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   headerButton: {
     alignItems: 'center',
     backgroundColor: MUTED_GREEN,
@@ -718,7 +850,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 50,
     justifyContent: 'center',
-    marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -732,6 +863,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
+    marginRight: 8,
   },
   listContent: {
     paddingBottom: 20,
@@ -889,13 +1021,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  searchBlur: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchContainer: {
+    paddingBottom: 8,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    color: DARK_TEXT,
+    flex: 1,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+    paddingVertical: 0,
+  },
   sectionContainer: {
     marginBottom: 16,
     marginHorizontal: 16,
-  },
-  sectionContainerDragging: {
-    backgroundColor: 'rgba(144, 197, 144, 0.2)',
-    borderRadius: 16,
   },
   sectionDivider: {
     alignItems: 'center',
@@ -922,10 +1074,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 4,
     paddingVertical: 8,
-  },
-  sectionHeaderDragging: {
-    backgroundColor: 'rgba(144, 197, 144, 0.3)',
-    borderRadius: 8,
   },
   sectionHeaderText: {
     color: DARK_TEXT,

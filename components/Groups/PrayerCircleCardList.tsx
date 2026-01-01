@@ -137,7 +137,6 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
           onPress={() => handleGroupPress(item)}
           onLongPress={drag}
           isDragging={isActive}
-          showDragHandle={true}
         />
       );
     },
@@ -223,6 +222,16 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
               localGroups.length === 0
                 ? styles.emptyListContent
                 : styles.listContent
+            }
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={ACTIVE_GREEN}
+                  colors={[ACTIVE_GREEN]}
+                />
+              ) : undefined
             }
           />
         </GestureHandlerRootView>
