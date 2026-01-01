@@ -66,7 +66,7 @@ export default function GroupModal() {
   const [groupDescription, setGroupDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const totalHeaderHeight = HEADER_HEIGHT + insets.top;
+  const totalHeaderHeight = HEADER_HEIGHT + 12;
   const headerGradientEnd = totalHeaderHeight / SCREEN_HEIGHT;
 
   const initials = useMemo(() => getInitials(groupName), [groupName]);
@@ -130,7 +130,7 @@ export default function GroupModal() {
       end={{ x: 0, y: 1 }}
     >
       {/* Custom Header */}
-      <View style={[styles.header, { height: HEADER_HEIGHT, marginTop: insets.top }]}>
+      <View style={[styles.header, { height: HEADER_HEIGHT + 12, paddingTop: 12 }]}>
         <Pressable
           style={({ pressed }) => [
             styles.headerButton,
@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
+    letterSpacing: 0,
     paddingVertical: 4,
   },
   inputRow: {

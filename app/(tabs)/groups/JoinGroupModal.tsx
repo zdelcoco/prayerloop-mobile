@@ -40,7 +40,7 @@ export default function JoinGroupModal() {
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const totalHeaderHeight = HEADER_HEIGHT + insets.top;
+  const totalHeaderHeight = HEADER_HEIGHT + 12;
   const headerGradientEnd = totalHeaderHeight / SCREEN_HEIGHT;
 
   const canJoin = inviteCode.trim().length > 0;
@@ -135,7 +135,7 @@ export default function JoinGroupModal() {
       end={{ x: 0, y: 1 }}
     >
       {/* Custom Header */}
-      <View style={[styles.header, { height: HEADER_HEIGHT, marginTop: insets.top }]}>
+      <View style={[styles.header, { height: HEADER_HEIGHT + 12, paddingTop: 12 }]}>
         <Pressable
           style={({ pressed }) => [
             styles.headerButton,
