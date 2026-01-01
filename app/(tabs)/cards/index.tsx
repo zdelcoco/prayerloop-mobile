@@ -9,9 +9,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useFocusEffect, useNavigation } from 'expo-router';
+import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
 import ContextMenuButton from '@/components/ui/ContextMenuButton';
+import ProfileButton from '@/components/ui/ProfileButton';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, setFilters, selectFilters } from '@/store/userPrayersSlice';
 import {
@@ -88,7 +89,16 @@ export default function Cards() {
       if (parentNavigation) {
         parentNavigation.setOptions({
           headerTitle: 'Prayer Cards',
-          headerLeft: null,
+          headerLeft: () => (
+            <View style={styles.headerLeftContainer}>
+              <ContextMenuButton
+                type='cards'
+                prayerCount={prayerSubjects?.flatMap(s => s.prayers).length || 0}
+                iconSize={18}
+                buttonSize={36}
+              />
+            </View>
+          ),
           headerRight: () => (
             <View style={styles.headerRightContainer}>
               <Pressable
@@ -98,18 +108,18 @@ export default function Cards() {
                   pressed && styles.headerButtonPressed,
                 ]}
               >
-                <Ionicons name='search' size={20} color='#2d3e31' />
+                <Ionicons name='search' size={18} color='#2d3e31' />
               </Pressable>
-              <ContextMenuButton
-                type='cards'
-                prayerCount={prayerSubjects?.flatMap(s => s.prayers).length || 0}
-                iconSize={20}
+              <ProfileButton
+                firstName={user?.firstName || ''}
+                lastName={user?.lastName || ''}
+                onPress={() => router.navigate('/userProfile')}
               />
             </View>
           ),
         });
       }
-    }, [navigation, prayerSubjects])
+    }, [navigation, prayerSubjects, user])
   );
 
   // Expose functions to global for tab layout to access
@@ -262,18 +272,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ccf0ccff',
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 25,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 50,
+    height: 36,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    width: 50,
+    width: 36,
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerLeftContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 16,
+    marginRight: 12,
   },
   headerRightContainer: {
     alignItems: 'center',

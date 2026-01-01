@@ -15,6 +15,7 @@ interface ContextMenuButtonProps {
   groupCreatorId?: number;
   iconColor?: string;
   iconSize?: number;
+  buttonSize?: number;
   showCircle?: boolean;
 }
 
@@ -25,7 +26,8 @@ export default function ContextMenuButton({
   prayerCount = 0,
   groupCreatorId,
   iconColor = DARK_ICON,
-  iconSize = 24,
+  iconSize = 18,
+  buttonSize = 36,
   showCircle = true,
 }: ContextMenuButtonProps) {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -45,12 +47,18 @@ export default function ContextMenuButton({
     setMenuVisible(false);
   };
 
+  const dynamicCircleStyles = {
+    width: buttonSize,
+    height: buttonSize,
+    borderRadius: buttonSize / 2,
+  };
+
   return (
     <>
       <Pressable
         onPress={handleMenuPress}
         style={({ pressed }) => [
-          showCircle ? styles.circleButton : styles.plainButton,
+          showCircle ? [styles.circleButton, dynamicCircleStyles] : styles.plainButton,
           pressed && showCircle && styles.circleButtonPressed,
         ]}
       >
@@ -70,13 +78,10 @@ export default function ContextMenuButton({
 const styles = StyleSheet.create({
   circleButton: {
     alignItems: 'center',
-    justifyContent: 'center',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
     backgroundColor: '#ccf0ccff', // Muted green - matches tab buttons
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 1,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

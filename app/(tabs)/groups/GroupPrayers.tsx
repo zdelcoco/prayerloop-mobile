@@ -44,7 +44,7 @@ import { groupUsersCache } from '@/util/groupUsersCache';
 type RootStackParamList = {
   GroupPrayers: { group: string }; // Serialized group as a string
   PrayerModal: { mode: string; groupProfileId: number; groupName: string };
-  UsersModal: {};
+  UsersModal: Record<string, never>;
 };
 
 type GroupPrayersNavigationProp = StackNavigationProp<
@@ -65,7 +65,6 @@ export default function GroupPrayers() {
   const group: Group = JSON.parse(route.params.group);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -88,7 +87,7 @@ export default function GroupPrayers() {
   const filteredPrayers = useAppSelector(selectFilteredGroupPrayers);
 
   const [loadingModalVisible, setLoadingModalVisible] = useState(
-    status === 'loading' || loading
+    status === 'loading'
   );
 
   const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
@@ -128,12 +127,15 @@ export default function GroupPrayers() {
           </TouchableOpacity>
         ),
         headerLeft: () => (
-          <TouchableOpacity
-            style={styles.backButton}
+          <Pressable
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.backButtonPressed,
+            ]}
             onPress={() => navigation.goBack()}
           >
-            <FontAwesome name='angle-left' size={28} color='#000' />
-          </TouchableOpacity>
+            <FontAwesome name='angle-left' size={22} color='#2d3e31' />
+          </Pressable>
         ),
         headerRight: () => (
           <View style={styles.headerRightContainer}>
@@ -144,7 +146,7 @@ export default function GroupPrayers() {
                 pressed && styles.searchButtonPressed,
               ]}
             >
-              <Ionicons name="search" size={20} color="#2d3e31" />
+              <Ionicons name="search" size={18} color="#2d3e31" />
             </Pressable>
             <ContextMenuButton
               type='groupDetail'
@@ -152,7 +154,8 @@ export default function GroupPrayers() {
               groupName={group.groupName}
               groupCreatorId={group.createdBy}
               prayerCount={sanitizedPrayers?.length || 0}
-              iconSize={20}
+              iconSize={18}
+              buttonSize={36}
             />
           </View>
         ),
@@ -166,7 +169,7 @@ export default function GroupPrayers() {
           headerLeft: null,
           headerRight: () => (
             <View style={styles.headerRightContainer}>
-              <ContextMenuButton type='groups' iconSize={20} />
+              <ContextMenuButton type='groups' iconSize={18} buttonSize={36} />
             </View>
           ),
         });
@@ -261,7 +264,7 @@ export default function GroupPrayers() {
       end={{ x: 0, y: 1 }}
     >
       <LoadingModal
-        visible={status === 'loading' || loading}
+        visible={status === 'loading'}
         message='Loading prayers...'
         onClose={toggleLoadingModal}
       />
@@ -301,7 +304,7 @@ export default function GroupPrayers() {
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
               <Text style={styles.emptyStateText}>
-                This prayer circle doesn't have any prayers yet. Tap the + button below
+                This prayer circle doesn&apos;t have any prayers yet. Tap the + button below
                 to add the first prayer to share with your circle!
               </Text>
             </View>
@@ -334,8 +337,24 @@ export default function GroupPrayers() {
 
 const styles = StyleSheet.create({
   backButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    alignItems: 'center',
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    marginLeft: 16,
+    marginRight: 12,
+    paddingRight: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 36,
+  },
+  backButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)',
   },
   container: {
     flex: 1,
@@ -379,15 +398,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ccf0ccff', // Muted green - matches header icons
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 25,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 50,
+    height: 36,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    width: 50,
+    width: 36,
   },
   searchButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency

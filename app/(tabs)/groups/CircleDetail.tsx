@@ -281,12 +281,12 @@ export default function CircleDetail() {
             <Pressable
               style={({ pressed }) => [
                 styles.headerButton,
-                { paddingRight: 2, marginLeft: 12, marginRight: 8 },
+                { paddingRight: 2, marginLeft: 16, marginRight: 12 },
                 pressed && styles.headerButtonPressed,
               ]}
               onPress={() => navigation.goBack()}
             >
-              <FontAwesome name='angle-left' size={28} color={DARK_TEXT} />
+              <FontAwesome name='angle-left' size={22} color={DARK_TEXT} />
             </Pressable>
           ),
           headerRight: () => (
@@ -298,7 +298,7 @@ export default function CircleDetail() {
                 ]}
                 onPress={() => setSearchVisible(prev => !prev)}
               >
-                <Ionicons name='search' size={20} color={DARK_TEXT} />
+                <Ionicons name='search' size={18} color={DARK_TEXT} />
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -311,7 +311,7 @@ export default function CircleDetail() {
                   });
                 }}
               >
-                <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
+                <FontAwesome name='pencil' size={18} color={DARK_TEXT} />
               </Pressable>
             </View>
           ),
@@ -846,15 +846,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: MUTED_GREEN,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 25,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 50,
+    height: 36,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    width: 50,
+    width: 36,
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',

@@ -652,36 +652,6 @@ export default function EditCircle() {
 }
 
 const styles = StyleSheet.create({
-  actionIcon: {
-    marginRight: 8,
-  },
-  actionRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: 14,
-  },
-  actionRowPressed: {
-    backgroundColor: 'rgba(144, 197, 144, 0.2)',
-  },
-  actionText: {
-    color: ACTIVE_GREEN,
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
-  },
-  addPhotoButton: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  addPhotoButtonPressed: {
-    opacity: 0.7,
-  },
-  addPhotoText: {
-    color: ACTIVE_GREEN,
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
-  },
   addMemberIcon: {
     marginRight: 8,
   },
@@ -698,6 +668,37 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
   },
+  addPhotoButton: {
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  addPhotoButtonPressed: {
+    opacity: 0.7,
+  },
+  addPhotoText: {
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  avatar: {
+    alignItems: 'center',
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: AVATAR_SIZE / 2,
+    borderWidth: 4,
+    elevation: 4,
+    height: AVATAR_SIZE,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    width: AVATAR_SIZE,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   cancelButton: {
     alignItems: 'center',
     marginTop: 8,
@@ -710,6 +711,23 @@ const styles = StyleSheet.create({
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
+  },
+  deleteIcon: {
+    marginRight: 8,
+  },
+  deleteRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  deleteRowPressed: {
+    opacity: 0.7,
+  },
+  deleteText: {
+    color: DANGER_RED,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
   },
   externalInviteIcon: {
     marginRight: 8,
@@ -733,58 +751,6 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 15,
   },
-  pickerOutsideBlur: {
-    marginTop: 12,
-    paddingHorizontal: 4,
-  },
-  pickerWithDropdown: {
-    marginBottom: 200,
-  },
-  avatar: {
-    alignItems: 'center',
-    borderColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 4,
-    elevation: 4,
-    height: AVATAR_SIZE,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    width: AVATAR_SIZE,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  deleteIcon: {
-    marginRight: 8,
-  },
-  deleteRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: 14,
-  },
-  deleteRowPressed: {
-    opacity: 0.7,
-  },
-  deleteText: {
-    color: DANGER_RED,
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
-  },
-  emptyRow: {
-    paddingVertical: 14,
-  },
-  emptyText: {
-    color: SUBTLE_TEXT,
-    fontFamily: 'InstrumentSans-Regular',
-    fontSize: 15,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
   extraLargeSpinner: {
     transform: [{ scale: 2 }],
   },
@@ -798,16 +764,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: MUTED_GREEN,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 25,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 50,
+    height: 36,
     justifyContent: 'center',
     marginHorizontal: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    width: 50,
+    width: 36,
   },
   headerButtonDisabled: {
     opacity: 0.6,
@@ -892,13 +858,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
   },
-  removeButton: {
-    marginRight: 8,
-    padding: 4,
-  },
-  removeButtonPressed: {
-    opacity: 0.7,
-  },
   memberName: {
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-Regular',
@@ -917,6 +876,13 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 60,
+  },
+  removeButton: {
+    marginRight: 8,
+    padding: 4,
+  },
+  removeButtonPressed: {
+    opacity: 0.7,
   },
   scrollContent: {
     paddingHorizontal: 16,
