@@ -199,6 +199,8 @@ export default function EditPrayerCardModal() {
   const [membershipChanged, setMembershipChanged] = useState(false);
 
   // Account settings state (only used when isOwnCard)
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || '');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -544,8 +546,14 @@ export default function EditPrayerCardModal() {
     setIsSavingAccount(true);
 
     try {
-      const updateData: { email?: string; phoneNumber?: string } = {};
+      const updateData: { firstName?: string; lastName?: string; email?: string; phoneNumber?: string } = {};
 
+      if (firstName !== (user.firstName || '')) {
+        updateData.firstName = firstName;
+      }
+      if (lastName !== (user.lastName || '')) {
+        updateData.lastName = lastName;
+      }
       if (email !== user.email) {
         updateData.email = email;
       }
@@ -670,8 +678,13 @@ export default function EditPrayerCardModal() {
   // Check if account settings have changes
   const hasAccountChanges = useMemo(() => {
     if (!isOwnCard || !user) return false;
-    return email !== user.email || phoneNumber !== (user.phoneNumber || '');
-  }, [isOwnCard, user, email, phoneNumber]);
+    return (
+      firstName !== (user.firstName || '') ||
+      lastName !== (user.lastName || '') ||
+      email !== user.email ||
+      phoneNumber !== (user.phoneNumber || '')
+    );
+  }, [isOwnCard, user, firstName, lastName, email, phoneNumber]);
 
   // Handle adding a member to the group/family
   const handleAddMember = async (memberSubject: PrayerSubject | null) => {
@@ -1062,6 +1075,131 @@ export default function EditPrayerCardModal() {
           </BlurView>
         </View>
 
+        {/* Account Settings Section - only show for user's own card */}
+        {isOwnCard && (
+          <View style={styles.section}>
+            <View style={styles.sectionLabelContainer}>
+              <Text style={styles.sectionLabel}>Account Settings</Text>
+              <View style={styles.sectionLabelLine} />
+            </View>
+            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+              <View style={styles.sectionContent}>
+                {/* Name Fields */}
+                <View style={styles.inputRow}>
+                  <View style={styles.accountFieldRow}>
+                    <Ionicons name="person-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
+                    <View style={styles.nameFieldsContainer}>
+                      <TextInput
+                        style={[styles.input, styles.accountInput]}
+                        placeholder="First Name"
+                        placeholderTextColor={SUBTLE_TEXT}
+                        value={firstName}
+                        onChangeText={setFirstName}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                      <View style={styles.nameFieldDivider} />
+                      <TextInput
+                        style={[styles.input, styles.accountInput]}
+                        placeholder="Last Name"
+                        placeholderTextColor={SUBTLE_TEXT}
+                        value={lastName}
+                        onChangeText={setLastName}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.inputRowBorder} />
+                {/* Email Field */}
+                <View style={styles.inputRow}>
+                  <View style={styles.accountFieldRow}>
+                    <Ionicons name="mail-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
+                    <TextInput
+                      style={[styles.input, styles.accountInput]}
+                      placeholder="Email"
+                      placeholderTextColor={SUBTLE_TEXT}
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </View>
+                <View style={styles.inputRowBorder} />
+                {/* Phone Field */}
+                <View style={styles.inputRow}>
+                  <View style={styles.accountFieldRow}>
+                    <Ionicons name="call-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
+                    <TextInput
+                      style={[styles.input, styles.accountInput]}
+                      placeholder="Phone Number"
+                      placeholderTextColor={SUBTLE_TEXT}
+                      value={formatPhoneNumberInput(phoneNumber)}
+                      onChangeText={handlePhoneNumberChange}
+                      keyboardType="phone-pad"
+                      maxLength={14}
+                    />
+                  </View>
+                </View>
+                {/* Save Account Settings Button - only show if there are changes */}
+                {hasAccountChanges && (
+                  <>
+                    <View style={styles.inputRowBorder} />
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.saveAccountButton,
+                        pressed && styles.saveAccountButtonPressed,
+                      ]}
+                      onPress={handleSaveAccountSettings}
+                      disabled={isSavingAccount}
+                    >
+                      {isSavingAccount ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.saveAccountButtonText}>Save Changes</Text>
+                      )}
+                    </Pressable>
+                  </>
+                )}
+                <View style={styles.inputRowBorder} />
+                {/* Change Password Button */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.accountActionRow,
+                    pressed && styles.accountActionRowPressed,
+                  ]}
+                  onPress={() => setShowChangePasswordModal(true)}
+                >
+                  <Ionicons name="key-outline" size={20} color={ACTIVE_GREEN} style={styles.accountFieldIcon} />
+                  <Text style={styles.accountActionText}>Change Password</Text>
+                  <FontAwesome name="chevron-right" size={14} color={SUBTLE_TEXT} />
+                </Pressable>
+                <View style={styles.inputRowBorder} />
+                {/* Delete Account Button */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.deleteRow,
+                    pressed && styles.deleteRowPressed,
+                  ]}
+                  onPress={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color={DANGER_RED}
+                    style={styles.deleteIcon}
+                  />
+                  <Text style={styles.deleteText}>Delete Account</Text>
+                </Pressable>
+              </View>
+            </BlurView>
+          </View>
+        )}
+
         {/* Active Prayer Requests Section */}
         <View style={styles.section}>
           <View style={styles.sectionLabelContainer}>
@@ -1410,111 +1548,6 @@ export default function EditPrayerCardModal() {
           </View>
         )}
 
-        {/* Account Settings Section - only show for user's own card */}
-        {isOwnCard && (
-          <View style={styles.section}>
-            <View style={styles.sectionLabelContainer}>
-              <Text style={styles.sectionLabel}>Account Settings</Text>
-              <View style={styles.sectionLabelLine} />
-            </View>
-            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                {/* Email Field */}
-                <View style={styles.inputRow}>
-                  <View style={styles.accountFieldRow}>
-                    <Ionicons name="mail-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
-                    <TextInput
-                      style={[styles.input, styles.accountInput]}
-                      placeholder="Email"
-                      placeholderTextColor={SUBTLE_TEXT}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                </View>
-                <View style={styles.inputRowBorder} />
-                {/* Phone Field */}
-                <View style={styles.inputRow}>
-                  <View style={styles.accountFieldRow}>
-                    <Ionicons name="call-outline" size={20} color={SUBTLE_TEXT} style={styles.accountFieldIcon} />
-                    <TextInput
-                      style={[styles.input, styles.accountInput]}
-                      placeholder="Phone Number"
-                      placeholderTextColor={SUBTLE_TEXT}
-                      value={formatPhoneNumberInput(phoneNumber)}
-                      onChangeText={handlePhoneNumberChange}
-                      keyboardType="phone-pad"
-                      maxLength={14}
-                    />
-                  </View>
-                </View>
-                {/* Save Account Settings Button - only show if there are changes */}
-                {hasAccountChanges && (
-                  <>
-                    <View style={styles.inputRowBorder} />
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.saveAccountButton,
-                        pressed && styles.saveAccountButtonPressed,
-                      ]}
-                      onPress={handleSaveAccountSettings}
-                      disabled={isSavingAccount}
-                    >
-                      {isSavingAccount ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <Text style={styles.saveAccountButtonText}>Save Changes</Text>
-                      )}
-                    </Pressable>
-                  </>
-                )}
-                <View style={styles.inputRowBorder} />
-                {/* Change Password Button */}
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.accountActionRow,
-                    pressed && styles.accountActionRowPressed,
-                  ]}
-                  onPress={() => setShowChangePasswordModal(true)}
-                >
-                  <Ionicons name="key-outline" size={20} color={ACTIVE_GREEN} style={styles.accountFieldIcon} />
-                  <Text style={styles.accountActionText}>Change Password</Text>
-                  <FontAwesome name="chevron-right" size={14} color={SUBTLE_TEXT} />
-                </Pressable>
-              </View>
-            </BlurView>
-          </View>
-        )}
-
-        {/* Delete Account Section - only show for user's own card */}
-        {isOwnCard && (
-          <View style={styles.section}>
-            <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
-              <View style={styles.sectionContent}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.deleteRow,
-                    pressed && styles.deleteRowPressed,
-                  ]}
-                  onPress={handleDeleteAccount}
-                  disabled={isDeletingAccount}
-                >
-                  <Ionicons
-                    name="trash-outline"
-                    size={20}
-                    color={DANGER_RED}
-                    style={styles.deleteIcon}
-                  />
-                  <Text style={styles.deleteText}>Delete Account</Text>
-                </Pressable>
-              </View>
-            </BlurView>
-          </View>
-        )}
-
         {/* Delete Section - only show if not user's own card */}
         {!isOwnCard && (
           <View style={styles.section}>
@@ -1810,6 +1843,14 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 60,
+  },
+  nameFieldDivider: {
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 4,
+  },
+  nameFieldsContainer: {
+    flex: 1,
   },
   pickerOutsideBlur: {
     marginTop: 12,
