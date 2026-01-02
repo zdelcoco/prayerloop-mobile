@@ -113,6 +113,9 @@ export default function CircleDetail() {
   // Group prayers from Redux
   const { prayers, status } = useAppSelector((state: RootState) => state.groupPrayers);
 
+  // Compute active prayers for session button state
+  const activePrayers = useMemo(() => (prayers || []).filter(p => !p.isAnswered), [prayers]);
+
   // Prayer subjects from Redux
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
 
@@ -373,11 +376,16 @@ export default function CircleDetail() {
               <Pressable
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  pressed && activePrayers.length > 0 && styles.headerButtonPressed,
+                  activePrayers.length === 0 && styles.headerButtonDisabled,
                 ]}
-                onPress={() => setPrayerSessionVisible(true)}
+                disabled={activePrayers.length === 0}
+                onPress={() => {
+                  if (activePrayers.length === 0) return;
+                  setPrayerSessionVisible(true);
+                }}
               >
-                <Text style={{ fontSize: 18 }}>🙏</Text>
+                <Text style={{ fontSize: 18, opacity: activePrayers.length === 0 ? 0.4 : 1 }}>🙏</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -405,7 +413,7 @@ export default function CircleDetail() {
           ),
         });
       }
-    }, [navigation, group, searchVisible, handleCircleAction])
+    }, [navigation, group, searchVisible, handleCircleAction, activePrayers])
   );
 
   // Handle refresh
@@ -910,6 +918,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     width: 36,
+  },
+  headerButtonDisabled: {
+    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+    shadowOpacity: 0.1,
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',

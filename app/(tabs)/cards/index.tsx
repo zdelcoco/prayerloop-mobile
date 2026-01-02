@@ -119,17 +119,20 @@ export default function Cards() {
             <View style={styles.headerRightContainer}>
               <Pressable
                 onPress={() => {
+                  if (allPrayers.length === 0) return;
                   // Header button starts directly with all personal prayers
                   setSessionPrayers(allPrayers);
                   setSessionContextTitle('Personal Prayers');
                   setPrayerSessionVisible(true);
                 }}
+                disabled={allPrayers.length === 0}
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  pressed && allPrayers.length > 0 && styles.headerButtonPressed,
+                  allPrayers.length === 0 && styles.headerButtonDisabled,
                 ]}
               >
-                <Text style={{ fontSize: 18 }}>🙏</Text>
+                <Text style={{ fontSize: 18, opacity: allPrayers.length === 0 ? 0.4 : 1 }}>🙏</Text>
               </Pressable>
               <Pressable
                 onPress={() => setSearchVisible((prev) => !prev)}
@@ -149,7 +152,7 @@ export default function Cards() {
           ),
         });
       }
-    }, [navigation, prayerSubjects, user, viewMode])
+    }, [navigation, prayerSubjects, user, viewMode, allPrayers])
   );
 
   // Expose functions to global for tab layout to access
@@ -196,8 +199,13 @@ export default function Cards() {
     dispatch(setFilters(newFilters));
   };
 
-  // Collect all prayers from subjects for prayer session
-  const allPrayers = prayerSubjects?.flatMap((subject) => subject.prayers) || [];
+  // Collect all prayers from subjects for prayer session, enriching with subject display name
+  const allPrayers = prayerSubjects?.flatMap((subject) =>
+    subject.prayers.map(prayer => ({
+      ...prayer,
+      prayerSubjectDisplayName: prayer.prayerSubjectDisplayName || subject.prayerSubjectDisplayName,
+    }))
+  ) || [];
 
   return (
     <LinearGradient
@@ -288,6 +296,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     width: 36,
+  },
+  headerButtonDisabled: {
+    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+    shadowOpacity: 0.1,
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',

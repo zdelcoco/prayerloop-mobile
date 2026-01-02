@@ -384,11 +384,16 @@ export default function ContactDetail() {
               <Pressable
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  pressed && activePrayers.length > 0 && styles.headerButtonPressed,
+                  activePrayers.length === 0 && styles.headerButtonDisabled,
                 ]}
-                onPress={() => setPrayerSessionVisible(true)}
+                disabled={activePrayers.length === 0}
+                onPress={() => {
+                  if (activePrayers.length === 0) return;
+                  setPrayerSessionVisible(true);
+                }}
               >
-                <Text style={{ fontSize: 18 }}>🙏</Text>
+                <Text style={{ fontSize: 18, opacity: activePrayers.length === 0 ? 0.4 : 1 }}>🙏</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -408,7 +413,7 @@ export default function ContactDetail() {
         });
       }
       // No cleanup needed - each screen sets up its own header when focused
-    }, [navigation, contact])
+    }, [navigation, contact, activePrayers])
   );
 
   // Avatar opacity - fades out as user scrolls
@@ -966,6 +971,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     width: 36,
+  },
+  headerButtonDisabled: {
+    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+    shadowOpacity: 0.1,
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',

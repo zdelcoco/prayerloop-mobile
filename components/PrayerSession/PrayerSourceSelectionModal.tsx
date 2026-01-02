@@ -13,8 +13,8 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
+import { selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 import { getUserGroups } from '@/util/getUserGroups';
-import { getUserPrayers } from '@/util/getUserPrayers';
 import { getGroupPrayers } from '@/util/getGroupPrayers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
@@ -47,6 +47,7 @@ export default function PrayerSourceSelectionModal({
 }: PrayerSourceSelectionModalProps) {
   const insets = useSafeAreaInsets();
   const { user, token } = useAppSelector((state: RootState) => state.auth);
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const [sources, setSources] = useState<PrayerSource[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -138,9 +139,15 @@ export default function PrayerSourceSelectionModal({
       for (const source of selectedSources) {
         try {
           if (source.type === 'personal') {
-            const result = await getUserPrayers(token, user.userProfileId);
-            if (result.success && result.data?.prayers) {
-              allPrayers.push(...result.data.prayers);
+            // Use prayerSubjects from Redux to get prayers with subject display names
+            if (prayerSubjects && prayerSubjects.length > 0) {
+              const enrichedPrayers = prayerSubjects.flatMap(subject =>
+                subject.prayers.map(prayer => ({
+                  ...prayer,
+                  prayerSubjectDisplayName: prayer.prayerSubjectDisplayName || subject.prayerSubjectDisplayName,
+                }))
+              );
+              allPrayers.push(...enrichedPrayers);
             }
           } else if (source.type === 'group' && source.groupId) {
             const result = await getGroupPrayers(token, source.groupId);
