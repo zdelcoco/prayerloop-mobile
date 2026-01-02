@@ -308,7 +308,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name='userProfile'
             options={{
-              title: 'Home',
+              title: 'Account Settings',
               href: null, // Hide from tab bar but keep route for compatibility
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
