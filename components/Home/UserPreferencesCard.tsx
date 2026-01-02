@@ -140,10 +140,16 @@ const UserPreferencesCard = () => {
 
   return (
     <View style={styles.cardContainer}>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>User Preferences</Text>       
+      {/* Construction tape overlay */}
+      <View style={styles.tapeOverlay} pointerEvents="none">
+        <View style={styles.tapeBanner}>
+          <Text style={styles.tapeText}>COMING SOON</Text>
+        </View>
       </View>
-      <Text style={styles.comingSoonBadge}>Coming Soon</Text>
+
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>User Preferences</Text>
+      </View>
       {!Array.isArray(preferences) || preferences.length === 0 ? (
         <Text style={styles.emptyText}>No preferences found</Text>
       ) : (
@@ -164,13 +170,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 6,
+    overflow: 'hidden',
     padding: 16,
-  },
-  comingSoonBadge: {
-    color: ACTIVE_GREEN,
-    fontFamily: 'InstrumentSans-Regular',
-    fontSize: 14,
-    fontStyle: 'italic',
   },
   comingSoonLabel: {
     color: SUBTLE_TEXT,
@@ -210,6 +211,28 @@ const styles = StyleSheet.create({
   switchContainer: {
     alignItems: 'flex-end',
     minWidth: 50,
+  },
+  tapeBanner: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    position: 'absolute',
+    //right: 60,
+    top: 85,
+    //transform: [{ rotate: '-30deg' }],
+    width: '100%',
+  },
+  tapeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  tapeText: {
+    color: '#ffffff',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
   title: {
     color: DARK_TEXT,
