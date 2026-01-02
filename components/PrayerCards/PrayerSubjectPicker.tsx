@@ -78,17 +78,23 @@ export default function PrayerSubjectPicker({
     }
   }, [selectedSubjectId, subjects]);
 
-  // Filter subjects based on type filter
+  // Filter subjects based on type filter and sort alphabetically
   const filteredSubjects = useMemo(() => {
     if (!subjects) return [];
-    if (!filterType) return subjects;
-    if (filterType === 'individual-only') {
-      return subjects.filter((s) => s.prayerSubjectType === 'individual');
+    let filtered: PrayerSubject[];
+    if (!filterType) {
+      filtered = [...subjects];
+    } else if (filterType === 'individual-only') {
+      filtered = subjects.filter((s) => s.prayerSubjectType === 'individual');
+    } else if (filterType === 'group-family-only') {
+      filtered = subjects.filter((s) => s.prayerSubjectType === 'family' || s.prayerSubjectType === 'group');
+    } else {
+      filtered = subjects.filter((s) => s.prayerSubjectType === filterType);
     }
-    if (filterType === 'group-family-only') {
-      return subjects.filter((s) => s.prayerSubjectType === 'family' || s.prayerSubjectType === 'group');
-    }
-    return subjects.filter((s) => s.prayerSubjectType === filterType);
+    // Sort alphabetically by display name (case-insensitive)
+    return filtered.sort((a, b) =>
+      a.prayerSubjectDisplayName.toLowerCase().localeCompare(b.prayerSubjectDisplayName.toLowerCase())
+    );
   }, [subjects, filterType]);
 
   // Filter subjects based on search text
@@ -635,6 +641,7 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
     height: 48,
+    letterSpacing: 0,
     paddingHorizontal: 16,
     paddingRight: 40,
   },

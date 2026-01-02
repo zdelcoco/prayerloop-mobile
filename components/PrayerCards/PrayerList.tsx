@@ -737,6 +737,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
+    letterSpacing: 0,
     marginLeft: 8,
     paddingVertical: 0,
   },

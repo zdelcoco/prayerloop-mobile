@@ -1112,6 +1112,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
+    letterSpacing: 0,
     paddingVertical: 0,
   },
   sectionContainer: {
