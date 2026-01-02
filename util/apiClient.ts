@@ -33,7 +33,19 @@ apiClient.interceptors.request.use(
       const token = storeRef.getState().auth.token;
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('[apiClient] Missing token or headers!', {
+          hasToken: !!token,
+          hasHeaders: !!config.headers,
+          url: config.url,
+          method: config.method,
+        });
       }
+    } else {
+      console.warn('[apiClient] storeRef not set!', {
+        url: config.url,
+        method: config.method,
+      });
     }
     return config;
   },
@@ -48,7 +60,12 @@ apiClient.interceptors.response.use(
   (error) => {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
       // Token is invalid or expired - logout the user
-      console.log('Received 401 response, logging out user');
+      console.warn('[apiClient] Received 401 response!', {
+        url: error.config?.url,
+        method: error.config?.method,
+        errorMessage: error.response?.data?.error,
+        hasAuthHeader: !!error.config?.headers?.Authorization,
+      });
 
       if (storeRef && logoutSuccessAction && clearUserPrayersAction && clearUserGroupsAction) {
         // Dispatch logout actions directly to store
