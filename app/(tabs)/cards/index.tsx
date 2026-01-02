@@ -34,8 +34,8 @@ import type { PrayerSubject } from '@/util/shared.types';
 type ViewMode = 'contact' | 'prayer';
 
 const VIEW_MODE_OPTIONS = [
-  { value: 'prayer', label: 'Prayer Cards' },
-  { value: 'contact', label: 'Contact Cards' },
+  { value: 'prayer', label: 'Prayer Cards', icon: 'user', iconType: 'fontawesome' as const },
+  { value: 'contact', label: 'Contact Cards', icon: 'vcard', iconType: 'fontawesome' as const },
 ];
 
 type RootStackParamList = {

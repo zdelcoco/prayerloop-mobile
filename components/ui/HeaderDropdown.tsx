@@ -9,11 +9,13 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 
 export type DropdownOption = {
   value: string;
   label: string;
+  icon?: string;
+  iconType?: 'fontawesome' | 'ionicons';
 };
 
 interface HeaderDropdownProps {
@@ -115,14 +117,23 @@ export default function HeaderDropdown({
                       pressed && styles.dropdownItemPressed,
                     ]}
                   >
+                    {option.icon && (
+                      <View style={styles.iconContainer}>
+                        {option.iconType === 'ionicons' ? (
+                          <Ionicons name={option.icon as any} size={16} color={DARK_TEXT} />
+                        ) : (
+                          <FontAwesome name={option.icon as any} size={16} color={DARK_TEXT} />
+                        )}
+                      </View>
+                    )}
+                    <Text style={styles.dropdownItemText}>
+                      {option.label}
+                    </Text>
                     {option.value === selectedValue ? (
                       <View style={styles.selectedDot} />
                     ) : (
                       <View style={styles.dotPlaceholder} />
                     )}
-                    <Text style={styles.dropdownItemText}>
-                      {option.label}
-                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -140,7 +151,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 12,
     borderWidth: 1,
-    minWidth: 180,
+    minWidth: 220,
     overflow: 'hidden',
     position: 'absolute',
     shadowColor: '#000',
@@ -173,8 +184,14 @@ const styles = StyleSheet.create({
   },
   dropdownItemText: {
     color: DARK_TEXT,
+    flex: 1,
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
   },
   modalOverlay: {
     flex: 1,

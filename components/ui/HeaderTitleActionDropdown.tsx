@@ -122,7 +122,9 @@ export default function HeaderTitleActionDropdown({
                     ]}
                   >
                     {option.icon && (
-                      <Ionicons name={option.icon} size={18} color={ACTIVE_GREEN} />
+                      <View style={styles.iconContainer}>
+                        <Ionicons name={option.icon} size={20} color={DARK_TEXT} />
+                      </View>
                     )}
                     <Text style={styles.dropdownItemText}>{option.label}</Text>
                   </Pressable>
@@ -173,6 +175,11 @@ const styles = StyleSheet.create({
     color: DARK_TEXT,
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 20,
   },
   modalOverlay: {
     flex: 1,
