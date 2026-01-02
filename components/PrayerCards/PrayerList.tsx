@@ -138,8 +138,11 @@ const PrayerList: React.FC<PrayerListProps> = ({
       // Sort prayers: active first (by sequence), then answered (by sequence)
       prayers = [...prayers].sort((a, b) => {
         // Active prayers always come before answered
-        if (a.isAnswered !== b.isAnswered) {
-          return a.isAnswered ? 1 : -1;
+        // Treat only explicitly true as "answered" - null/false/undefined are all "active"
+        const aAnswered = a.isAnswered === true;
+        const bAnswered = b.isAnswered === true;
+        if (aAnswered !== bAnswered) {
+          return aAnswered ? 1 : -1;
         }
         // Within same category, sort by subjectDisplaySequence
         return (a.subjectDisplaySequence ?? 0) - (b.subjectDisplaySequence ?? 0);

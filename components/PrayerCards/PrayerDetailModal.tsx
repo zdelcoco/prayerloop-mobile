@@ -246,7 +246,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
                   ]}
                   onPress={onEditHandler}
                 >
-                  <Ionicons name="pencil-outline" size={20} color="#2E7D32" />
+                  <Text style={{ fontSize: 20 }}>✏️</Text>
                   <Text style={styles.actionButtonText}>Edit</Text>
                 </Pressable>
                 <Pressable

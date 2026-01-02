@@ -1,8 +1,9 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useCallback } from 'react';
 import { ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect } from 'expo-router';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import ProfileContent from '@/components/Profile/ProfileContent';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
@@ -28,6 +29,16 @@ export default function UserProfile() {
       // Don't clear - let the cards screen manage this when it's focused
     };
   }, []);
+
+  // Hide tab bar when this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      global.tabBarHidden = true;
+      return () => {
+        global.tabBarHidden = false;
+      };
+    }, [])
+  );
 
   const handleStartSession = (prayers: Prayer[], contextTitle: string) => {
     setSessionPrayers(prayers);

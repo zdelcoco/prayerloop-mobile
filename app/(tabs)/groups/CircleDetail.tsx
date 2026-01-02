@@ -407,7 +407,7 @@ export default function CircleDetail() {
                   });
                 }}
               >
-                <FontAwesome name='pencil' size={18} color={DARK_TEXT} />
+                <Text style={{ fontSize: 18 }}>✏️</Text>
               </Pressable>
             </View>
           ),

@@ -17,8 +17,7 @@ import {
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { FontAwesome, FontAwesome5, Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -60,29 +59,13 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const AVATAR_SIZE = 120;
 const HEADER_HEIGHT = 100;
 
-// Item types for the list
-type SectionHeaderItem = {
-  type: 'section-header';
-  title: string;
-  key: string;
-};
-
-type EmptyStateItem = {
-  type: 'empty-state';
-  message: string;
-  key: string;
-};
-
-type PrayerItem = {
-  type: 'prayer';
+// Type for active prayers only (used in DraggableFlatList)
+type ActivePrayerItem = {
   prayer: Prayer;
   isFirst: boolean;
   isLast: boolean;
-  isAnswered: boolean;
   key: string;
 };
-
-type ListItem = SectionHeaderItem | EmptyStateItem | PrayerItem;
 
 // Generate initials from display name
 const getInitials = (displayName: string): string => {
@@ -169,8 +152,6 @@ export default function ContactDetail() {
   // Local prayers state for reordering
   const [localPrayers, setLocalPrayers] = useState<Prayer[]>([]);
   const isReorderingRef = useRef(false);
-  // Key to force DraggableFlatList remount when reverting invalid drags
-  const [listKey, setListKey] = useState(0);
 
   // Get prayerSubjectId from route params, then find fresh data from Redux
   const routeContact: PrayerSubject = JSON.parse(route.params.contact);
@@ -221,8 +202,11 @@ export default function ContactDetail() {
     const prayers = contact.prayers || [];
     const sorted = [...prayers].sort((a, b) => {
       // Active prayers come before answered
-      if (a.isAnswered !== b.isAnswered) {
-        return a.isAnswered ? 1 : -1;
+      // Treat only explicitly true as "answered" - null/false/undefined are all "active"
+      const aAnswered = a.isAnswered === true;
+      const bAnswered = b.isAnswered === true;
+      if (aAnswered !== bAnswered) {
+        return aAnswered ? 1 : -1;
       }
       // Within same category, sort by subjectDisplaySequence
       return (a.subjectDisplaySequence ?? 0) - (b.subjectDisplaySequence ?? 0);
@@ -231,61 +215,24 @@ export default function ContactDetail() {
   }, [contact.prayers]);
 
   // Build list items including section headers and all prayers
-  const activePrayers = useMemo(() => localPrayers.filter(p => !p.isAnswered), [localPrayers]);
-  const answeredPrayers = useMemo(() => localPrayers.filter(p => p.isAnswered), [localPrayers]);
+  // Treat only explicitly true as "answered" - null/false/undefined are all "active"
+  const activePrayers = useMemo(() => localPrayers.filter(p => p.isAnswered !== true), [localPrayers]);
+  const answeredPrayers = useMemo(() => localPrayers.filter(p => p.isAnswered === true), [localPrayers]);
 
-  const listItems = useMemo<ListItem[]>(() => {
-    const items: ListItem[] = [];
+  // Only active prayers go in the DraggableFlatList - no headers mixed in
+  const activePrayerItems = useMemo(() =>
+    activePrayers.map((prayer, index) => ({
+      prayer,
+      isFirst: index === 0,
+      isLast: index === activePrayers.length - 1,
+      key: `prayer-${prayer.prayerId}`,
+    })),
+    [activePrayers]
+  );
 
-    // Prayer Requests section header
-    items.push({
-      type: 'section-header',
-      title: 'Prayer Requests',
-      key: 'header-active',
-    });
-
-    // Active prayers or empty state
-    if (activePrayers.length === 0) {
-      items.push({
-        type: 'empty-state',
-        message: 'No active prayer requests.',
-        key: 'empty-active',
-      });
-    } else {
-      activePrayers.forEach((prayer, index) => {
-        items.push({
-          type: 'prayer',
-          prayer,
-          isFirst: index === 0,
-          isLast: index === activePrayers.length - 1,
-          isAnswered: false,
-          key: `prayer-${prayer.prayerId}`,
-        });
-      });
-    }
-
-    // Answered Prayers section (only if there are answered prayers)
-    if (answeredPrayers.length > 0) {
-      items.push({
-        type: 'section-header',
-        title: 'Answered Prayers',
-        key: 'header-answered',
-      });
-
-      answeredPrayers.forEach((prayer, index) => {
-        items.push({
-          type: 'prayer',
-          prayer,
-          isFirst: index === 0,
-          isLast: index === answeredPrayers.length - 1,
-          isAnswered: true,
-          key: `prayer-${prayer.prayerId}`,
-        });
-      });
-    }
-
-    return items;
-  }, [activePrayers, answeredPrayers]);
+  // Stable key for DraggableFlatList based on prayer subject ID
+  // This prevents unnecessary remounts that cause scroll position to reset
+  const listKey = `prayers-${contact.prayerSubjectId}`;
 
   // Calculate gradient end point based on header height
   const headerGradientEnd = headerHeight / SCREEN_HEIGHT;
@@ -406,7 +353,7 @@ export default function ContactDetail() {
                   });
                 }}
               >
-                <FontAwesome name='pencil' size={20} color={DARK_TEXT} />
+                <Text style={{ fontSize: 20 }}>✏️</Text>
               </Pressable>
             </View>
           ),
@@ -441,56 +388,16 @@ export default function ContactDetail() {
     dispatch(fetchPrayerSubjects());
   };
 
-  // Handle reorder completion - validate section boundaries and save
-  const handleDragEnd = async (reorderedItems: ListItem[]) => {
-    // Validate the reorder: section headers must be in correct positions
-    // and prayers must stay within their sections
-    const activeHeaderIndex = reorderedItems.findIndex(
-      item => item.type === 'section-header' && item.key === 'header-active'
-    );
-    const answeredHeaderIndex = reorderedItems.findIndex(
-      item => item.type === 'section-header' && item.key === 'header-answered'
-    );
-
-    // Active header must be first
-    if (activeHeaderIndex !== 0) {
-      // Force revert by incrementing key to remount the list
-      setListKey(prev => prev + 1);
-      return;
-    }
-
-    // Check all prayer items are in their correct sections
-    let isValid = true;
-    for (let i = 1; i < reorderedItems.length; i++) {
-      const item = reorderedItems[i];
-      // Skip section headers and empty states
-      if (item.type === 'section-header' || item.type === 'empty-state') continue;
-
-      // Before answered header (or no answered header) = should be active
-      // After answered header = should be answered
-      const shouldBeAnswered = answeredHeaderIndex !== -1 && i > answeredHeaderIndex;
-      if (item.isAnswered !== shouldBeAnswered) {
-        isValid = false;
-        break;
-      }
-    }
-
-    if (!isValid) {
-      // Force revert by incrementing key to remount the list
-      setListKey(prev => prev + 1);
-      return;
-    }
-
+  // Handle reorder completion - simple now that we only have active prayers
+  const handleDragEnd = async (reorderedActivePrayers: Prayer[]) => {
     // Mark that we're reordering to prevent useEffect from overriding
     isReorderingRef.current = true;
 
-    // Extract prayers in new order (skip section headers)
-    const reorderedPrayers = reorderedItems
-      .filter((item): item is PrayerItem => item.type === 'prayer')
-      .map(item => item.prayer);
+    // Combine reordered active prayers with answered prayers (answered stay at end)
+    const allPrayers = [...reorderedActivePrayers, ...answeredPrayers];
 
     // Update local state immediately for responsive UI
-    setLocalPrayers(reorderedPrayers);
+    setLocalPrayers(allPrayers);
 
     // Call API to persist the new order
     if (!token) {
@@ -500,7 +407,7 @@ export default function ContactDetail() {
 
     try {
       const reorderData: ReorderPrayerSubjectPrayersRequest = {
-        prayers: reorderedPrayers.map((prayer, index) => ({
+        prayers: allPrayers.map((prayer, index) => ({
           prayerId: prayer.prayerId,
           displaySequence: index,
         })),
@@ -513,69 +420,45 @@ export default function ContactDetail() {
       );
 
       if (!result.success) {
-        console.error('Failed to save prayer order:', result.error);
         // On failure, revert by fetching fresh data
         isReorderingRef.current = false;
         dispatch(fetchPrayerSubjects());
+      } else {
+        // On success, refresh Redux so the new order persists when navigating away
+        dispatch(fetchPrayerSubjects());
+        // Reset flag after a brief delay to allow Redux to update
+        setTimeout(() => {
+          isReorderingRef.current = false;
+        }, 500);
       }
-    } catch (error) {
-      console.error('Error reordering prayers:', error);
+    } catch {
       // On error, revert by fetching fresh data
       isReorderingRef.current = false;
       dispatch(fetchPrayerSubjects());
     }
   };
 
-  // Render list item (section header, empty state, or prayer)
-  const renderItem = useCallback(({ item, drag, isActive }: RenderItemParams<ListItem>) => {
-    // Section header - NOT draggable
-    if (item.type === 'section-header') {
-      // First section header (Prayer Requests) doesn't need top margin
-      const isFirstHeader = item.key === 'header-active';
-      return (
-        <View style={isFirstHeader ? undefined : styles.section}>
-          <View style={styles.sectionLabelContainer}>
-            <Text style={styles.sectionLabel}>{item.title}</Text>
-            <View style={styles.sectionLabelLine} />
-          </View>
-        </View>
-      );
-    }
-
-    // Empty state - NOT draggable
-    if (item.type === 'empty-state') {
-      return (
-        <View style={styles.sectionCardSingle}>
-          <Text style={styles.emptyText}>{item.message}</Text>
-        </View>
-      );
-    }
-
-    // Prayer item - draggable
-    const { prayer, isFirst, isLast, isAnswered } = item;
+  // Render active prayer item (only active prayers are in the DraggableFlatList)
+  const renderActivePrayerItem = useCallback(({ item, drag, isActive: isDragging }: RenderItemParams<ActivePrayerItem>) => {
+    const { prayer, isFirst, isLast } = item;
     return (
       <ScaleDecorator>
         <Pressable
           onPress={() => handlePrayerPress(prayer)}
           onLongPress={drag}
-          disabled={isActive}
+          disabled={isDragging}
           style={[
             styles.prayerItem,
             isFirst && styles.prayerItemFirst,
             isLast && styles.prayerItemLast,
             !isLast && styles.prayerItemBorder,
-            isActive && styles.prayerItemDragging,
+            isDragging && styles.prayerItemDragging,
           ]}
         >
           <View style={styles.prayerHeader}>
             <Text style={styles.prayerTitle} numberOfLines={1}>
               {prayer.title}
             </Text>
-            {isAnswered && (
-              <View style={styles.answeredBadge}>
-                <FontAwesome name="check" size={10} color="#FFFFFF" />
-              </View>
-            )}
             <FontAwesome
               name='chevron-right'
               size={12}
@@ -592,21 +475,56 @@ export default function ContactDetail() {
           <Text style={styles.prayerDescription} numberOfLines={3}>
             {prayer.prayerDescription}
           </Text>
-          {isAnswered && prayer.datetimeAnswered ? (
-            <Text style={styles.answeredDate}>
-              Answered {formatDate(prayer.datetimeAnswered)}
-            </Text>
-          ) : (
-            <Text style={styles.prayerDate}>
-              {formatDate(prayer.datetimeCreate)}
-            </Text>
-          )}
+          <Text style={styles.prayerDate}>
+            {formatDate(prayer.datetimeCreate)}
+          </Text>
         </Pressable>
       </ScaleDecorator>
     );
   }, [handlePrayerPress]);
 
-  // List header (avatar, name, notes)
+  // Render an answered prayer (non-draggable, used in footer)
+  const renderAnsweredPrayer = useCallback((prayer: Prayer, isFirst: boolean, isLast: boolean) => (
+    <Pressable
+      key={prayer.prayerId}
+      onPress={() => handlePrayerPress(prayer)}
+      style={[
+        styles.prayerItem,
+        isFirst && styles.prayerItemFirst,
+        isLast && styles.prayerItemLast,
+        !isLast && styles.prayerItemBorder,
+      ]}
+    >
+      <View style={styles.prayerHeader}>
+        <Text style={styles.prayerTitle} numberOfLines={1}>
+          {prayer.title}
+        </Text>
+        <View style={styles.answeredBadge}>
+          <FontAwesome name="check" size={10} color="#FFFFFF" />
+        </View>
+        <FontAwesome
+          name='chevron-right'
+          size={12}
+          color={SUBTLE_TEXT}
+          style={styles.prayerChevron}
+        />
+      </View>
+      {prayer.prayerSubjectDisplayName && (
+        <View style={styles.prayerSubjectRow}>
+          <Text style={styles.prayerSubjectLabel}>Pray for</Text>
+          <Text style={styles.prayerSubjectName}>{prayer.prayerSubjectDisplayName}</Text>
+        </View>
+      )}
+      <Text style={styles.prayerDescription} numberOfLines={3}>
+        {prayer.prayerDescription}
+      </Text>
+      <Text style={styles.answeredDate}>
+        Answered {prayer.datetimeAnswered ? formatDate(prayer.datetimeAnswered) : 'N/A'}
+      </Text>
+    </Pressable>
+  ), [handlePrayerPress]);
+
+  // List header (avatar, name, notes, and Prayer Requests section header)
   const ListHeader = useMemo(() => (
     <View style={[styles.listHeader, { paddingTop: insets.top + HEADER_HEIGHT }]}>
       {/* Spacer for avatar */}
@@ -624,12 +542,40 @@ export default function ContactDetail() {
 
       {/* Spacer before content */}
       <View style={styles.contentSpacer} />
-    </View>
-  ), [contact.prayerSubjectDisplayName, contact.notes, insets.top]);
 
-  // List footer (members section, link status, padding)
+      {/* Prayer Requests section header */}
+      <View style={styles.sectionLabelContainer}>
+        <Text style={styles.sectionLabel}>Prayer Requests</Text>
+        <View style={styles.sectionLabelLine} />
+      </View>
+
+      {/* Empty state if no active prayers */}
+      {activePrayers.length === 0 && (
+        <View style={styles.sectionCardSingle}>
+          <Text style={styles.emptyText}>No active prayer requests.</Text>
+        </View>
+      )}
+    </View>
+  ), [contact.prayerSubjectDisplayName, contact.notes, insets.top, activePrayers.length]);
+
+  // List footer (answered prayers, members section, link status, padding)
   const ListFooter = useMemo(() => (
     <View style={styles.listFooter}>
+      {/* Answered Prayers Section */}
+      {answeredPrayers.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionLabelContainer}>
+            <Text style={styles.sectionLabel}>Answered Prayers</Text>
+            <View style={styles.sectionLabelLine} />
+          </View>
+          <View style={styles.sectionCard}>
+            {answeredPrayers.map((prayer, index) =>
+              renderAnsweredPrayer(prayer, index === 0, index === answeredPrayers.length - 1)
+            )}
+          </View>
+        </View>
+      )}
+
       {/* Member Of Section (for individual types with parent groups) */}
       {contact.prayerSubjectType === 'individual' && (parentGroupsLoading || parentGroups.length > 0) && (
         <View style={styles.section}>
@@ -803,7 +749,7 @@ export default function ContactDetail() {
       {/* Bottom padding for scroll */}
       <View style={styles.bottomPadding} />
     </View>
-  ), [contact, parentGroups, parentGroupsLoading, members, membersLoading, navigation, prayerSubjects]);
+  ), [contact, parentGroups, parentGroupsLoading, members, membersLoading, navigation, prayerSubjects, answeredPrayers, renderAnsweredPrayer]);
 
   return (
     <LinearGradient
@@ -848,14 +794,20 @@ export default function ContactDetail() {
         )}
       </Animated.View>
 
-      {/* Single DraggableFlatList as the main scrollable container */}
+      {/* DraggableFlatList for active prayers only */}
       <GestureHandlerRootView style={styles.gestureContainer}>
         <DraggableFlatList
           key={listKey}
-          data={listItems}
+          data={activePrayerItems}
           keyExtractor={(item) => item.key}
-          renderItem={renderItem}
-          onDragEnd={({ data }) => handleDragEnd(data)}
+          renderItem={renderActivePrayerItem}
+          onDragEnd={({ data, from, to }) => {
+            if (from !== to) {
+              // Extract just the prayers from the reordered items
+              const reorderedPrayers = data.map(item => item.prayer);
+              handleDragEnd(reorderedPrayers);
+            }
+          }}
           ListHeaderComponent={ListHeader}
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.listContent}
@@ -1034,6 +986,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  memberItemBorder: {
+    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   memberItemFirst: {
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
@@ -1041,10 +997,6 @@ const styles = StyleSheet.create({
   memberItemLast: {
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
-  },
-  memberItemBorder: {
-    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   memberItemPressed: {
     backgroundColor: 'rgba(144, 197, 144, 0.15)',
@@ -1137,12 +1089,6 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 24,
   },
-  sectionBlur: {
-    borderColor: 'rgba(252, 251, 231, 0.58)',
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
   sectionCard: {
     overflow: 'hidden',
   },
@@ -1151,13 +1097,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  sectionContent: {
-    paddingVertical: 8,
-  },
-  sectionHeaderContainer: {
-    marginBottom: 4,
-    marginTop: 8,
   },
   sectionLabel: {
     color: SUBTLE_TEXT,

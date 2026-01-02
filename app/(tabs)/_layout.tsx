@@ -315,6 +315,16 @@ export default function TabsLayout() {
               href: null, // Hide from tab bar but keep route for compatibility
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
+                  <HeaderIconButton
+                    onPress={() => router.back()}
+                    iconName="chevron-back"
+                    iconType="ionicons"
+                    size={20}
+                  />
+                </View>
+              ),
+              headerRight: () => (
+                <View style={styles.headerRightContainer}>
                   <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={18} buttonSize={36} />
                 </View>
               ),

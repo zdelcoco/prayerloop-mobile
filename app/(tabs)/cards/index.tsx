@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Text,
   View,
@@ -156,15 +156,18 @@ export default function Cards() {
   );
 
   // Expose functions to global for tab layout to access
-  useLayoutEffect(() => {
-    // Context menu uses source selection modal
-    (global as any).cardsSetPrayerSessionVisible = setSourceSelectionVisible;
-    (global as any).cardsToggleSearch = () => setSearchVisible((prev) => !prev);
-    return () => {
-      (global as any).cardsSetPrayerSessionVisible = null;
-      (global as any).cardsToggleSearch = null;
-    };
-  }, []);
+  // Using useFocusEffect so this resets when screen gains focus after navigating back
+  useFocusEffect(
+    useCallback(() => {
+      // Context menu uses source selection modal
+      (global as any).cardsSetPrayerSessionVisible = setSourceSelectionVisible;
+      (global as any).cardsToggleSearch = () => setSearchVisible((prev) => !prev);
+      return () => {
+        (global as any).cardsSetPrayerSessionVisible = null;
+        (global as any).cardsToggleSearch = null;
+      };
+    }, [])
+  );
 
   // Handle starting session from source selection
   const handleStartSession = (prayers: any[], contextTitle: string) => {
