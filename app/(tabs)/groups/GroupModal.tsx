@@ -72,7 +72,7 @@ export default function GroupModal() {
   const initials = useMemo(() => getInitials(groupName), [groupName]);
   const avatarColor = useMemo(() => getAvatarColor(groupName), [groupName]);
 
-  const canCreate = groupName.trim() && groupDescription.trim();
+  const canCreate = groupName.trim().length > 0;
 
   const handleClose = useCallback(() => {
     if (groupName.trim() || groupDescription.trim()) {
@@ -90,8 +90,8 @@ export default function GroupModal() {
   }, [groupName, groupDescription, navigation]);
 
   const handleCreate = useCallback(async () => {
-    if (!groupName.trim() || !groupDescription.trim()) {
-      Alert.alert('Required', 'Please fill in both the name and description.');
+    if (!groupName.trim()) {
+      Alert.alert('Required', 'Please enter a circle name.');
       return;
     }
 
@@ -101,7 +101,7 @@ export default function GroupModal() {
 
     const newGroup: CreateGroupRequest = {
       groupName: groupName.trim(),
-      groupDescription: groupDescription.trim(),
+      groupDescription: groupDescription.trim() || undefined,
     };
 
     try {
@@ -206,7 +206,7 @@ export default function GroupModal() {
                   placeholderTextColor={SUBTLE_TEXT}
                   value={groupName}
                   onChangeText={setGroupName}
-                  autoCapitalize="words"
+                  autoCapitalize="none"
                   autoCorrect={false}
                   autoFocus
                 />

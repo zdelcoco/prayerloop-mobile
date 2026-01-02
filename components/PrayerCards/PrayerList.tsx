@@ -394,6 +394,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
+      <Ionicons name="heart-outline" size={48} color={SUBTLE_TEXT} />
       <Text style={styles.emptyText}>{emptyMessage}</Text>
     </View>
   );
@@ -541,12 +542,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingTop: 64,
+    paddingVertical: 60,
   },
   emptyText: {
-    color: SUBTLE_TEXT,
-    fontFamily: 'InstrumentSans-Regular',
-    fontSize: 16,
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
+    marginTop: 16,
     textAlign: 'center',
   },
   filterButton: {

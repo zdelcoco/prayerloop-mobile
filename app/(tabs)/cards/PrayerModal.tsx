@@ -371,8 +371,8 @@ export default function PrayerModal() {
           </BlurView>
         </View>
 
-        {/* Prayer Circle Sharing Section - only show in add mode */}
-        {!isEditMode && (
+        {/* Prayer Circle Sharing Section - only show in add mode and when user has circles */}
+        {!isEditMode && userGroups && userGroups.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionLabelContainer}>
               <Text style={styles.sectionLabel}>Share with Prayer Circle</Text>

@@ -262,7 +262,7 @@ export default function Groups() {
           onRefresh={onRefresh}
           refreshing={refreshing}
           searchVisible={searchVisible}
-          emptyMessage="No prayer circles yet. Tap + to create or join a prayer circle!"
+          emptyMessage="No prayer circles yet. Tap the title above to create or join a prayer circle!"
           enableReorder={true}
           onReorder={handleReorder}
         />

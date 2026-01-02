@@ -211,18 +211,39 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
       {/* Group List */}
       {enableReorder ? (
         <GestureHandlerRootView style={styles.container}>
-          <DraggableFlatList
-            data={localGroups}
+          {localGroups.length === 0 ? (
+            renderEmptyComponent()
+          ) : (
+            <DraggableFlatList
+              data={localGroups}
+              keyExtractor={(item) => item.groupId.toString()}
+              renderItem={renderDraggableItem}
+              onDragEnd={({ data }) => handleDragEnd(data)}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                onRefresh ? (
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    tintColor={ACTIVE_GREEN}
+                    colors={[ACTIVE_GREEN]}
+                  />
+                ) : undefined
+              }
+            />
+          )}
+        </GestureHandlerRootView>
+      ) : (
+        sortedGroups.length === 0 ? (
+          renderEmptyComponent()
+        ) : (
+          <FlatList
+            data={sortedGroups}
             keyExtractor={(item) => item.groupId.toString()}
-            renderItem={renderDraggableItem}
-            onDragEnd={({ data }) => handleDragEnd(data)}
-            ListEmptyComponent={renderEmptyComponent}
+            renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={
-              localGroups.length === 0
-                ? styles.emptyListContent
-                : styles.listContent
-            }
+            contentContainerStyle={styles.listContent}
             refreshControl={
               onRefresh ? (
                 <RefreshControl
@@ -234,30 +255,7 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
               ) : undefined
             }
           />
-        </GestureHandlerRootView>
-      ) : (
-        <FlatList
-          data={sortedGroups}
-          keyExtractor={(item) => item.groupId.toString()}
-          renderItem={renderItem}
-          ListEmptyComponent={renderEmptyComponent}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={
-            sortedGroups.length === 0
-              ? styles.emptyListContent
-              : styles.listContent
-          }
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={ACTIVE_GREEN}
-                colors={[ACTIVE_GREEN]}
-              />
-            ) : undefined
-          }
-        />
+        )
       )}
     </View>
   );
@@ -275,10 +273,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 32,
-    paddingVertical: 60,
-  },
-  emptyListContent: {
-    flexGrow: 1,
   },
   emptySubtext: {
     color: SUBTLE_TEXT,

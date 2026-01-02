@@ -168,14 +168,7 @@ export const addUserPrayer =
   (prayerRequest: CreatePrayerRequest): AppThunk =>
   async (dispatch, getState) => {
     const { auth } = getState();
-    console.log('[addUserPrayer] Auth state check:', {
-      isAuthenticated: auth.isAuthenticated,
-      hasToken: !!auth.token,
-      hasUser: !!auth.user,
-      userProfileId: auth.user?.userProfileId,
-    });
     if (!auth.isAuthenticated || !auth.token || !auth.user) {
-      console.warn('[addUserPrayer] Auth check failed!');
       dispatch(createUserPrayerFailure('User not authenticated'));
       return;
     }
