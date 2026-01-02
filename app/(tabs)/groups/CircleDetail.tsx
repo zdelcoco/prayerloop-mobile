@@ -396,24 +396,26 @@ export default function CircleDetail() {
               >
                 <Ionicons name='search' size={18} color={DARK_TEXT} />
               </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.headerButton,
-                  pressed && styles.headerButtonPressed,
-                ]}
-                onPress={() => {
-                  navigation.navigate('EditCircle', {
-                    group: JSON.stringify(group),
-                  });
-                }}
-              >
-                <Text style={{ fontSize: 18 }}>✏️</Text>
-              </Pressable>
+              {user?.userProfileId === group.createdBy && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.headerButton,
+                    pressed && styles.headerButtonPressed,
+                  ]}
+                  onPress={() => {
+                    navigation.navigate('EditCircle', {
+                      group: JSON.stringify(group),
+                    });
+                  }}
+                >
+                  <Text style={{ fontSize: 18 }}>✏️</Text>
+                </Pressable>
+              )}
             </View>
           ),
         });
       }
-    }, [navigation, group, searchVisible, handleCircleAction, activePrayers])
+    }, [navigation, group, searchVisible, handleCircleAction, activePrayers, user])
   );
 
   // Handle refresh
