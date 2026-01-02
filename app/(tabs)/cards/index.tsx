@@ -25,6 +25,7 @@ import { RootState } from '@/store/store';
 
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import PrayerSourceSelectionModal from '@/components/PrayerSession/PrayerSourceSelectionModal';
 import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
 import { ContactCardList } from '@/components/Contacts';
 import { PrayerList } from '@/components/PrayerCards';
@@ -59,6 +60,9 @@ export default function Cards() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [sourceSelectionVisible, setSourceSelectionVisible] = useState(false);
+  const [sessionPrayers, setSessionPrayers] = useState<any[]>([]);
+  const [sessionContextTitle, setSessionContextTitle] = useState('Personal Prayers');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('prayer');
@@ -114,7 +118,12 @@ export default function Cards() {
           headerRight: () => (
             <View style={styles.headerRightContainer}>
               <Pressable
-                onPress={() => setPrayerSessionVisible(true)}
+                onPress={() => {
+                  // Header button starts directly with all personal prayers
+                  setSessionPrayers(allPrayers);
+                  setSessionContextTitle('Personal Prayers');
+                  setPrayerSessionVisible(true);
+                }}
                 style={({ pressed }) => [
                   styles.headerButton,
                   pressed && styles.headerButtonPressed,
@@ -145,12 +154,21 @@ export default function Cards() {
 
   // Expose functions to global for tab layout to access
   useLayoutEffect(() => {
-    (global as any).cardsSetPrayerSessionVisible = setPrayerSessionVisible;
+    // Context menu uses source selection modal
+    (global as any).cardsSetPrayerSessionVisible = setSourceSelectionVisible;
     (global as any).cardsToggleSearch = () => setSearchVisible((prev) => !prev);
     return () => {
+      (global as any).cardsSetPrayerSessionVisible = null;
       (global as any).cardsToggleSearch = null;
     };
   }, []);
+
+  // Handle starting session from source selection
+  const handleStartSession = (prayers: any[], contextTitle: string) => {
+    setSessionPrayers(prayers);
+    setSessionContextTitle(contextTitle);
+    setPrayerSessionVisible(true);
+  };
 
   const onRefresh = async () => {
     if (refreshing) return;
@@ -193,12 +211,20 @@ export default function Cards() {
         message='Loading contacts...'
         onClose={() => {}}
       />
+      <PrayerSourceSelectionModal
+        visible={sourceSelectionVisible}
+        onClose={() => setSourceSelectionVisible(false)}
+        onStartSession={handleStartSession}
+      />
       <PrayerSessionModal
         visible={prayerSessionVisible}
-        prayers={allPrayers}
+        prayers={sessionPrayers.length > 0 ? sessionPrayers : allPrayers}
         currentUserId={user?.userProfileId || 0}
-        onClose={() => setPrayerSessionVisible(false)}
-        contextTitle="Personal Prayers"
+        onClose={() => {
+          setPrayerSessionVisible(false);
+          setSessionPrayers([]);
+        }}
+        contextTitle={sessionContextTitle}
       />
       <FilterModal
         visible={filterModalVisible}

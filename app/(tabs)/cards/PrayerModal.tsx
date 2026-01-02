@@ -15,6 +15,7 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { BlurView } from 'expo-blur';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { addUserPrayer, putUserPrayer, fetchUserPrayers } from '@/store/userPrayersSlice';
@@ -62,8 +63,18 @@ export default function PrayerModal() {
       newContactId?: number;
       preselectedCircleId?: string;
       preselectedCircleName?: string;
+      returnTo?: string;
     };
   }>();
+
+  // Helper to go back - uses router.back() when coming from another screen
+  const goBack = useCallback(() => {
+    if (route.params?.returnTo === 'current') {
+      router.back();
+    } else {
+      navigation.goBack();
+    }
+  }, [route.params?.returnTo, navigation]);
 
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const pendingNewContactId = useAppSelector(selectPendingNewContactId);
@@ -200,7 +211,7 @@ export default function PrayerModal() {
       await dispatch(fetchUserPrayers());
       await dispatch(fetchPrayerSubjects());
 
-      navigation.goBack();
+      goBack();
     } catch (error) {
       console.error('Error saving prayer:', error);
       Alert.alert('Error', 'Something went wrong while saving the prayer.');
@@ -218,7 +229,7 @@ export default function PrayerModal() {
     route.params?.prayer,
     isSaving,
     dispatch,
-    navigation,
+    goBack,
   ]);
 
   const handleSelectSubject = (subject: PrayerSubject | null) => {
@@ -248,7 +259,7 @@ export default function PrayerModal() {
             styles.headerButton,
             pressed && styles.headerButtonPressed,
           ]}
-          onPress={() => navigation.goBack()}
+          onPress={goBack}
         >
           <Ionicons name="close" size={24} color={DARK_TEXT} />
         </Pressable>

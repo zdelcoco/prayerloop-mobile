@@ -19,9 +19,11 @@ import { RootState } from '@/store/store';
 import { clearGroupPrayers } from '@/store/groupPrayersSlice';
 
 import LoadingModal from '@/components/ui/LoadingModal';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import PrayerSourceSelectionModal from '@/components/PrayerSession/PrayerSourceSelectionModal';
 import { PrayerCircleCardList } from '@/components/Groups';
 
-import type { Group, User } from '@/util/shared.types';
+import type { Group, User, Prayer } from '@/util/shared.types';
 import { groupUsersCache } from '@/util/groupUsersCache';
 import { useEffect, useRef } from 'react';
 
@@ -45,6 +47,10 @@ export default function Groups() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [groupMembers, setGroupMembers] = useState<{ [groupId: number]: User[] }>({});
+  const [sourceSelectionVisible, setSourceSelectionVisible] = useState(false);
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [sessionPrayers, setSessionPrayers] = useState<Prayer[]>([]);
+  const [sessionContextTitle, setSessionContextTitle] = useState('Prayer Session');
   const previousGroupsRef = useRef<Group[] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
 
@@ -157,10 +163,19 @@ export default function Groups() {
   // Expose functions to global for tab layout to access
   useLayoutEffect(() => {
     (global as any).groupsToggleSearch = () => setSearchVisible((prev) => !prev);
+    (global as any).groupsSetPrayerSessionVisible = setSourceSelectionVisible;
     return () => {
       (global as any).groupsToggleSearch = null;
+      (global as any).groupsSetPrayerSessionVisible = null;
     };
   }, []);
+
+  // Handle starting session from source selection
+  const handleStartSession = (prayers: Prayer[], contextTitle: string) => {
+    setSessionPrayers(prayers);
+    setSessionContextTitle(contextTitle);
+    setPrayerSessionVisible(true);
+  };
 
   useEffect(() => {
     if (groups && Array.isArray(groups) && token) {
@@ -221,6 +236,21 @@ export default function Groups() {
         visible={status === 'loading'}
         message='Loading prayer circles...'
         onClose={() => {}}
+      />
+      <PrayerSourceSelectionModal
+        visible={sourceSelectionVisible}
+        onClose={() => setSourceSelectionVisible(false)}
+        onStartSession={handleStartSession}
+      />
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={sessionPrayers}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => {
+          setPrayerSessionVisible(false);
+          setSessionPrayers([]);
+        }}
+        contextTitle={sessionContextTitle}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
         {/* Prayer Circle List */}
