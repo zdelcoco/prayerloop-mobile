@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 4,
-    paddingHorizontal: 4,
+    paddingRight: 4,
     paddingVertical: 4,
   },
   titleContainerPressed: {

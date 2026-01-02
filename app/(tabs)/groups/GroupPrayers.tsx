@@ -28,7 +28,6 @@ import {
   selectFilteredGroupPrayers,
 } from '@/store/groupPrayersSlice';
 import { RootState } from '../../../store/store';
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
 
 import { Group, User } from '@/util/shared.types';
 import LoadingModal from '@/components/ui/LoadingModal';
@@ -148,15 +147,6 @@ export default function GroupPrayers() {
             >
               <Ionicons name="search" size={18} color="#2d3e31" />
             </Pressable>
-            <ContextMenuButton
-              type='groupDetail'
-              groupId={group.groupId}
-              groupName={group.groupName}
-              groupCreatorId={group.createdBy}
-              prayerCount={sanitizedPrayers?.length || 0}
-              iconSize={18}
-              buttonSize={36}
-            />
           </View>
         ),
       });
@@ -167,11 +157,7 @@ export default function GroupPrayers() {
         parentNavigation.setOptions({
           headerTitle: 'Prayer Circles',
           headerLeft: null,
-          headerRight: () => (
-            <View style={styles.headerRightContainer}>
-              <ContextMenuButton type='groups' iconSize={18} buttonSize={36} />
-            </View>
-          ),
+          headerRight: null,
         });
       }
     };

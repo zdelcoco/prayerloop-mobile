@@ -11,7 +11,6 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import ProfileButton from '@/components/ui/ProfileButton';
 import HeaderDropdown from '@/components/ui/HeaderDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
@@ -107,11 +106,10 @@ export default function Cards() {
           ),
           headerLeft: () => (
             <View style={styles.headerLeftContainer}>
-              <ContextMenuButton
-                type='cards'
-                prayerCount={prayerSubjects?.flatMap(s => s.prayers).length || 0}
-                iconSize={18}
-                buttonSize={36}
+              <ProfileButton
+                firstName={user?.firstName || ''}
+                lastName={user?.lastName || ''}
+                onPress={() => router.navigate('/userProfile')}
               />
             </View>
           ),
@@ -143,11 +141,6 @@ export default function Cards() {
               >
                 <Ionicons name='search' size={18} color='#2d3e31' />
               </Pressable>
-              <ProfileButton
-                firstName={user?.firstName || ''}
-                lastName={user?.lastName || ''}
-                onPress={() => router.navigate('/userProfile')}
-              />
             </View>
           ),
         });
@@ -312,7 +305,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginLeft: 16,
-    marginRight: 12,
+    marginRight: 16,
   },
   headerRightContainer: {
     alignItems: 'center',

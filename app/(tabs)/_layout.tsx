@@ -4,7 +4,6 @@ import { useAppSelector } from '@/hooks/redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
 import ProfileButton from '@/components/ui/ProfileButton';
 import ProfileDrawer from '@/components/Profile/ProfileDrawer';
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -235,7 +234,6 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabsLayout() {
-  const { prayers } = useAppSelector((state: RootState) => state.userPrayers);
   const user = useAppSelector((state: RootState) => state.auth.user);
   const drawerRef = useRef<DrawerLayoutMethods>(null);
 
@@ -284,7 +282,11 @@ export default function TabsLayout() {
               title: 'Prayer Cards',
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
-                  <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={18} />
+                  <ProfileButton
+                    firstName={user?.firstName || ''}
+                    lastName={user?.lastName || ''}
+                    onPress={() => router.navigate('/userProfile')}
+                  />
                 </View>
               ),
               headerRight: () => (
@@ -298,11 +300,6 @@ export default function TabsLayout() {
                     iconName="search"
                     iconType="ionicons"
                     size={18}
-                  />
-                  <ProfileButton
-                    firstName={user?.firstName || ''}
-                    lastName={user?.lastName || ''}
-                    onPress={() => router.navigate('/userProfile')}
                   />
                 </View>
               ),
@@ -323,11 +320,6 @@ export default function TabsLayout() {
                   />
                 </View>
               ),
-              headerRight: () => (
-                <View style={styles.headerRightContainer}>
-                  <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={18} buttonSize={36} />
-                </View>
-              ),
             }}
           />
           <Tabs.Screen
@@ -336,7 +328,11 @@ export default function TabsLayout() {
               title: 'Prayer Circles',
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
-                  <ContextMenuButton type="groups" iconSize={18} />
+                  <ProfileButton
+                    firstName={user?.firstName || ''}
+                    lastName={user?.lastName || ''}
+                    onPress={() => router.navigate('/userProfile')}
+                  />
                 </View>
               ),
               headerRight: () => (
@@ -350,11 +346,6 @@ export default function TabsLayout() {
                     iconName="search"
                     iconType="ionicons"
                     size={18}
-                  />
-                  <ProfileButton
-                    firstName={user?.firstName || ''}
-                    lastName={user?.lastName || ''}
-                    onPress={() => router.navigate('/userProfile')}
                   />
                 </View>
               ),
@@ -458,7 +449,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginLeft: 16,
-    marginRight: 12,
+    marginRight: 16,
   },
   headerRightContainer: {
     alignItems: 'center',
