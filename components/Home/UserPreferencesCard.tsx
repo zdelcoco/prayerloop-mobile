@@ -112,26 +112,10 @@ const UserPreferencesCard = () => {
 
     // Handle string preferences that have specific options (like theme with light/dark)
     if (preference.key === 'theme' && preference.valueType === 'string') {
-      const isDark = preference.value === 'dark';
+      // theming is low on priority, don't want to highlight to users yet
+      //const isDark = preference.value === 'dark';
 
-      return (
-        <View key={preference.key} style={styles.preferenceRow}>
-          <Text style={[styles.preferenceLabel, isComingSoon && styles.comingSoonLabel]}>
-            Dark Theme
-          </Text>
-          <View style={styles.switchContainer}>
-            <Switch
-              value={isDark}
-              onValueChange={isComingSoon ? undefined : (value) =>
-                updatePreference(preference, value ? 'dark' : 'light')
-              }
-              disabled={isComingSoon}
-              thumbColor={isDark ? '#white' : 'white'}
-              trackColor={{ false: '#ddd', true: '#ccc' }}
-            />
-          </View>
-        </View>
-      );
+      return;
     }
 
     // For other preference types, just show the value (could add more UI types later)

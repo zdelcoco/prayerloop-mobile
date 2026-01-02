@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -44,6 +45,9 @@ interface PrayerListProps {
 }
 
 type FilterType = 'all' | 'active' | 'answered';
+type SortMode = 'manual' | 'alphabetical';
+
+const SORT_MODE_STORAGE_KEY = 'prayerlist_sort_mode';
 
 // Generate initials from display name
 const getInitials = (displayName: string): string => {
@@ -110,6 +114,38 @@ const PrayerList: React.FC<PrayerListProps> = ({
   const dispatch = useAppDispatch();
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('alphabetical');
+  const hasLoadedSortMode = useRef(false);
+
+  // Load saved sort mode preference on mount
+  useEffect(() => {
+    const loadSortMode = async () => {
+      try {
+        const savedMode = await AsyncStorage.getItem(SORT_MODE_STORAGE_KEY);
+        if (savedMode === 'manual' || savedMode === 'alphabetical') {
+          setSortMode(savedMode);
+        }
+      } catch (error) {
+        console.error('Failed to load sort mode preference:', error);
+      } finally {
+        hasLoadedSortMode.current = true;
+      }
+    };
+    loadSortMode();
+  }, []);
+
+  // Save sort mode preference when it changes (but only after initial load)
+  useEffect(() => {
+    if (!hasLoadedSortMode.current) return;
+    const saveSortMode = async () => {
+      try {
+        await AsyncStorage.setItem(SORT_MODE_STORAGE_KEY, sortMode);
+      } catch (error) {
+        console.error('Failed to save sort mode preference:', error);
+      }
+    };
+    saveSortMode();
+  }, [sortMode]);
 
   // Local state for reordering
   const [localSections, setLocalSections] = useState<PrayerSection[]>([]);
@@ -122,8 +158,13 @@ const PrayerList: React.FC<PrayerListProps> = ({
   const sections = useMemo<PrayerSection[]>(() => {
     const result: PrayerSection[] = [];
 
-    // Sort subjects by displaySequence
-    const sortedSubjects = [...subjects].sort((a, b) => a.displaySequence - b.displaySequence);
+    // Sort subjects based on sort mode
+    const sortedSubjects = [...subjects].sort((a, b) => {
+      if (sortMode === 'alphabetical') {
+        return a.prayerSubjectDisplayName.localeCompare(b.prayerSubjectDisplayName);
+      }
+      return a.displaySequence - b.displaySequence;
+    });
 
     for (const subject of sortedSubjects) {
       let prayers = subject.prayers || [];
@@ -165,7 +206,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
     }
 
     return result;
-  }, [subjects, filter, searchQuery]);
+  }, [subjects, filter, searchQuery, sortMode]);
 
   // Sync local sections when sections change
   useEffect(() => {
@@ -371,13 +412,16 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
   // Render a complete section (header + prayers)
   const renderSection = useCallback(({ item, drag, isActive }: RenderItemParams<PrayerSection>) => {
+    // Disable dragging when in alphabetical sort mode
+    const canDrag = sortMode === 'manual';
+
     return (
       <ScaleDecorator>
         <View style={[styles.sectionContainer, isActive && styles.sectionContainerDragging]}>
-          {/* Section Header - tap to open contact, long press to drag */}
+          {/* Section Header - tap to open contact, long press to drag (only in manual mode) */}
           <Pressable
             onPress={() => onContactPress?.(item.subject)}
-            onLongPress={drag}
+            onLongPress={canDrag ? drag : undefined}
             disabled={isActive}
           >
             {renderSectionHeader(item.subject, item.data.length, isActive)}
@@ -392,7 +436,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
         </View>
       </ScaleDecorator>
     );
-  }, [renderSectionHeader, renderPrayerItem, onContactPress]);
+  }, [renderSectionHeader, renderPrayerItem, onContactPress, sortMode]);
 
   // Render empty state
   const renderEmptyState = () => (
@@ -445,6 +489,19 @@ const PrayerList: React.FC<PrayerListProps> = ({
           {renderFilterButton('all', 'All')}
           {renderFilterButton('active', 'Active')}
           {renderFilterButton('answered', 'Answered')}
+          <Pressable
+            onPress={() => setSortMode(prev => prev === 'manual' ? 'alphabetical' : 'manual')}
+            style={[
+              styles.sortToggleButton,
+              sortMode === 'alphabetical' && styles.sortToggleButtonActive,
+            ]}
+          >
+            <FontAwesome
+              name="sort-alpha-asc"
+              size={16}
+              color={sortMode === 'alphabetical' ? '#FFFFFF' : DARK_TEXT}
+            />
+          </Pressable>
         </View>
       )}
 
@@ -572,11 +629,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   filterContainer: {
+    alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
+  },
+  sortToggleButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: 4,
+    width: 32,
+  },
+  sortToggleButtonActive: {
+    backgroundColor: ACTIVE_GREEN,
   },
   initialsText: {
     color: '#FFFFFF',

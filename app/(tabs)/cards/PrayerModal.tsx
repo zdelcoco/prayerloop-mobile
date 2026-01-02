@@ -19,10 +19,13 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { addUserPrayer, putUserPrayer, fetchUserPrayers } from '@/store/userPrayersSlice';
+import { putUserPrayer, fetchUserPrayers } from '@/store/userPrayersSlice';
 import { fetchPrayerSubjects, selectPrayerSubjects, selectPendingNewContactId, clearPendingNewContactId } from '@/store/prayerSubjectsSlice';
 import { selectUserGroups } from '@/store/groupsSlice';
-import { addGroupPrayer, fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import { createUserPrayer } from '@/util/createUserPrayer';
+import { addPrayerAccess } from '@/util/addPrayerAccess';
+import { CreatePrayerResponse } from '@/util/shared.types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { selectAuthState } from '@/store/authSlice';
 import PrayerSubjectPicker from '@/components/PrayerCards/PrayerSubjectPicker';
@@ -175,7 +178,7 @@ export default function PrayerModal() {
     try {
       const prayerData: CreatePrayerRequest = {
         title: prayerTitle.trim(),
-        prayerDescription: prayerDescription.trim() || prayerTitle.trim(),
+        prayerDescription: prayerDescription.trim(),
         isPrivate,
         isAnswered,
         prayerType: 'general',
@@ -185,23 +188,41 @@ export default function PrayerModal() {
       if (isEditMode && route.params.prayer) {
         await dispatch(putUserPrayer(route.params.prayer.prayerId, prayerData));
       } else {
-        // Create user prayer
-        await dispatch(addUserPrayer(prayerData));
+        // Create user prayer and get the prayerId
+        if (!auth.token || !auth.user) {
+          Alert.alert('Error', 'You must be logged in to create a prayer.');
+          return;
+        }
 
-        // If any prayer circles are selected, create group prayers for each
-        if (selectedCircleIds.length > 0) {
-          const groupPrayerData: CreatePrayerRequest = {
-            title: prayerTitle.trim(),
-            prayerDescription: prayerDescription.trim() || prayerTitle.trim(),
-            isPrivate: false, // Group prayers shouldn't be private
-            isAnswered,
-            prayerType: 'general',
-            prayerSubjectId: selectedSubjectId,
-          };
+        const result = await createUserPrayer(
+          auth.token,
+          auth.user.userProfileId,
+          prayerData
+        );
 
-          // Create group prayer for each selected circle
+        if (!result.success) {
+          Alert.alert('Error', result.error?.message || 'Failed to create prayer.');
+          return;
+        }
+
+        const newPrayerId = (result.data as CreatePrayerResponse).prayerId;
+
+        // If any prayer circles are selected, share this prayer with each group
+        // (instead of creating separate prayers)
+        if (selectedCircleIds.length > 0 && newPrayerId) {
           for (const circleId of selectedCircleIds) {
-            await dispatch(addGroupPrayer(circleId, groupPrayerData));
+            const shareResult = await addPrayerAccess(
+              auth.token,
+              newPrayerId,
+              'group',
+              circleId
+            );
+
+            if (!shareResult.success) {
+              console.warn(`Failed to share prayer with group ${circleId}:`, shareResult.error);
+              // Continue sharing with other groups even if one fails
+            }
+
             // Refresh group prayers for each
             await dispatch(fetchGroupPrayers(circleId));
           }
@@ -231,6 +252,8 @@ export default function PrayerModal() {
     isSaving,
     dispatch,
     goBack,
+    auth.token,
+    auth.user,
   ]);
 
   const handleSelectSubject = (subject: PrayerSubject | null) => {
