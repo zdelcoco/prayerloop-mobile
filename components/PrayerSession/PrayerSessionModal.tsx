@@ -85,10 +85,10 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
 
           {/* Card Container - Center 1/2 */}
           <View style={styles.cardContainer}>
-            {/* Praying for subject name */}
+            {/* Pray for subject name */}
             {currentPrayer.prayerSubjectDisplayName && (
               <View style={styles.subjectHeader}>
-                <Text style={styles.subjectLabel}>Praying for</Text>
+                <Text style={styles.subjectLabel}>Pray for</Text>
                 <Text style={styles.subjectName}>{currentPrayer.prayerSubjectDisplayName}</Text>
               </View>
             )}

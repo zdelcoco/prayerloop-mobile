@@ -34,6 +34,7 @@ interface PrayerDetailModalProps {
   userToken: string;
   prayer: Prayer;
   prayerSubjectId?: number; // Optional - used to prepopulate "who is this prayer for?" when editing
+  subjectDisplayName?: string; // Optional - used when prayer.prayerSubjectDisplayName is not populated
   onClose: () => void;
   onActionComplete: () => void;
   onShare: () => void;
@@ -47,12 +48,15 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   userToken,
   prayer,
   prayerSubjectId,
+  subjectDisplayName,
   onClose,
   onActionComplete,
   onShare,
   usersLookup,
   context = 'cards', // Default to 'cards' for backward compatibility
 }) => {
+  // Use prayer's subject display name, or the one passed as prop
+  const displaySubjectName = prayer.prayerSubjectDisplayName || subjectDisplayName;
   const [loading, setLoading] = useState(false);
   const [modalMode, setModalMode] = useState<'detail' | 'share' | 'groupSelection'>('detail');
   const [sharing, setSharing] = useState(false);
@@ -201,10 +205,10 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     return (
       <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1}>
         <View style={[styles.detailContainer, { maxHeight: maxContentHeight }]}>
-          {prayer.prayerSubjectDisplayName && (
+          {displaySubjectName && (
             <View style={styles.subjectHeader}>
-              <Text style={styles.subjectLabel}>Praying for</Text>
-              <Text style={styles.subjectName}>{prayer.prayerSubjectDisplayName}</Text>
+              <Text style={styles.subjectLabel}>Pray for</Text>
+              <Text style={styles.subjectName}>{displaySubjectName}</Text>
             </View>
           )}
           <ScrollView

@@ -578,6 +578,12 @@ export default function ContactDetail() {
               style={styles.prayerChevron}
             />
           </View>
+          {prayer.prayerSubjectDisplayName && (
+            <View style={styles.prayerSubjectRow}>
+              <Text style={styles.prayerSubjectLabel}>Pray for</Text>
+              <Text style={styles.prayerSubjectName}>{prayer.prayerSubjectDisplayName}</Text>
+            </View>
+          )}
           <Text style={styles.prayerDescription} numberOfLines={3}>
             {prayer.prayerDescription}
           </Text>
@@ -861,6 +867,7 @@ export default function ContactDetail() {
           userToken={token || ''}
           prayer={selectedPrayer}
           prayerSubjectId={contact.prayerSubjectId}
+          subjectDisplayName={contact.prayerSubjectDisplayName}
           onClose={handleModalClose}
           onActionComplete={handleActionComplete}
           onShare={() => {}}
@@ -1095,6 +1102,22 @@ const styles = StyleSheet.create({
   prayerItemLast: {
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+  },
+  prayerSubjectLabel: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+  },
+  prayerSubjectName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  prayerSubjectRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 4,
   },
   prayerTitle: {
     color: DARK_TEXT,

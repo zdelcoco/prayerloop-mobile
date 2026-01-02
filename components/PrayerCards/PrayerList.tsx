@@ -340,6 +340,14 @@ const PrayerList: React.FC<PrayerListProps> = ({
           />
         </View>
 
+        {/* Pray for subject name */}
+        {prayer.prayerSubjectDisplayName && (
+          <View style={styles.prayerSubjectRow}>
+            <Text style={styles.prayerSubjectLabel}>Pray for</Text>
+            <Text style={styles.prayerSubjectName}>{prayer.prayerSubjectDisplayName}</Text>
+          </View>
+        )}
+
         {/* Prayer description */}
         <Text style={styles.prayerDescription} numberOfLines={3}>
           {prayer.prayerDescription}
@@ -470,6 +478,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
           userToken={userToken || ''}
           prayer={selectedPrayer.prayer}
           prayerSubjectId={selectedPrayer.subject.prayerSubjectId}
+          subjectDisplayName={selectedPrayer.subject.prayerSubjectDisplayName}
           onClose={handleModalClose}
           onActionComplete={handleActionComplete}
           onShare={() => {}}
@@ -612,6 +621,22 @@ const styles = StyleSheet.create({
   },
   prayerItemPressed: {
     backgroundColor: 'rgba(144, 197, 144, 0.3)',
+  },
+  prayerSubjectLabel: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+  },
+  prayerSubjectName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  prayerSubjectRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginTop: 4,
   },
   prayerTitle: {
     color: DARK_TEXT,
