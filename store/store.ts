@@ -6,6 +6,7 @@ import userPrayersReducer from './userPrayersSlice';
 import userGroupsReducer from './groupsSlice';
 import groupPrayersReducer from './groupPrayersSlice';
 import groupUsersReducer from './groupUsersSlice';
+import prayerSubjectsReducer from './prayerSubjectsSlice';
 
 // Persist configuration for auth slice
 const authPersistConfig = {
@@ -23,6 +24,7 @@ const store = configureStore({
     userGroups: userGroupsReducer,
     groupPrayers: groupPrayersReducer,
     groupUsers: groupUsersReducer,
+    prayerSubjects: prayerSubjectsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

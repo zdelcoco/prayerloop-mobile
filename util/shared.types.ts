@@ -46,10 +46,14 @@ export interface Prayer {
   prayerAccessId: number;
   prayerId: number;
   prayerPriority: number;
+  prayerSubjectId?: number;
+  prayerSubjectDisplayName?: string;
   prayerType: string;
   title: string;
   updatedBy: number;
   userProfileId: number;
+  displaySequence?: number;
+  subjectDisplaySequence?: number;
 }
 
 export interface Group {
@@ -68,7 +72,56 @@ export interface CreatePrayerRequest {
   title: string;
   prayerDescription: string;
   isPrivate: boolean;
+  isAnswered?: boolean;
   prayerType: string;
+  prayerSubjectId?: number;
+}
+
+export interface PrayerSubjectMember {
+  prayerSubjectMembershipId: number;
+  memberPrayerSubjectId: number;
+  membershipRole: 'member' | 'leader';
+  datetimeCreate: string;
+  createdBy: number;
+  memberDisplayName: string;
+  memberType: 'individual' | 'family' | 'group';
+  memberPhotoS3Key: string | null;
+  memberUserProfileId: number | null;
+}
+
+export interface PrayerSubject {
+  prayerSubjectId: number;
+  prayerSubjectType: 'individual' | 'family' | 'group';
+  prayerSubjectDisplayName: string;
+  notes: string | null;
+  displaySequence: number;
+  photoS3Key: string | null;
+  userProfileId: number | null;
+  useLinkedUserPhoto: boolean;
+  linkStatus: 'unlinked' | 'pending' | 'linked' | 'declined';
+  datetimeCreate: string;
+  datetimeUpdate: string;
+  createdBy: number;
+  updatedBy: number;
+  prayers: Prayer[];
+  members?: PrayerSubjectMember[];
+}
+
+export interface CreatePrayerSubjectRequest {
+  prayerSubjectType: 'individual' | 'family' | 'group';
+  prayerSubjectDisplayName: string;
+  notes?: string;
+  photoS3Key?: string;
+  userProfileId?: number;
+  useLinkedUserPhoto?: boolean;
+}
+
+export interface UpdatePrayerSubjectRequest {
+  prayerSubjectDisplayName?: string;
+  prayerSubjectType?: 'individual' | 'family' | 'group';
+  notes?: string;
+  photoS3Key?: string;
+  useLinkedUserPhoto?: boolean;
 }
 
 export interface CreatePrayerResponse {

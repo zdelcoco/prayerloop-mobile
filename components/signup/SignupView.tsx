@@ -62,8 +62,20 @@ function SignupView({ onPress, onBackToLogin, errorMessage }: SignupViewProps) {
 
   const onPhoneNumberChange = (text: string) => {
     const cleaned = text.replace(/\D/g, '');
-    setShowError(false);
-    setFormData(prev => ({ ...prev, phoneNumber: cleaned })); // Store unformatted
+    const currentDigits = formData.phoneNumber || '';
+
+    // Detect if user is deleting (formatted text got shorter but digits didn't decrease)
+    // In this case, remove the last digit
+    const formattedLength = formatPhoneNumberInput(currentDigits).length;
+    if (text.length < formattedLength && cleaned.length >= currentDigits.length && currentDigits.length > 0) {
+      // User deleted a formatting character - remove the last digit instead
+      const newValue = currentDigits.slice(0, -1);
+      setShowError(false);
+      setFormData(prev => ({ ...prev, phoneNumber: newValue }));
+    } else {
+      setShowError(false);
+      setFormData(prev => ({ ...prev, phoneNumber: cleaned })); // Store unformatted
+    }
   };
 
   const onConfirmPasswordChange = (text: string) => {

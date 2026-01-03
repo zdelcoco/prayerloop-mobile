@@ -1,75 +1,77 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Text,
   View,
   StyleSheet,
   Dimensions,
-  Alert,
-  ActivityIndicator,
   Pressable,
 } from 'react-native';
-import { FlatList } from 'react-native-gesture-handler';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { FontAwesome } from '@expo/vector-icons';
+import ProfileButton from '@/components/ui/ProfileButton';
+import HeaderDropdown from '@/components/ui/HeaderDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { fetchUserPrayers, setFilters, selectFilters } from '@/store/userPrayersSlice';
 import {
-  fetchUserPrayers,
-  addUserPrayer,
-  setSearchQuery,
-  setFilters,
-  selectSearchQuery,
-  selectFilters,
-  selectFilteredPrayers,
-} from '@/store/userPrayersSlice';
-import { logout } from '@/store/authSlice';
+  fetchPrayerSubjects,
+  selectPrayerSubjects,
+  selectPrayerSubjectsState,
+} from '@/store/prayerSubjectsSlice';
 import { RootState } from '@/store/store';
 
 import LoadingModal from '@/components/ui/LoadingModal';
-import PrayerCards from '@/components/PrayerCards/PrayerCards';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
-import SearchBar from '@/components/Search/SearchBar';
+import PrayerSourceSelectionModal from '@/components/PrayerSession/PrayerSourceSelectionModal';
 import FilterModal, { FilterOptions } from '@/components/Search/FilterModal';
+import { ContactCardList } from '@/components/Contacts';
+import { PrayerList } from '@/components/PrayerCards';
 
-import type { Prayer } from '@/util/shared.types';
-import { ReactReduxContext } from 'react-redux';
+import type { PrayerSubject } from '@/util/shared.types';
+
+type ViewMode = 'contact' | 'prayer';
+
+const VIEW_MODE_OPTIONS = [
+  { value: 'prayer', label: 'Prayer Cards', icon: 'user', iconType: 'fontawesome' as const },
+  { value: 'contact', label: 'Contact Cards', icon: 'vcard', iconType: 'fontawesome' as const },
+];
 
 type RootStackParamList = {
-  PrayerModal: { mode: string };
+  PrayerModal: { mode: string; prayerSubjectId?: number };
+  AddPrayerCardModal: undefined;
+  ContactDetail: { contact: string }; // Serialized PrayerSubject
 };
 
 export default function Cards() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
 
-  const { token, user } = useAppSelector((state: RootState) => state.auth);
+  const { user, token } = useAppSelector((state: RootState) => state.auth);
 
-  const { prayers, status, error } = useAppSelector(
-    (state: RootState) => state.userPrayers
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
+  const { status: subjectsStatus, error: subjectsError } = useAppSelector(
+    selectPrayerSubjectsState
   );
 
-  const searchQuery = useAppSelector(selectSearchQuery);
   const filters = useAppSelector(selectFilters);
-  const filteredPrayers = useAppSelector(selectFilteredPrayers);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [sourceSelectionVisible, setSourceSelectionVisible] = useState(false);
+  const [sessionPrayers, setSessionPrayers] = useState<any[]>([]);
+  const [sessionContextTitle, setSessionContextTitle] = useState('Personal Prayers');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('prayer');
 
-  const [loadingModalVisible, setLoadingModalVisible] = useState(
-    status === 'loading' || loading
-  );
-
-  const flatListRef = useRef<FlatList<Prayer>>(null);
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
 
   const fetchData = useCallback(() => {
+    dispatch(fetchPrayerSubjects());
     dispatch(fetchUserPrayers());
   }, [dispatch]);
 
@@ -89,56 +91,117 @@ export default function Cards() {
     }, [navigation])
   );
 
-  // Expose functions to global for tab layout to access
-  useLayoutEffect(() => {
-    (global as any).cardsSetPrayerSessionVisible = setPrayerSessionVisible;
-    (global as any).cardsToggleSearch = () => setSearchBarVisible((prev) => !prev);
-  }, [setPrayerSessionVisible]);
+  // Restore header when this screen gains focus (after navigating back from ContactDetail)
+  useFocusEffect(
+    useCallback(() => {
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.setOptions({
+          headerTitle: () => (
+            <HeaderDropdown
+              options={VIEW_MODE_OPTIONS}
+              selectedValue={viewMode}
+              onSelect={(value) => setViewMode(value as ViewMode)}
+            />
+          ),
+          headerLeft: () => (
+            <View style={styles.headerLeftContainer}>
+              <ProfileButton
+                firstName={user?.firstName || ''}
+                lastName={user?.lastName || ''}
+                onPress={() => router.navigate('/userProfile')}
+              />
+            </View>
+          ),
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <Pressable
+                onPress={() => {
+                  if (allPrayers.length === 0) return;
+                  // Header button starts directly with all personal prayers
+                  setSessionPrayers(allPrayers);
+                  setSessionContextTitle('Personal Prayers');
+                  setPrayerSessionVisible(true);
+                }}
+                disabled={allPrayers.length === 0}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && allPrayers.length > 0 && styles.headerButtonPressed,
+                  allPrayers.length === 0 && styles.headerButtonDisabled,
+                ]}
+              >
+                <Text style={{ fontSize: 18, opacity: allPrayers.length === 0 ? 0.4 : 1 }}>🙏</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setSearchVisible((prev) => !prev)}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons name='search' size={18} color='#2d3e31' />
+              </Pressable>
+            </View>
+          ),
+        });
+      }
+    }, [navigation, prayerSubjects, user, viewMode, allPrayers])
+  );
 
-  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
+  // Expose functions to global for tab layout to access
+  // Using useFocusEffect so this resets when screen gains focus after navigating back
+  useFocusEffect(
+    useCallback(() => {
+      // Context menu uses source selection modal
+      (global as any).cardsSetPrayerSessionVisible = setSourceSelectionVisible;
+      (global as any).cardsToggleSearch = () => setSearchVisible((prev) => !prev);
+      return () => {
+        (global as any).cardsSetPrayerSessionVisible = null;
+        (global as any).cardsToggleSearch = null;
+      };
+    }, [])
+  );
+
+  // Handle starting session from source selection
+  const handleStartSession = (prayers: any[], contextTitle: string) => {
+    setSessionPrayers(prayers);
+    setSessionContextTitle(contextTitle);
+    setPrayerSessionVisible(true);
+  };
 
   const onRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
     try {
+      await dispatch(fetchPrayerSubjects());
       await dispatch(fetchUserPrayers());
     } catch (error) {
-      console.error('Failed to refresh prayers:', error);
+      console.error('Failed to refresh:', error);
     } finally {
       setRefreshing(false);
-      // Use a timeout to ensure that scrollToOffset doesn't conflict with FlatList's internal logic
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }, 100); // 100ms delay to avoid conflicts
     }
   };
 
-  const handleSearchChange = (text: string) => {
-    dispatch(setSearchQuery(text));
+  const handleContactPress = (contact: PrayerSubject) => {
+    navigation.navigate('ContactDetail', { contact: JSON.stringify(contact) });
   };
 
-  const handleFilterPress = () => {
-    setFilterModalVisible(true);
+  const handleContactLongPress = (contact: PrayerSubject) => {
+    // TODO: Show action sheet for edit/delete
+    console.log('Contact long pressed:', contact.prayerSubjectDisplayName);
   };
 
   const handleApplyFilters = (newFilters: FilterOptions) => {
     dispatch(setFilters(newFilters));
   };
 
-  // Hide search bar when user starts scrolling (only if no active search/filters)
-  const handleScrollBeginDrag = useCallback(() => {
-    if (
-      searchBarVisible &&
-      !searchQuery &&
-      !filters.createdBy &&
-      filters.dateRange === 'all' &&
-      filters.isAnswered === null
-    ) {
-      setSearchBarVisible(false);
-    }
-  }, [searchBarVisible, searchQuery, filters]);
-
-  const displayedPrayers = filteredPrayers || prayers;
+  // Collect all prayers from subjects for prayer session, enriching with subject display name
+  const allPrayers = prayerSubjects?.flatMap((subject) =>
+    subject.prayers.map(prayer => ({
+      ...prayer,
+      prayerSubjectDisplayName: prayer.prayerSubjectDisplayName || subject.prayerSubjectDisplayName,
+    }))
+  ) || [];
 
   return (
     <LinearGradient
@@ -148,16 +211,24 @@ export default function Cards() {
       end={{ x: 0, y: 1 }}
     >
       <LoadingModal
-        visible={status === 'loading'}
-        message='Loading prayers...'
-        onClose={toggleLoadingModal}
+        visible={subjectsStatus === 'loading'}
+        message='Loading contacts...'
+        onClose={() => {}}
+      />
+      <PrayerSourceSelectionModal
+        visible={sourceSelectionVisible}
+        onClose={() => setSourceSelectionVisible(false)}
+        onStartSession={handleStartSession}
       />
       <PrayerSessionModal
         visible={prayerSessionVisible}
-        prayers={prayers || []}
+        prayers={sessionPrayers.length > 0 ? sessionPrayers : allPrayers}
         currentUserId={user?.userProfileId || 0}
-        onClose={() => setPrayerSessionVisible(false)}
-        contextTitle="Personal Prayers"
+        onClose={() => {
+          setPrayerSessionVisible(false);
+          setSessionPrayers([]);
+        }}
+        contextTitle={sessionContextTitle}
       />
       <FilterModal
         visible={filterModalVisible}
@@ -167,47 +238,35 @@ export default function Cards() {
         availableUsers={[]}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        {/* Search Bar - shown when searchBarVisible is true */}
-        {searchBarVisible && (
-          <View style={styles.searchBarContainer}>
-            <SearchBar
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              onFilterPress={handleFilterPress}
-              placeholder="Search prayers..."
-            />
-          </View>
+        {subjectsError && <Text style={styles.text}>Error: {subjectsError}</Text>}
+
+        {/* Contact View */}
+        {viewMode === 'contact' && (
+          <ContactCardList
+            contacts={prayerSubjects || []}
+            currentUserId={user?.userProfileId}
+            onContactPress={handleContactPress}
+            onContactLongPress={handleContactLongPress}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            searchVisible={searchVisible}
+            showFilters={true}
+            emptyMessage="No prayer contacts yet. Tap + to add someone you're praying for!"
+          />
         )}
 
-        {error && <Text style={styles.text}>Error: {error}</Text>}
-        {!user || !prayers || prayers.length === 0 ? (
-          status !== 'loading' ? (
-            <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateTitle}>No Prayers Yet</Text>
-              <Text style={styles.emptyStateText}>
-                You haven't created any prayers yet. Tap the + button below to add your first prayer!
-              </Text>
-            </View>
-          ) : null
-        ) : displayedPrayers && displayedPrayers.length === 0 ? (
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyStateTitle}>No Results</Text>
-            <Text style={styles.emptyStateText}>
-              No prayers match your search or filters.
-            </Text>
-          </View>
-        ) : (
-          <PrayerCards
-            userId={user!.userProfileId}
-            token={token ?? ''}
-            prayers={displayedPrayers || []}
-            refreshing={refreshing}
+        {/* Prayer View */}
+        {viewMode === 'prayer' && (
+          <PrayerList
+            subjects={prayerSubjects || []}
+            currentUserId={user?.userProfileId}
+            userToken={token || undefined}
             onRefresh={onRefresh}
-            flatListRef={flatListRef}
-            onActionComplete={() => {
-              onRefresh();
-            }}
-            onScrollBeginDrag={handleScrollBeginDrag}
+            refreshing={refreshing}
+            searchVisible={searchVisible}
+            showFilters={true}
+            emptyMessage="No prayers yet. Tap + to add a prayer request!"
+            onContactPress={handleContactPress}
           />
         )}
       </View>
@@ -220,38 +279,39 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  emptyStateContainer: {
+  headerButton: {
     alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 32,
-    paddingTop: 100,
-  },
-  emptyStateText: {
-    color: '#666',
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  emptyStateTitle: {
-    color: '#333',
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  inlineLoadingIndicator: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    bottom: 0,
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
     justifyContent: 'center',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 36,
   },
-  searchBarContainer: {
-    backgroundColor: 'transparent',
+  headerButtonDisabled: {
+    backgroundColor: 'rgba(200, 200, 200, 0.5)',
+    shadowOpacity: 0.1,
+  },
+  headerButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerLeftContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 16,
+    marginRight: 16,
+  },
+  headerRightContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
   },
   text: {
     color: '#000',

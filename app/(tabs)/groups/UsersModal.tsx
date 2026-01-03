@@ -48,6 +48,32 @@ const CustomModalHeader = ({ title }: { title: string }) => (
   </View>
 );
 
+// Color constants matching the app theme
+const ACTIVE_GREEN = '#2E7D32';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
+
+// Generate a consistent color based on the name
+const getAvatarColor = (name: string): string => {
+  const colors = [
+    '#4CAF50', // Green
+    '#2196F3', // Blue
+    '#9C27B0', // Purple
+    '#FF9800', // Orange
+    '#00BCD4', // Cyan
+    '#E91E63', // Pink
+    '#607D8B', // Blue Grey
+    '#795548', // Brown
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export default function UsersModal() {
   const dispatch = useAppDispatch();
   const route = useRoute<{
@@ -221,10 +247,10 @@ export default function UsersModal() {
   ]);
 
   const handleLeaveGroup = useCallback(() => {
-    const groupName = route.params.groupName || 'this group';
+    const groupName = route.params.groupName || 'this prayer circle';
 
     Alert.alert(
-      'Leave Group',
+      'Leave Prayer Circle',
       `Are you sure you want to leave "${groupName}"?`,
       [
         {
@@ -265,16 +291,16 @@ export default function UsersModal() {
                 isDeletingRef.current = false; // Reset flag if leave failed
                 Alert.alert(
                   'Error',
-                  result?.error || 'Failed to leave group. Please try again.',
+                  result?.error || 'Failed to leave prayer circle. Please try again.',
                   [{ text: 'OK' }]
                 );
               }
             } catch (error) {
               isDeletingRef.current = false; // Reset flag on error
-              console.error('Leave group error:', error);
+              console.error('Leave prayer circle error:', error);
               Alert.alert(
                 'Error',
-                'Failed to leave group. Please try again.',
+                'Failed to leave prayer circle. Please try again.',
                 [{ text: 'OK' }]
               );
             } finally {
@@ -287,10 +313,10 @@ export default function UsersModal() {
   }, [dispatch, route.params.groupProfileId, route.params.groupName, navigation]);
 
   const handleDeleteGroup = useCallback(() => {
-    const groupName = route.params.groupName || 'this group';
+    const groupName = route.params.groupName || 'this prayer circle';
 
     Alert.alert(
-      'Delete Group',
+      'Delete Prayer Circle',
       `This will permanently delete "${groupName}" and all its prayers. This cannot be undone.`,
       [
         {
@@ -332,16 +358,16 @@ export default function UsersModal() {
                 isDeletingRef.current = false; // Reset flag if delete failed
                 Alert.alert(
                   'Error',
-                  result?.error || 'Failed to delete group. Please try again.',
+                  result?.error || 'Failed to delete prayer circle. Please try again.',
                   [{ text: 'OK' }]
                 );
               }
             } catch (error) {
               isDeletingRef.current = false; // Reset flag on error
-              console.error('Delete group error:', error);
+              console.error('Delete prayer circle error:', error);
               Alert.alert(
                 'Error',
-                'Failed to delete group. Please try again.',
+                'Failed to delete prayer circle. Please try again.',
                 [{ text: 'OK' }]
               );
             } finally {
@@ -355,8 +381,8 @@ export default function UsersModal() {
 
   const handleRemoveUser = useCallback((userId: number, userName: string) => {
     Alert.alert(
-      'Remove User',
-      `Do you want to remove ${userName} from this group?`,
+      'Remove Member',
+      `Do you want to remove ${userName} from this prayer circle?`,
       [
         {
           text: 'Cancel',
@@ -367,7 +393,7 @@ export default function UsersModal() {
           onPress: () => {
             Alert.alert(
               'Are you sure?',
-              `${userName} will be removed from "${route.params.groupName || 'this group'}" and will no longer have access to its prayers.`,
+              `${userName} will be removed from "${route.params.groupName || 'this prayer circle'}" and will no longer have access to its prayers.`,
               [
                 {
                   text: 'Cancel',
@@ -455,7 +481,7 @@ export default function UsersModal() {
       end={{ x: 0, y: 1 }}
     >
       <SafeAreaView style={styles.safeArea}>
-        <CustomModalHeader title='Manage Group' />
+        <CustomModalHeader title='Manage Prayer Circle' />
         <View style={styles.contentContainer}>
           {status === 'loading' && !loadingTimeout && (
             <View style={styles.centeredMessageContainer}>
@@ -499,7 +525,7 @@ export default function UsersModal() {
           {status === 'succeeded' && (!users || users.length === 0) && (
             <View style={styles.centeredMessageContainer}>
               <Text style={styles.emptyText}>
-                No users found in this group.
+                No members found in this prayer circle.
               </Text>
             </View>
           )}
@@ -516,18 +542,18 @@ export default function UsersModal() {
           )}
         </View>
 
-        {/* Invite to Group Button */}
+        {/* Invite to Prayer Circle Button */}
         <TouchableOpacity
           style={styles.inviteButtonContainer}
           onPress={handleInviteToGroup}
           disabled={inviteLoading}
         >
           <Text style={styles.inviteButtonText}>
-            {inviteLoading ? 'Generating Invite...' : 'Invite to Group'}
+            {inviteLoading ? 'Generating Invite...' : 'Invite to Prayer Circle'}
           </Text>
         </TouchableOpacity>
 
-        {/* Leave/Delete Group Button - Show Delete for creator, Leave for others */}
+        {/* Leave/Delete Prayer Circle Button - Show Delete for creator, Leave for others */}
         {isCreator ? (
           <TouchableOpacity
             style={styles.deleteGroupButtonContainer}
@@ -535,7 +561,7 @@ export default function UsersModal() {
             disabled={deleteGroupLoading}
           >
             <Text style={styles.deleteGroupButtonText}>
-              {deleteGroupLoading ? 'Deleting Group...' : 'Delete Group'}
+              {deleteGroupLoading ? 'Deleting...' : 'Delete Prayer Circle'}
             </Text>
           </TouchableOpacity>
         ) : (
@@ -545,7 +571,7 @@ export default function UsersModal() {
             disabled={leaveGroupLoading}
           >
             <Text style={styles.leaveGroupButtonText}>
-              {leaveGroupLoading ? 'Leaving Group...' : 'Leave Group'}
+              {leaveGroupLoading ? 'Leaving...' : 'Leave Prayer Circle'}
             </Text>
           </TouchableOpacity>
         )}

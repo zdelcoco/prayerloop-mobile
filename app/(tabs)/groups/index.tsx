@@ -1,49 +1,61 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Text, View, StyleSheet, FlatList } from 'react-native';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
-import { useHeaderHeight } from '@react-navigation/elements';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Pressable,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions } from 'react-native';
-
+import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect, useNavigation, router } from 'expo-router';
+import { StackNavigationProp } from '@react-navigation/stack';
+import ProfileButton from '@/components/ui/ProfileButton';
+import HeaderTitleActionDropdown, { ActionOption } from '@/components/ui/HeaderTitleActionDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { RootState } from '@/store/store';
 import { fetchUserGroups, reorderGroups } from '@/store/groupsSlice';
-
-import type { Group, User } from '@/util/shared.types';
-import { groupUsersCache } from '@/util/groupUsersCache';
-import { formatGroupMembersString } from '@/util/formatGroupMembers';
-
-import GroupCard from '@/components/Groups/GroupCard';
-import LoadingModal from '@/components/ui/LoadingModal';
-import { router, useFocusEffect } from 'expo-router';
+import { RootState } from '@/store/store';
 import { clearGroupPrayers } from '@/store/groupPrayersSlice';
 
+import LoadingModal from '@/components/ui/LoadingModal';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import PrayerSourceSelectionModal from '@/components/PrayerSession/PrayerSourceSelectionModal';
+import { PrayerCircleCardList } from '@/components/Groups';
+
+import type { Group, User, Prayer } from '@/util/shared.types';
+import { groupUsersCache } from '@/util/groupUsersCache';
+import { useEffect, useRef } from 'react';
+
+type RootStackParamList = {
+  CircleDetail: { group: string };
+  PrayerModal: { mode: string };
+};
+
+const CIRCLE_ACTION_OPTIONS: ActionOption[] = [
+  { value: 'create', label: 'Create Prayer Circle', icon: 'add-outline' },
+  { value: 'join', label: 'Join Prayer Circle', icon: 'enter-outline' },
+];
+
 export default function Groups() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const dispatch = useAppDispatch();
+
+  const { groups, status } = useAppSelector((state: RootState) => state.userGroups);
+  const { user, token } = useAppSelector((state: RootState) => state.auth);
+
   const [refreshing, setRefreshing] = useState(false);
-  const flatListRef = useRef<FlatList<Group>>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<{ [groupId: number]: User[] }>({});
+  const [sourceSelectionVisible, setSourceSelectionVisible] = useState(false);
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [sessionPrayers, setSessionPrayers] = useState<Prayer[]>([]);
+  const [sessionContextTitle, setSessionContextTitle] = useState('Prayer Session');
+  const previousGroupsRef = useRef<Group[] | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
 
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
-
-  const dispatch = useAppDispatch();
-  const { groups, status } = useAppSelector(
-    (state: RootState) => state.userGroups
-  );
-  const { token } = useAppSelector(
-    (state: RootState) => state.auth
-  );
-
-  const [loading, setLoading] = useState(false);
-  const [groupMembers, setGroupMembers] = useState<{ [groupId: number]: User[] }>({});
-  const previousGroupsRef = useRef<Group[] | null>(null);
-  const lastFetchTimeRef = useRef<number>(0);
-
-  const [loadingModalVisible, setLoadingModalVisible] = useState(
-    status === 'loading' || loading
-  );
-
-  const toggleLoadingModal = () => setLoadingModalVisible(!loadingModalVisible);
 
   const fetchGroupMembers = useCallback(async (groupId: number) => {
     if (!token) return;
@@ -60,6 +72,14 @@ export default function Groups() {
       console.error('Failed to fetch group members:', error);
     }
   }, [token]);
+
+  const handleCircleAction = useCallback((value: string) => {
+    if (value === 'create') {
+      router.push('/groups/GroupModal');
+    } else if (value === 'join') {
+      router.push('/groups/JoinGroupModal');
+    }
+  }, []);
 
   const fetchData = useCallback(() => {
     // Debounce fetches to prevent duplicate calls within 500ms
@@ -80,18 +100,76 @@ export default function Groups() {
   );
 
   // Register tab bar add button handler when this screen is focused
+  // Tab bar + always adds a prayer (no group context from the groups list)
   useFocusEffect(
     useCallback(() => {
       global.tabBarAddVisible = true;
       global.tabBarAddHandler = () => {
-        router.push({ pathname: '/groups/ActionSelection' });
+        navigation.navigate('PrayerModal', { mode: 'add' });
       };
       return () => {
         // Cleanup when screen loses focus
         global.tabBarAddHandler = null;
       };
-    }, [])
+    }, [navigation])
   );
+
+  // Restore header when this screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.setOptions({
+          headerTitle: () => (
+            <HeaderTitleActionDropdown
+              title="Prayer Circles"
+              options={CIRCLE_ACTION_OPTIONS}
+              onSelect={handleCircleAction}
+            />
+          ),
+          headerLeft: () => (
+            <View style={styles.headerLeftContainer}>
+              <ProfileButton
+                firstName={user?.firstName || ''}
+                lastName={user?.lastName || ''}
+                onPress={() => router.navigate('/userProfile')}
+              />
+            </View>
+          ),
+          headerRight: () => (
+            <View style={styles.headerRightContainer}>
+              <Pressable
+                onPress={() => setSearchVisible((prev) => !prev)}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.headerButtonPressed,
+                ]}
+              >
+                <Ionicons name='search' size={18} color='#2d3e31' />
+              </Pressable>
+            </View>
+          ),
+        });
+      }
+    }, [navigation, user, handleCircleAction])
+  );
+
+  // Expose functions to global for tab layout to access
+  useLayoutEffect(() => {
+    (global as any).groupsToggleSearch = () => setSearchVisible((prev) => !prev);
+    (global as any).groupsSetPrayerSessionVisible = setSourceSelectionVisible;
+    return () => {
+      (global as any).groupsToggleSearch = null;
+      (global as any).groupsSetPrayerSessionVisible = null;
+    };
+  }, []);
+
+  // Handle starting session from source selection
+  const handleStartSession = (prayers: Prayer[], contextTitle: string) => {
+    setSessionPrayers(prayers);
+    setSessionContextTitle(contextTitle);
+    setPrayerSessionVisible(true);
+  };
 
   useEffect(() => {
     if (groups && Array.isArray(groups) && token) {
@@ -122,47 +200,24 @@ export default function Groups() {
       console.error('Failed to refresh groups:', error);
     } finally {
       setRefreshing(false);
-      // Use a timeout to ensure that scrollToOffset doesn't conflict with FlatList's internal logic
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-      }, 100); // 100ms delay to avoid conflicts
     }
   };
 
-  const onPressHandler = (groupId: number) => {
-    if (!groups || !Array.isArray(groups)) return;
-
-    const group = groups.find((g) => g.groupId === groupId);
-
-    if (group) {
-      router.push({
-        pathname: '/groups/GroupPrayers',
-        params: { group: JSON.stringify(group) }, // Serialize group object
-      });
-    }
+  const handleGroupPress = (group: Group) => {
+    router.push({
+      pathname: '/groups/CircleDetail',
+      params: { group: JSON.stringify(group) },
+    });
   };
 
-  const handleDragEnd = useCallback((data: Group[]) => {
+  const handleGroupLongPress = (group: Group) => {
+    // TODO: Show action sheet for edit/delete
+    console.log('Group long pressed:', group.groupName);
+  };
+
+  const handleReorder = useCallback((data: Group[]) => {
     dispatch(reorderGroups(data));
   }, [dispatch]);
-
-  const renderGroupItem = ({ item, drag, isActive }: RenderItemParams<Group>) => {
-    const members = groupMembers[item.groupId];
-    const membersText = members ? formatGroupMembersString(members) : 'Loading members...';
-
-    return (
-      <GroupCard
-        title={item.groupName}
-        description={item.groupDescription}
-        members={membersText}
-        onPress={() => onPressHandler(item.groupId)}
-        onLongPress={drag}
-        isActive={isActive}
-      />
-    );
-  };
-
-  const statusOverride = false;
 
   return (
     <LinearGradient
@@ -172,30 +227,38 @@ export default function Groups() {
       end={{ x: 0, y: 1 }}
     >
       <LoadingModal
-        visible={status === 'loading' || statusOverride}
-        message='Loading groups...'
-        onClose={toggleLoadingModal}
+        visible={status === 'loading'}
+        message='Loading prayer circles...'
+        onClose={() => {}}
+      />
+      <PrayerSourceSelectionModal
+        visible={sourceSelectionVisible}
+        onClose={() => setSourceSelectionVisible(false)}
+        onStartSession={handleStartSession}
+      />
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={sessionPrayers}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => {
+          setPrayerSessionVisible(false);
+          setSessionPrayers([]);
+        }}
+        contextTitle={sessionContextTitle}
       />
       <View style={[{ paddingTop: headerHeight }, styles.container]}>
-        <DraggableFlatList
-          ref={flatListRef}
-          data={groups || []}
-          keyExtractor={(item) => item.groupId.toString()}
-          renderItem={renderGroupItem}
-          onDragEnd={({ data }) => handleDragEnd(data)}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={() =>
-            status !== 'loading' ? (
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyStateTitle}>No Groups Yet</Text>
-                <Text style={styles.emptyStateText}>
-                  You haven't joined any groups yet. Create a new group or join an existing one to get started!
-                </Text>
-              </View>
-            ) : null
-          }
-          refreshing={refreshing}
+        {/* Prayer Circle List */}
+        <PrayerCircleCardList
+          groups={groups || []}
+          groupMembers={groupMembers}
+          onGroupPress={handleGroupPress}
+          onGroupLongPress={handleGroupLongPress}
           onRefresh={onRefresh}
+          refreshing={refreshing}
+          searchVisible={searchVisible}
+          emptyMessage="No prayer circles yet. Tap the title above to create or join a prayer circle!"
+          enableReorder={true}
+          onReorder={handleReorder}
         />
       </View>
     </LinearGradient>
@@ -207,32 +270,34 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  listContainer: {
-    paddingBottom: 120, // Extra padding for floating tab bar
-  },
-  emptyStateContainer: {
+  headerButton: {
     alignItems: 'center',
-    flex: 1,
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
     justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingTop: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 36,
   },
-  emptyStateText: {
-    color: '#666',
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: 'center',
+  headerButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)',
   },
-  emptyStateTitle: {
-    color: '#333',
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
+  headerLeftContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 16,
+    marginRight: 16,
   },
-  text: {
-    color: '#000',
-    marginTop: 20,
-    textAlign: 'center',
+  headerRightContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
   },
 });

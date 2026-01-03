@@ -9,7 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import store, { persistor } from '../store/store';
 import { useAppDispatch } from '../store/hooks';
-import { validateToken, logoutSuccess } from '../store/authSlice';
+import { validateToken, loginSuccess, logoutSuccess } from '../store/authSlice';
 import { clearUserPrayers } from '../store/userPrayersSlice';
 import { clearUserGroups } from '../store/groupsSlice';
 import { setupApiClient } from '../util/apiClient';
@@ -19,8 +19,8 @@ import InstrumentSansRegular from '../assets/fonts/InstrumentSans-Regular.ttf';
 import InstrumentSansBold from '../assets/fonts/InstrumentSans-Bold.ttf';
 import InstrumentSansSemiBold from '../assets/fonts/InstrumentSans-SemiBold.ttf';
 
-// Setup API client with store and actions for 401 handling
-setupApiClient(store, logoutSuccess, clearUserPrayers, clearUserGroups);
+// Setup API client with store and actions for 401 handling and auto re-login
+setupApiClient(store, loginSuccess, logoutSuccess, clearUserPrayers, clearUserGroups);
 
 // Keep splash visible until we're ready
 SplashScreen.preventAutoHideAsync();
