@@ -112,26 +112,10 @@ const UserPreferencesCard = () => {
 
     // Handle string preferences that have specific options (like theme with light/dark)
     if (preference.key === 'theme' && preference.valueType === 'string') {
-      const isDark = preference.value === 'dark';
+      // theming is low on priority, don't want to highlight to users yet
+      //const isDark = preference.value === 'dark';
 
-      return (
-        <View key={preference.key} style={styles.preferenceRow}>
-          <Text style={[styles.preferenceLabel, isComingSoon && styles.comingSoonLabel]}>
-            Dark Theme
-          </Text>
-          <View style={styles.switchContainer}>
-            <Switch
-              value={isDark}
-              onValueChange={isComingSoon ? undefined : (value) =>
-                updatePreference(preference, value ? 'dark' : 'light')
-              }
-              disabled={isComingSoon}
-              thumbColor={isDark ? '#white' : 'white'}
-              trackColor={{ false: '#ddd', true: '#ccc' }}
-            />
-          </View>
-        </View>
-      );
+      return;
     }
 
     // For other preference types, just show the value (could add more UI types later)
@@ -156,10 +140,16 @@ const UserPreferencesCard = () => {
 
   return (
     <View style={styles.cardContainer}>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>User Preferences</Text>       
+      {/* Construction tape overlay */}
+      <View style={styles.tapeOverlay} pointerEvents="none">
+        <View style={styles.tapeBanner}>
+          <Text style={styles.tapeText}>COMING SOON</Text>
+        </View>
       </View>
-      <Text style={styles.comingSoonBadge}>Coming Soon</Text>
+
+      <View style={styles.titleContainer}>
+        <Text style={styles.title}>User Preferences</Text>
+      </View>
       {!Array.isArray(preferences) || preferences.length === 0 ? (
         <Text style={styles.emptyText}>No preferences found</Text>
       ) : (
@@ -169,43 +159,40 @@ const UserPreferencesCard = () => {
   );
 };
 
+// Color constants matching the app theme
+const ACTIVE_GREEN = '#2E7D32';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
+
 const styles = StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 10,
-    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 6,
+    overflow: 'hidden',
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  comingSoonBadge: {
-    color: '#008000',
-    fontSize: 14,
-    fontStyle: 'italic',
-    fontWeight: '500',
-
   },
   comingSoonLabel: {
-    color: '#999',
+    color: SUBTLE_TEXT,
     fontStyle: 'italic',
   },
   emptyText: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
     textAlign: 'center',
   },
   loadingText: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
     textAlign: 'center',
   },
   preferenceLabel: {
-    color: '#333',
+    color: DARK_TEXT,
     flex: 1,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
     lineHeight: 22,
     marginRight: 16,
@@ -217,18 +204,40 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   preferenceValue: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '500',
   },
   switchContainer: {
     alignItems: 'flex-end',
     minWidth: 50,
   },
+  tapeBanner: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    position: 'absolute',
+    //right: 60,
+    top: 85,
+    //transform: [{ rotate: '-30deg' }],
+    width: '100%',
+  },
+  tapeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+  },
+  tapeText: {
+    color: '#ffffff',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
   title: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
   },
   titleContainer: {
     alignItems: 'center',

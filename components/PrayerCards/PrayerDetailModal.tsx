@@ -13,7 +13,7 @@ import {
   Share,
   Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Card from './PrayerCard';
 import { useNavigation } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,7 +25,7 @@ import { addPrayerAccess } from '@/util/addPrayerAccess';
 import { RootState } from '@/store/store';
 
 type RootStackParamList = {
-  PrayerModal: { mode: string; prayer: Prayer };
+  PrayerModal: { mode: string; prayer: Prayer; prayerSubjectId?: number };
 };
 
 interface PrayerDetailModalProps {
@@ -33,6 +33,8 @@ interface PrayerDetailModalProps {
   userId: number;
   userToken: string;
   prayer: Prayer;
+  prayerSubjectId?: number; // Optional - used to prepopulate "who is this prayer for?" when editing
+  subjectDisplayName?: string; // Optional - used when prayer.prayerSubjectDisplayName is not populated
   onClose: () => void;
   onActionComplete: () => void;
   onShare: () => void;
@@ -45,12 +47,16 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   userId,
   userToken,
   prayer,
+  prayerSubjectId,
+  subjectDisplayName,
   onClose,
   onActionComplete,
   onShare,
   usersLookup,
   context = 'cards', // Default to 'cards' for backward compatibility
 }) => {
+  // Use prayer's subject display name, or the one passed as prop
+  const displaySubjectName = prayer.prayerSubjectDisplayName || subjectDisplayName;
   const [loading, setLoading] = useState(false);
   const [modalMode, setModalMode] = useState<'detail' | 'share' | 'groupSelection'>('detail');
   const [sharing, setSharing] = useState(false);
@@ -77,7 +83,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
 
   const onEditHandler = () => {
     onClose();
-    navigation.navigate('PrayerModal', { mode: 'edit', prayer });
+    navigation.navigate('PrayerModal', { mode: 'edit', prayer, prayerSubjectId });
   };
 
   const onDeleteHandler = async () => {
@@ -199,6 +205,12 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     return (
       <TouchableOpacity style={styles.overlay} onPress={onClose} activeOpacity={1}>
         <View style={[styles.detailContainer, { maxHeight: maxContentHeight }]}>
+          {displaySubjectName && (
+            <View style={styles.subjectHeader}>
+              <Text style={styles.subjectLabel}>Pray for</Text>
+              <Text style={styles.subjectName}>{displaySubjectName}</Text>
+            </View>
+          )}
           <ScrollView
             style={[styles.scrollableContent, { maxHeight: scrollViewMaxHeight }]}
             contentContainerStyle={styles.scrollableContentContainer}
@@ -212,37 +224,42 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
               </Card>
             </View>
           </ScrollView>
-          <View style={styles.buttonRow}>
+          <View style={styles.actionRow}>
             {canShare() && (
               <Pressable
-                style={[styles.button, styles.shareButton]}
+                style={({ pressed }) => [
+                  styles.actionButton,
+                  pressed && styles.actionButtonPressed,
+                ]}
                 onPress={onShareHandler}
               >
-                <Text style={styles.buttonText}>Share</Text>
+                <Ionicons name="share-outline" size={20} color="#2E7D32" />
+                <Text style={styles.actionButtonText}>Share</Text>
               </Pressable>
             )}
-            {canEditAndDelete() ? (
+            {canEditAndDelete() && (
               <>
                 <Pressable
-                  style={styles.button}
-                  onPress={() => {
-                    onEditHandler();
-                  }}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    pressed && styles.actionButtonPressed,
+                  ]}
+                  onPress={onEditHandler}
                 >
-                  <Text style={styles.buttonText}>Edit</Text>
+                  <Text style={{ fontSize: 20 }}>✏️</Text>
+                  <Text style={styles.actionButtonText}>Edit</Text>
                 </Pressable>
                 <Pressable
-                  style={[styles.button, styles.deleteButton]}
-                  onPress={() => {
-                    onDeleteHandler();
-                  }}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.deleteActionButton,
+                    pressed && styles.deleteActionButtonPressed,
+                  ]}
+                  onPress={onDeleteHandler}
                 >
-                  <Text style={styles.buttonText}>Delete</Text>
+                  <Ionicons name="trash-outline" size={20} color="#D32F2F" />
+                  <Text style={styles.deleteActionButtonText}>Delete</Text>
                 </Pressable>
-              </>
-            ) : (
-              <>
-                {!canShare() && <View style={styles.spacer} />}
               </>
             )}
           </View>
@@ -391,27 +408,56 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
 };
 
 const styles = StyleSheet.create({
+  actionButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  actionButtonPressed: {
+    backgroundColor: 'rgba(46, 125, 50, 0.15)',
+  },
+  actionButtonText: {
+    color: '#2E7D32',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 15,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+    marginTop: 12,
+    width: '100%',
+  },
   button: {
     alignItems: 'center',
-    backgroundColor: '#008000',
-    borderRadius: 5,
+    backgroundColor: '#2E7D32',
+    borderRadius: 12,
     flex: 1,
     marginHorizontal: 5,
-    padding: 10,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    width: '100%',
+    padding: 12,
   },
   buttonText: {
     color: '#fff',
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: 'bold',
   },
   cancelButton: {
     backgroundColor: '#6c757d',
+  },
+  deleteActionButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  deleteActionButtonPressed: {
+    backgroundColor: 'rgba(211, 47, 47, 0.15)',
+  },
+  deleteActionButtonText: {
+    color: '#D32F2F',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 15,
   },
   cardStyle: {
     marginHorizontal: 0,
@@ -420,9 +466,6 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     flex: 1,
-  },
-  deleteButton: {
-    backgroundColor: '#cc0000',
   },
   detailContainer: {
     backgroundColor: 'transparent',
@@ -514,7 +557,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(50, 70, 55, 0.9)',
+    backgroundColor: 'rgba(20, 40, 25, 0.95)',
     flex: 1,
     justifyContent: 'center',
   },
@@ -524,8 +567,20 @@ const styles = StyleSheet.create({
   scrollableContentContainer: {
     flexGrow: 1,
   },
-  shareButton: {
-    backgroundColor: '#007AFF',
+  subjectHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subjectLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subjectName: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 20,
   },
   shareButtonRow: {
     flexDirection: 'row',
@@ -578,10 +633,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
-  },
-  spacer: {
-    flex: 1,
-    marginHorizontal: 5,
   },
   text: {
     fontSize: 16,

@@ -1,54 +1,50 @@
-import React, { useCallback } from 'react';
-import { Text, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useState, useLayoutEffect, useCallback } from 'react';
+import { ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { useFocusEffect } from 'expo-router';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions } from 'react-native';
-import Constants from 'expo-constants';
-import { useFocusEffect, router } from 'expo-router';
+import ProfileContent from '@/components/Profile/ProfileContent';
+import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
+import PrayerSourceSelectionModal from '@/components/PrayerSession/PrayerSourceSelectionModal';
+import type { Prayer } from '@/util/shared.types';
 
-import UserCard from '@/components/Home/UserCard';
-import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
-import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
-import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
-import TestNotifications from '@/components/TestNotifications';
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 120, // Extra padding for floating tab bar
-  },
-  versionContainer: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  versionText: {
-    color: '#666',
-    fontSize: 12,
-    opacity: 0.6,
-  },
-});
-
+// This route is kept for deep link compatibility but hidden from tab bar via href: null
 export default function UserProfile() {
   const user = useSelector((state: RootState) => state.auth.user);
-  const token = useSelector((state: RootState) => state.auth.token);
   const headerHeight = useHeaderHeight();
   const screenHeight = Dimensions.get('window').height;
   const headerGradientEnd = headerHeight / screenHeight;
 
-  // Register tab bar add button handler when this screen is focused
+  const [sourceSelectionVisible, setSourceSelectionVisible] = useState(false);
+  const [prayerSessionVisible, setPrayerSessionVisible] = useState(false);
+  const [sessionPrayers, setSessionPrayers] = useState<Prayer[]>([]);
+  const [sessionContextTitle, setSessionContextTitle] = useState('Prayer Session');
+
+  // Set up global function for context menu to trigger prayer session
+  useLayoutEffect(() => {
+    (global as any).cardsSetPrayerSessionVisible = setSourceSelectionVisible;
+    return () => {
+      // Don't clear - let the cards screen manage this when it's focused
+    };
+  }, []);
+
+  // Hide tab bar when this screen is focused
   useFocusEffect(
     useCallback(() => {
-      global.tabBarAddVisible = true;
-      global.tabBarAddHandler = () => {
-        router.push({ pathname: '/cards/PrayerModal', params: { mode: 'add' } });
-      };
+      global.tabBarHidden = true;
       return () => {
-        // Cleanup when screen loses focus
-        global.tabBarAddHandler = null;
+        global.tabBarHidden = false;
       };
     }, [])
   );
+
+  const handleStartSession = (prayers: Prayer[], contextTitle: string) => {
+    setSessionPrayers(prayers);
+    setSessionContextTitle(contextTitle);
+    setPrayerSessionVisible(true);
+  };
 
   return (
     <LinearGradient
@@ -57,26 +53,37 @@ export default function UserProfile() {
       start={{ x: 0, y: headerGradientEnd }}
       end={{ x: 0, y: 1 }}
     >
+      <PrayerSourceSelectionModal
+        visible={sourceSelectionVisible}
+        onClose={() => setSourceSelectionVisible(false)}
+        onStartSession={handleStartSession}
+      />
+      <PrayerSessionModal
+        visible={prayerSessionVisible}
+        prayers={sessionPrayers}
+        currentUserId={user?.userProfileId || 0}
+        onClose={() => {
+          setPrayerSessionVisible(false);
+          setSessionPrayers([]);
+        }}
+        contextTitle={sessionContextTitle}
+      />
       <ScrollView style={{ paddingTop: headerHeight }} contentContainerStyle={styles.scrollContent}>
         {user && (
-          <UserCard
+          <ProfileContent
             user={user}
             onUserUpdate={(updatedUser) => {
               console.log('User updated successfully:', updatedUser);
             }}
           />
         )}
-
-        <StartPrayerSessionCard />
-        <PrayerReminderCard />
-        <UserPreferencesCard />
-
-        <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>
-            v{Constants.expoConfig?.version}
-          </Text>
-        </View>
       </ScrollView>
     </LinearGradient>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingBottom: 120, // Extra padding for floating tab bar
+  },
+});

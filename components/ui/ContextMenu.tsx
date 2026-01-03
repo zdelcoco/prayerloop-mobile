@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -6,19 +6,19 @@ import {
   Pressable,
   Dimensions,
   TouchableWithoutFeedback,
-  SafeAreaView,
   PanResponder,
   Animated,
   Modal,
 } from 'react-native';
-import { router } from 'expo-router';
-import { useAppDispatch } from '@/hooks/redux';
-import { logout } from '@/store/authSlice';
+import { FontAwesome } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 
 export interface ContextMenuOption {
   title: string;
   action: () => void;
   style?: 'default' | 'destructive' | 'primary' | 'blue';
+  icon?: string;
 }
 
 interface ContextMenuProps {
@@ -28,82 +28,123 @@ interface ContextMenuProps {
   options: ContextMenuOption[];
 }
 
-export default function ContextMenu({ visible, onClose, title, options }: ContextMenuProps) {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const currentValue = useRef(0);
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const PANEL_WIDTH = screenWidth * 0.7;
 
-  // Animate in when modal opens
+// Design language colors (matching _layout.tsx)
+const MUTED_GREEN = '#ccf0ccff';
+const DARK_TEXT = '#2d3e31';
+
+// Icon mapping for menu options
+const getIconForOption = (title: string, style?: string): string => {
+  const titleLower = title.toLowerCase();
+  if (titleLower.includes('prayer session')) return 'play-circle';
+  if (titleLower.includes('add prayer')) return 'plus-circle';
+  if (titleLower.includes('user preferences') || titleLower.includes('preferences')) return 'cog';
+  if (titleLower.includes('logout')) return 'sign-out';
+  if (titleLower.includes('create group')) return 'plus-square';
+  if (titleLower.includes('join group')) return 'user-plus';
+  if (titleLower.includes('manage group')) return 'users';
+  if (titleLower.includes('invite')) return 'share';
+  if (titleLower.includes('view cards')) return 'vcard';
+  if (titleLower.includes('view groups')) return 'users';
+  if (style === 'destructive') return 'sign-out';
+  return 'chevron-right';
+};
+
+// Get text/icon colors based on style
+const getItemColors = (style?: string) => {
+  switch (style) {
+    case 'destructive':
+      return { text: '#ad2835ff', icon: '#ad2835ff' };
+    case 'blue':
+      return { text: '#007bff', icon: '#007bff' };
+    default:
+      return { text: DARK_TEXT, icon: DARK_TEXT };
+  }
+};
+
+export default function ContextMenu({ visible, onClose, title, options }: ContextMenuProps) {
+  const insets = useSafeAreaInsets();
+  const translateX = useRef(new Animated.Value(-PANEL_WIDTH)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+
   React.useEffect(() => {
     if (visible) {
-      // Start from bottom and slide up
-      translateY.setValue(500);
-      currentValue.current = 0;
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
+      translateX.setValue(-PANEL_WIDTH);
+      backdropOpacity.setValue(0);
+
+      Animated.parallel([
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
-  }, [visible, translateY]);
+  }, [visible, translateX, backdropOpacity]);
 
-  // Track the current value
-  React.useEffect(() => {
-    const listener = translateY.addListener(({ value }) => {
-      currentValue.current = value;
+  const animateOut = () => {
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: -PANEL_WIDTH,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
     });
-
-    return () => {
-      translateY.removeListener(listener);
-    };
-  }, [translateY]);
-
-  const handleBackdropPress = () => {
-    onClose();
   };
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Only respond to vertical drags
-        return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 5;
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 5;
       },
       onPanResponderGrant: () => {
-        // Store the starting position
-        translateY.stopAnimation();
+        translateX.stopAnimation();
       },
       onPanResponderMove: (evt, gestureState) => {
-        // Only allow dragging down (positive dy values)
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
+        if (gestureState.dx < 0) {
+          translateX.setValue(gestureState.dx);
+          const progress = Math.abs(gestureState.dx) / PANEL_WIDTH;
+          backdropOpacity.setValue(1 - progress);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // If dragged down more than 100px or with high velocity, dismiss
-        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          // Animate out and close
-          Animated.timing(translateY, {
-            toValue: 500,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            onClose();
-          });
+        if (gestureState.dx < -80 || gestureState.vx < -0.5) {
+          animateOut();
         } else {
-          // Snap back to top
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 100,
-            friction: 8,
-          }).start();
+          Animated.parallel([
+            Animated.spring(translateX, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 8,
+            }),
+            Animated.timing(backdropOpacity, {
+              toValue: 1,
+              duration: 150,
+              useNativeDriver: true,
+            }),
+          ]).start();
         }
       },
     })
   ).current;
 
-  // Don't render the modal at all if not visible
   if (!visible) {
     return null;
   }
@@ -113,176 +154,205 @@ export default function ContextMenu({ visible, onClose, title, options }: Contex
       animationType="none"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={animateOut}
     >
       <View style={styles.container}>
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <View style={styles.backdrop} />
+        <TouchableWithoutFeedback onPress={animateOut}>
+          <Animated.View
+            style={[
+              styles.backdrop,
+              { opacity: backdropOpacity }
+            ]}
+          />
         </TouchableWithoutFeedback>
 
         <Animated.View
           style={[
-            styles.bottomSheet,
-            {
-              transform: [{ translateY }],
-            },
+            styles.sidePanel,
+            { transform: [{ translateX }] },
           ]}
           {...panResponder.panHandlers}
         >
-          <View style={styles.handleContainer}>
-            <View style={styles.handle} />
-          </View>
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.content}>
+          <LinearGradient
+            colors={['#90C590', '#F6EDD9']}
+            style={styles.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          >
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
               <Text style={styles.title}>{title}</Text>
-              
-              {options.map((option, index) => (
-                <Pressable 
-                  key={index}
-                  onPress={() => {
-                    onClose();
-                    // Use setTimeout to ensure the context menu fully closes before executing the action
-                    setTimeout(() => {
-                      option.action();
-                    }, 100);
-                  }} 
-                  style={[
-                    styles.button,
-                    option.style === 'destructive' ? styles.destructiveButton :
-                    option.style === 'primary' ? styles.primaryButton :
-                    option.style === 'blue' ? styles.blueButton :
-                    styles.defaultButton
-                  ]}
-                >
-                  <Text style={[
-                    styles.buttonText,
-                    option.style === 'destructive' ? styles.destructiveText :
-                    option.style === 'primary' ? styles.primaryText :
-                    option.style === 'blue' ? styles.blueText :
-                    styles.defaultText
-                  ]}>
-                    {option.title}
-                  </Text>
-                </Pressable>
-              ))}
-              
-              <Pressable onPress={onClose} style={styles.cancelButton}>
-                <Text style={styles.buttonText}>Cancel</Text>
+            </View>
+
+            {/* Menu Options */}
+            <View style={styles.optionsContainer}>
+              {options.map((option, index) => {
+                const colors = getItemColors(option.style);
+                const icon = option.icon || getIconForOption(option.title, option.style);
+
+                return (
+                  <View key={index} style={styles.cardWrapper}>
+                    <Pressable
+                      onPress={() => {
+                        animateOut();
+                        setTimeout(() => {
+                          option.action();
+                        }, 250);
+                      }}
+                      style={({ pressed }) => [
+                        styles.card,
+                        pressed && styles.cardPressed,
+                      ]}
+                    >
+                      <View style={styles.cardContent}>
+                        <FontAwesome
+                          name={icon as any}
+                          size={18}
+                          color={colors.icon}
+                          style={styles.menuIcon}
+                        />
+                        <Text style={[styles.menuItemText, { color: colors.text }]}>
+                          {option.title}
+                        </Text>
+                        <FontAwesome
+                          name="chevron-right"
+                          size={14}
+                          color={colors.icon}
+                          style={styles.chevron}
+                        />
+                      </View>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Footer */}
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+              <Pressable
+                onPress={animateOut}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.closeButtonPressed,
+                ]}
+              >
+                <FontAwesome name="times" size={16} color={DARK_TEXT} />
+                <Text style={styles.closeText}>Close</Text>
               </Pressable>
             </View>
-          </SafeAreaView>
+          </LinearGradient>
         </Animated.View>
       </View>
     </Modal>
   );
 }
 
-const { height: screenHeight } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   backdrop: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     bottom: 0,
     left: 0,
     position: 'absolute',
     right: 0,
     top: 0,
   },
-  blueButton: {
-    backgroundColor: '#007bff',
+  card: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
   },
-  blueText: {
-    color: '#fff',
+  cardContent: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  bottomSheet: {
-    backgroundColor: '#f9f9f9',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: screenHeight * 0.7,
-    minHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
-    // Ensure it's always positioned correctly
-    position: 'relative',
+  cardPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.4)',
   },
-  button: {
-    borderRadius: 10,
-    elevation: 3,
-    marginVertical: 8,
+  cardWrapper: {
+    marginBottom: 8,
+  },
+  chevron: {
+    opacity: 0.5,
+  },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: MUTED_GREEN,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+  closeButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.7)',
   },
-  cancelButton: {
-    backgroundColor: '#6c757d',
-    borderRadius: 10,
-    elevation: 3,
-    marginVertical: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  closeText: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 15,
   },
   container: {
     backgroundColor: 'transparent',
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  content: {
-    padding: 20,
-    paddingTop: 10,
+  footer: {
+    borderTopColor: 'rgba(45, 62, 49, 0.1)',
+    borderTopWidth: 1,
+    marginTop: 'auto',
+    paddingHorizontal: 12,
+    paddingTop: 16,
   },
-  defaultButton: {
-    backgroundColor: '#90c590',
+  gradient: {
+    flex: 1,
   },
-  defaultText: {
-    color: '#333',
-  },
-  destructiveButton: {
-    backgroundColor: '#ef606fff',
-  },
-  destructiveText: {
-    color: '#fff',
-  },
-  handle: {
-    backgroundColor: '#ccc',
-    borderRadius: 2,
-    height: 4,
-    width: 40,
-  },
-  handleContainer: {
-    alignItems: 'center',
+  header: {
+    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
+    borderBottomWidth: 1,
+    paddingBottom: 16,
     paddingHorizontal: 20,
-    paddingVertical: 10,
   },
-  primaryButton: {
-    backgroundColor: '#008000',
+  menuIcon: {
+    width: 24,
+    textAlign: 'center',
   },
-  primaryText: {
-    color: '#fff',
+  menuItemText: {
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
   },
-  safeArea: {
-    paddingBottom: 20,
+  optionsContainer: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 16,
+  },
+  sidePanel: {
+    borderBottomRightRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10,
+    height: screenHeight,
+    left: 0,
+    overflow: 'hidden',
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    top: 0,
+    width: PANEL_WIDTH,
   },
   title: {
-    color: '#333',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 18,
     textAlign: 'center',
   },
 });

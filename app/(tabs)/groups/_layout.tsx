@@ -9,70 +9,56 @@ export default function GroupsLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ActionSelection"
+        name="CircleDetail"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ContactDetail"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="EditCircle"
         options={{
           headerShown: false,
-          presentation: 'transparentModal',
-          animation: 'slide_from_bottom',
-          gestureEnabled: true,
+          presentation: 'modal',
         }}
       />
       <Stack.Screen
-        name="GroupPrayers" 
+        name="GroupPrayers"
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="GroupModal"
         options={{
-          title: "Create a new group",
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />
       <Stack.Screen
         name="JoinGroupModal"
         options={{
-          title: "Join a group",
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />
       <Stack.Screen
         name='PrayerModal'
         options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
           presentation: 'modal',
         }}
       />
       <Stack.Screen
         name='UsersModal'
         options={{
-          title: 'Group Members',
+          title: 'Circle Members',
           headerShown: false,
           presentation: 'modal',
           animation: 'slide_from_bottom',
           gestureEnabled: true,
           gestureDirection: 'vertical',
         }}
-      />    
+      />
     </Stack>
   );
 }

@@ -40,21 +40,24 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0, grou
 
   const handleAddPrayer = () => {
     if (type === 'cards') {
-      router.push('/(tabs)/cards/PrayerModal?mode=add');
+      // Pass returnTo so the modal knows where to go back to
+      router.push('/(tabs)/cards/PrayerModal?mode=add&returnTo=current');
     } else if (type === 'groupDetail' && groupId && groupName) {
       router.push(`/(tabs)/groups/PrayerModal?mode=add&groupProfileId=${groupId}&groupName=${encodeURIComponent(groupName)}`);
     }
   };
 
   const handleStartPrayerSession = () => {
-    // Access global function set by tab layout
+    // Access global function set by each screen
     if (type === 'cards') {
-      console.log('Attempting to start prayer session for cards, global function available:', !!(global as any).cardsSetPrayerSessionVisible);
       if ((global as any).cardsSetPrayerSessionVisible) {
         (global as any).cardsSetPrayerSessionVisible(true);
       }
+    } else if (type === 'groups') {
+      if ((global as any).groupsSetPrayerSessionVisible) {
+        (global as any).groupsSetPrayerSessionVisible(true);
+      }
     } else if (type === 'groupDetail') {
-      console.log('Attempting to start prayer session for group, global function available:', !!(global as any).groupSetPrayerSessionVisible);
       if ((global as any).groupSetPrayerSessionVisible) {
         (global as any).groupSetPrayerSessionVisible(true);
       }
@@ -142,8 +145,9 @@ export function useContextMenu({ type, groupId, groupName, prayerCount = 0, grou
 
       case 'groups':
         return {
-          title: 'Groups Menu',
+          title: 'Prayer Circles Menu',
           options: [
+            { title: 'Start Prayer Session', action: handleStartPrayerSession, style: 'default' as const },
             { title: 'Create Group', action: handleCreateGroup, style: 'default' as const },
             { title: 'Join Group', action: handleJoinGroup, style: 'default' as const },
             { title: 'User Preferences', action: handleUserPreferences, style: 'default' as const },

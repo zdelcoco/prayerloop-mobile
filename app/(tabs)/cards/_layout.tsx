@@ -1,4 +1,3 @@
-import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Stack } from 'expo-router';
 
 export default function CardsLayout() {
@@ -6,15 +5,29 @@ export default function CardsLayout() {
     <Stack>
       <Stack.Screen name='index' options={{ headerShown: false }} />
       <Stack.Screen
+        name='ContactDetail'
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name='PrayerModal'
         options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: 18,
-            fontFamily: 'InstrumentSans-Bold',
-          },
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name='AddPrayerCardModal'
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name='EditPrayerCardModal'
+        options={{
+          headerShown: false,
           presentation: 'modal',
         }}
       />

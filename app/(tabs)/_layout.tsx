@@ -1,14 +1,16 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
 import { RootState } from '@/store/store';
-import ContextMenuButton from '@/components/ui/ContextMenuButton';
+import ProfileButton from '@/components/ui/ProfileButton';
+import ProfileDrawer from '@/components/Profile/ProfileDrawer';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { DrawerLayoutMethods } from 'react-native-gesture-handler/ReanimatedDrawerLayout';
 // Global add button handler - screens register their add action here
 // This allows nested screens (like GroupPrayers) to override the default behavior
 declare global {
@@ -16,17 +18,19 @@ declare global {
   var tabBarAddHandler: (() => void) | null;
   // eslint-disable-next-line no-var
   var tabBarAddVisible: boolean;
+  // eslint-disable-next-line no-var
+  var tabBarHidden: boolean;
 }
 
 // Initialize globals
 global.tabBarAddHandler = null;
 global.tabBarAddVisible = true;
+global.tabBarHidden = false;
 
-// Tab configuration for icons
+// Tab configuration for icons (only Cards and Prayer Circles in bottom nav)
 const TAB_CONFIG: Record<string, { icon: string; label: string }> = {
   cards: { icon: 'vcard', label: 'Cards' },
-  userProfile: { icon: 'home', label: 'Home' },
-  groups: { icon: 'users', label: 'Groups' },
+  groups: { icon: 'users', label: 'Prayer Circles' },
 };
 
 // Muted green for inactive states
@@ -155,16 +159,20 @@ function HeaderIconButton({
 function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const [addButtonVisible, setAddButtonVisible] = useState(global.tabBarAddVisible);
+  const [isHidden, setIsHidden] = useState(global.tabBarHidden);
 
-  // Poll for visibility changes (screens will update global.tabBarAddVisible)
+  // Poll for visibility changes (screens will update global.tabBarAddVisible and global.tabBarHidden)
   useEffect(() => {
     const interval = setInterval(() => {
       if (addButtonVisible !== global.tabBarAddVisible) {
         setAddButtonVisible(global.tabBarAddVisible);
       }
+      if (isHidden !== global.tabBarHidden) {
+        setIsHidden(global.tabBarHidden);
+      }
     }, 100);
     return () => clearInterval(interval);
-  }, [addButtonVisible]);
+  }, [addButtonVisible, isHidden]);
 
   // Handle add button press - calls the registered handler
   const handleAddPress = useCallback(() => {
@@ -173,13 +181,22 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
     }
   }, []);
 
+  // Don't render if hidden (must be after all hooks)
+  if (isHidden) {
+    return null;
+  }
+
+  // Filter routes to only show those in TAB_CONFIG
+  const visibleRoutes = state.routes.filter((route) => TAB_CONFIG[route.name]);
+
   return (
     <View style={[styles.floatingTabBarContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
       <BlurView intensity={8} tint="regular" style={styles.floatingTabBarBlur}>
         <View style={styles.floatingTabBarInner}>
-          {state.routes.map((route, index) => {
-            const isFocused = state.index === index;
-            const config = TAB_CONFIG[route.name] || { icon: 'circle', label: route.name };
+          {visibleRoutes.map((route) => {
+            const originalIndex = state.routes.findIndex((r) => r.key === route.key);
+            const isFocused = state.index === originalIndex;
+            const config = TAB_CONFIG[route.name];
 
             const onPress = () => {
               const event = navigation.emit({
@@ -217,7 +234,8 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabsLayout() {
-  const { prayers } = useAppSelector((state: RootState) => state.userPrayers);
+  const user = useAppSelector((state: RootState) => state.auth.user);
+  const drawerRef = useRef<DrawerLayoutMethods>(null);
 
   function ms(size: number): number {
     const scale = 1.2;
@@ -226,82 +244,116 @@ export default function TabsLayout() {
   const SCREEN_HEIGHT = Dimensions.get('window').height;
 
   return (
-    <LinearGradient
-      colors={['#90C590', '#F6EDD9']}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-    >
-      <Tabs
-        tabBar={(props) => <FloatingTabBar {...props} />}
-        screenOptions={{
-          headerShown: true,
-          headerTransparent: true,
-          headerStyle: {
-            height: 120, // Increased to fit larger icon buttons
-          },
-          headerBackground: () => (
-            <LinearGradient
-              colors={['#90C590', '#F6EDD9']}
-              style={{ flex: 1 }}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: SCREEN_HEIGHT }}
-            />
-          ),
-          headerTitleAlign: 'left',
-          headerTitleStyle: {
-            fontSize: ms(18),
-            fontFamily: 'InstrumentSans-Bold',
-          },
-          // Hide default tab bar since we're using custom
-          tabBarStyle: { display: 'none' },
-        }}
+    <ProfileDrawer ref={drawerRef}>
+      <LinearGradient
+        colors={['#90C590', '#F6EDD9']}
+        style={styles.container}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
       >
-        <Tabs.Screen
-          name='cards'
-          options={{
-            title: 'Prayer Cards',
-            headerRight: () => (
-              <View style={styles.headerRightContainer}>
-                <HeaderIconButton
-                  onPress={() => {
-                    if ((global as any).cardsToggleSearch) {
-                      (global as any).cardsToggleSearch();
-                    }
-                  }}
-                  iconName="search"
-                  iconType="ionicons"
-                  size={20}
-                />
-                <ContextMenuButton type="cards" prayerCount={prayers?.length || 0} iconSize={20} />
-              </View>
+        <Tabs
+          tabBar={(props) => <FloatingTabBar {...props} />}
+          screenOptions={{
+            headerShown: true,
+            headerTransparent: true,
+            headerStyle: {
+              height: 120, // Increased to fit larger icon buttons
+            },
+            headerBackground: () => (
+              <LinearGradient
+                colors={['#90C590', '#F6EDD9']}
+                style={{ flex: 1 }}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: SCREEN_HEIGHT }}
+              />
             ),
+            headerTitleAlign: 'left',
+            headerTitleStyle: {
+              fontSize: ms(18),
+              fontFamily: 'InstrumentSans-Bold',
+            },
+            // Hide default tab bar since we're using custom
+            tabBarStyle: { display: 'none' },
           }}
-        />
-        <Tabs.Screen
-          name='userProfile'
-          options={{
-            title: 'Home',
-            headerRight: () => (
-              <View style={styles.headerRightContainer}>
-                <ContextMenuButton type="home" iconSize={20} />
-              </View>
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name='groups'
-          options={{
-            title: 'Groups',
-            headerRight: () => (
-              <View style={styles.headerRightContainer}>
-                <ContextMenuButton type="groups" iconSize={20} />
-              </View>
-            ),
-          }}
-        />
-      </Tabs>
-    </LinearGradient>
+        >
+          <Tabs.Screen
+            name='cards'
+            options={{
+              title: 'Prayer Cards',
+              headerLeft: () => (
+                <View style={styles.headerLeftContainer}>
+                  <ProfileButton
+                    firstName={user?.firstName || ''}
+                    lastName={user?.lastName || ''}
+                    onPress={() => router.navigate('/userProfile')}
+                  />
+                </View>
+              ),
+              headerRight: () => (
+                <View style={styles.headerRightContainer}>
+                  <HeaderIconButton
+                    onPress={() => {
+                      if ((global as any).cardsToggleSearch) {
+                        (global as any).cardsToggleSearch();
+                      }
+                    }}
+                    iconName="search"
+                    iconType="ionicons"
+                    size={18}
+                  />
+                </View>
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name='userProfile'
+            options={{
+              title: 'Account Settings',
+              href: null, // Hide from tab bar but keep route for compatibility
+              headerLeft: () => (
+                <View style={styles.headerLeftContainer}>
+                  <HeaderIconButton
+                    onPress={() => router.back()}
+                    iconName="chevron-back"
+                    iconType="ionicons"
+                    size={20}
+                  />
+                </View>
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name='groups'
+            options={{
+              title: 'Prayer Circles',
+              headerLeft: () => (
+                <View style={styles.headerLeftContainer}>
+                  <ProfileButton
+                    firstName={user?.firstName || ''}
+                    lastName={user?.lastName || ''}
+                    onPress={() => router.navigate('/userProfile')}
+                  />
+                </View>
+              ),
+              headerRight: () => (
+                <View style={styles.headerRightContainer}>
+                  <HeaderIconButton
+                    onPress={() => {
+                      if ((global as any).groupsToggleSearch) {
+                        (global as any).groupsToggleSearch();
+                      }
+                    }}
+                    iconName="search"
+                    iconType="ionicons"
+                    size={18}
+                  />
+                </View>
+              ),
+            }}
+          />
+        </Tabs>
+      </LinearGradient>
+    </ProfileDrawer>
   );
 }
 
@@ -379,18 +431,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: MUTED_GREEN,
     borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 25,
+    borderRadius: 18,
     borderWidth: 1,
-    height: 50,
+    height: 36,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
-    width: 50,
+    width: 36,
   },
   headerIconButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)', // Muted green with transparency
+  },
+  headerLeftContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 16,
+    marginRight: 16,
   },
   headerRightContainer: {
     alignItems: 'center',

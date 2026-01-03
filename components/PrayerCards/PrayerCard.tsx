@@ -6,7 +6,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Prayer, User } from '@/util/shared.types';
 import { formatPrayerDateTime } from '@/util/dateFormat';
@@ -68,14 +68,20 @@ const Card = ({
             {prayer.title}
           </Text>
           {prayer.isPrivate && (
-            <FontAwesome
-              name="eye-slash"
+            <Ionicons
+              name="lock-closed"
               size={16}
               color="#666"
               style={styles.privateIcon}
             />
           )}
         </View>
+        {prayer.prayerSubjectDisplayName && (
+          <View style={styles.subjectRow}>
+            <Text style={styles.subjectLabel}>Pray for</Text>
+            <Text style={styles.subjectName}>{prayer.prayerSubjectDisplayName}</Text>
+          </View>
+        )}
         <View style={styles.content}>
           {children}
           {showReadMore && (
@@ -84,7 +90,9 @@ const Card = ({
         </View>
         <View style={styles.footer}>
           <Text style={styles.status}>
-            {prayer.isAnswered ? 'Answered?' : ''}
+            {prayer.isAnswered
+              ? `Answered ${prayer.datetimeAnswered ? formatPrayerDateTime(prayer.datetimeAnswered) : ''}`
+              : ''}
           </Text>
           <Text style={styles.date} numberOfLines={1} ellipsizeMode="tail">
             Created by {getCreatorText()} on {formatPrayerDateTime(prayer.datetimeCreate)}
@@ -145,6 +153,23 @@ const styles = StyleSheet.create({
   status: {
     color: '#666',
     fontSize: 12,
+  },
+  subjectLabel: {
+    color: '#5a6b5e',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+  },
+  subjectName: {
+    color: '#2d3e31',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    marginLeft: 4,
+  },
+  subjectRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 8,
+    marginTop: -4,
   },
   title: {
     flex: 1,

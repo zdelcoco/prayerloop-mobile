@@ -480,26 +480,27 @@ const PrayerReminderCard = () => {
   );
 };
 
+// Color constants matching the app theme
+const ACTIVE_GREEN = '#2E7D32';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
+
 const styles = StyleSheet.create({
   cancelButton: {
-    color: '#999',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
   },
   cardContainer: {
-    backgroundColor: '#F1FDED',
-    borderRadius: 10,
-    elevation: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 12,
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 6,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   dayButton: {
     alignItems: 'center',
-    borderColor: '#ccc',
+    borderColor: SUBTLE_TEXT,
     borderRadius: 8,
     borderWidth: 1,
     minWidth: 60,
@@ -507,13 +508,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   dayButtonSelected: {
-    backgroundColor: '#008000',
-    borderColor: '#008000',
+    backgroundColor: ACTIVE_GREEN,
+    borderColor: ACTIVE_GREEN,
   },
   dayButtonText: {
-    color: '#333',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
-    fontWeight: '500',
   },
   dayButtonTextSelected: {
     color: '#fff',
@@ -525,22 +526,23 @@ const styles = StyleSheet.create({
   },
   dayTimeButton: {
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
     borderRadius: 8,
     minWidth: 80,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   dayTimeText: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '500',
   },
   daysContainer: {
     gap: 12,
   },
   detailText: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 8,
@@ -570,8 +572,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   modalTitle: {
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 18,
-    fontWeight: '600',
   },
   optionRow: {
     borderRadius: 8,
@@ -580,60 +582,64 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   optionRowSelected: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
   },
   optionText: {
-    color: '#333',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
   },
   optionTextSelected: {
-    color: '#008000',
-    fontWeight: '500',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
   },
   saveButton: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
   },
   sectionSubtitle: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
     marginBottom: 16,
   },
   sectionTitle: {
-    color: '#333',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
     marginBottom: 12,
     marginTop: 20,
   },
   settingsButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#008000',
+    backgroundColor: ACTIVE_GREEN,
     borderRadius: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   settingsButtonText: {
     color: '#fff',
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 14,
-    fontWeight: '500',
   },
   tapToEdit: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
   },
   timeDisplay: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 32,
-    fontWeight: '600',
     marginBottom: 4,
   },
   timePicker: {
     backgroundColor: '#fff',
   },
   timePickerCancel: {
-    color: '#999',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 16,
   },
   timePickerContainer: {
@@ -643,9 +649,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   timePickerDone: {
-    color: '#008000',
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
   },
   timePickerHeader: {
     alignItems: 'center',
@@ -661,20 +667,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   timePickerTitle: {
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 18,
-    fontWeight: '600',
   },
   timeSelector: {
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 8,
     marginBottom: 20,
     paddingVertical: 20,
   },
   title: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
   },
 });
 

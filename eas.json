@@ -9,13 +9,13 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.0.88:3000"
+        "EXPO_PUBLIC_API_URL": "http://10.0.0.48:3000"
       }
     },
     "local": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.0.88:3000"
+        "EXPO_PUBLIC_API_URL": "http://10.0.0.48:3000"
       }
     },
     "development": {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,225 +7,493 @@ import {
   Pressable,
   Switch,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   ActivityIndicator,
+  Dimensions,
+  Keyboard,
 } from 'react-native';
-import { useAppDispatch } from '@/hooks/redux';
-import { addUserPrayer } from '@/store/userPrayersSlice';
-import { putUserPrayer } from '@/store/userPrayersSlice';
-import { CreateUserPrayerRequest } from '@/util/createUserPrayer.types';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
+import { BlurView } from 'expo-blur';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppDispatch, useAppSelector } from '@/hooks/redux';
+import { putUserPrayer, fetchUserPrayers } from '@/store/userPrayersSlice';
+import { fetchPrayerSubjects, selectPrayerSubjects, selectPendingNewContactId, clearPendingNewContactId } from '@/store/prayerSubjectsSlice';
+import { selectUserGroups } from '@/store/groupsSlice';
+import { fetchGroupPrayers } from '@/store/groupPrayersSlice';
+import { createUserPrayer } from '@/util/createUserPrayer';
+import { addPrayerAccess } from '@/util/addPrayerAccess';
+import { CreatePrayerResponse } from '@/util/shared.types';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { selectAuthState } from '@/store/authSlice';
+import PrayerSubjectPicker from '@/components/PrayerCards/PrayerSubjectPicker';
 
-import type { Prayer } from '@/util/shared.types';
-import { useHeaderHeight } from '@react-navigation/elements';
+import type { Prayer, PrayerSubject, CreatePrayerRequest, Group } from '@/util/shared.types';
 
-interface AddPrayerProps {
-  mode: 'add' | 'edit';
-  prayer?: Prayer;
-}
+// Color constants matching the app theme
+const ACTIVE_GREEN = '#2E7D32';
+const MUTED_GREEN = '#ccf0ccff';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
 
-export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const HEADER_HEIGHT = 56;
+
+type RootStackParamList = {
+  AddPrayerCardModal: { returnToPrayer?: boolean };
+  PrayerModal: {
+    mode: 'add' | 'edit';
+    prayer?: Prayer;
+    prayerSubjectId?: number;
+    newContactId?: number;
+    preselectedCircleId?: string;
+    preselectedCircleName?: string;
+  };
+};
+
+export default function PrayerModal() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
-  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const route = useRoute<{
     key: string;
     name: string;
-    params: { mode: 'add' | 'edit'; prayer?: Prayer };
+    params: {
+      mode: 'add' | 'edit';
+      prayer?: Prayer;
+      prayerSubjectId?: number;
+      newContactId?: number;
+      preselectedCircleId?: string;
+      preselectedCircleName?: string;
+      returnTo?: string;
+    };
   }>();
 
+  // Helper to go back - uses router.back() when coming from another screen
+  const goBack = useCallback(() => {
+    if (route.params?.returnTo === 'current') {
+      router.back();
+    } else {
+      navigation.goBack();
+    }
+  }, [route.params?.returnTo, navigation]);
+
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
+  const pendingNewContactId = useAppSelector(selectPendingNewContactId);
+  const auth = useAppSelector(selectAuthState);
+  const userGroups = useAppSelector(selectUserGroups);
+
+  // Initialize state based on mode
   const [prayerTitle, setPrayerTitle] = useState(() => {
-    if (route.params.mode === 'edit' && route.params.prayer) {
-      return route.params.prayer?.title;
+    if (route.params?.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer.title;
     }
     return '';
   });
   const [prayerDescription, setPrayerDescription] = useState(() => {
-    if (route.params.mode === 'edit' && route.params.prayer) {
-      return route.params.prayer?.prayerDescription;
+    if (route.params?.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer.prayerDescription;
     }
     return '';
   });
   const [isPrivate, setIsPrivate] = useState(() => {
-    if (route.params.mode === 'edit' && route.params.prayer) {
-      return route.params.prayer?.isPrivate;
+    if (route.params?.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer.isPrivate;
     }
     return false;
   });
+  const [isAnswered, setIsAnswered] = useState(() => {
+    if (route.params?.mode === 'edit' && route.params.prayer) {
+      return route.params.prayer.isAnswered;
+    }
+    return false;
+  });
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(() => {
+    if (route.params?.prayerSubjectId) {
+      return route.params.prayerSubjectId;
+    }
+    return null;
+  });
+  const [selectedCircleIds, setSelectedCircleIds] = useState<number[]>(() => {
+    if (route.params?.preselectedCircleId) {
+      return [parseInt(route.params.preselectedCircleId, 10)];
+    }
+    return [];
+  });
+  const [showCirclePicker, setShowCirclePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const headerHeight = useHeaderHeight();
+  // Get the selected circle objects
+  const selectedCircles = useMemo(() => {
+    if (!userGroups || selectedCircleIds.length === 0) return [];
+    return userGroups.filter(g => selectedCircleIds.includes(g.groupId));
+  }, [selectedCircleIds, userGroups]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title:
-        route.params.mode === 'add'
-          ? 'Add a Prayer Request'
-          : 'Edit Prayer Request',
-    });
-  });
+  // Get available circles (not already selected)
+  const availableCircles = useMemo(() => {
+    if (!userGroups) return [];
+    return userGroups.filter(g => !selectedCircleIds.includes(g.groupId));
+  }, [userGroups, selectedCircleIds]);
 
-  const onPrayerTitleChange = useCallback(
-    (text: string) => setPrayerTitle(text),
-    []
+  const totalHeaderHeight = HEADER_HEIGHT + 12;
+  const headerGradientEnd = totalHeaderHeight / SCREEN_HEIGHT;
+
+  // Handle newly created contact from AddPrayerCardModal via Redux state
+  // Using useFocusEffect to ensure it triggers when navigating back from AddPrayerCardModal
+  useFocusEffect(
+    useCallback(() => {
+      if (pendingNewContactId && prayerSubjects) {
+        const newContact = prayerSubjects.find(
+          (s) => s.prayerSubjectId === pendingNewContactId
+        );
+        if (newContact) {
+          setSelectedSubjectId(newContact.prayerSubjectId);
+          // Clear the pending ID to prevent re-triggering
+          dispatch(clearPendingNewContactId());
+        }
+      }
+    }, [pendingNewContactId, prayerSubjects, dispatch])
   );
-  const onPrayerDescriptionChange = useCallback(
-    (text: string) => setPrayerDescription(text),
-    []
-  );
-  const onIsPrivateChange = useCallback(
-    (value: boolean) => setIsPrivate(value),
-    []
-  );
 
-  const resetForm = useCallback(() => {
-    setPrayerTitle('');
-    setPrayerDescription('');
-    setIsPrivate(false);
-  }, []);
+  const isEditMode = route.params?.mode === 'edit';
+  const canSave = prayerTitle.trim() && selectedSubjectId;
 
-  const handleAddPrayer = useCallback(async () => {
-    if (!prayerTitle.trim() || !prayerDescription.trim()) {
-      Alert.alert('Validation Error', 'Please fill in all required fields.');
+  const handleSave = useCallback(async () => {
+    if (!prayerTitle.trim()) {
+      Alert.alert('Validation Error', 'Please enter a prayer title.');
       return;
     }
 
-    if (isSaving) {
-      return; // Prevent multiple submissions
+    if (!selectedSubjectId) {
+      Alert.alert('Validation Error', 'Please select a contact for this prayer.');
+      return;
     }
 
-    const prayerData: CreateUserPrayerRequest = {
-      title: prayerTitle.trim(),
-      prayerDescription: prayerDescription.trim(),
-      isPrivate,
-      prayerType: 'general',
-    };
+    if (isSaving) return;
 
     setIsSaving(true);
 
     try {
-      await dispatch(addUserPrayer(prayerData));
-      resetForm();
-      setIsSaving(false);
-      navigation.goBack(); // Close the modal/screen
+      const prayerData: CreatePrayerRequest = {
+        title: prayerTitle.trim(),
+        prayerDescription: prayerDescription.trim(),
+        isPrivate,
+        isAnswered,
+        prayerType: 'general',
+        prayerSubjectId: selectedSubjectId,
+      };
+
+      if (isEditMode && route.params.prayer) {
+        await dispatch(putUserPrayer(route.params.prayer.prayerId, prayerData));
+      } else {
+        // Create user prayer and get the prayerId
+        if (!auth.token || !auth.user) {
+          Alert.alert('Error', 'You must be logged in to create a prayer.');
+          return;
+        }
+
+        const result = await createUserPrayer(
+          auth.token,
+          auth.user.userProfileId,
+          prayerData
+        );
+
+        if (!result.success) {
+          Alert.alert('Error', result.error?.message || 'Failed to create prayer.');
+          return;
+        }
+
+        const newPrayerId = (result.data as CreatePrayerResponse).prayerId;
+
+        // If any prayer circles are selected, share this prayer with each group
+        // (instead of creating separate prayers)
+        if (selectedCircleIds.length > 0 && newPrayerId) {
+          for (const circleId of selectedCircleIds) {
+            const shareResult = await addPrayerAccess(
+              auth.token,
+              newPrayerId,
+              'group',
+              circleId
+            );
+
+            if (!shareResult.success) {
+              console.warn(`Failed to share prayer with group ${circleId}:`, shareResult.error);
+              // Continue sharing with other groups even if one fails
+            }
+
+            // Refresh group prayers for each
+            await dispatch(fetchGroupPrayers(circleId));
+          }
+        }
+      }
+
+      // Refresh data
+      await dispatch(fetchUserPrayers());
+      await dispatch(fetchPrayerSubjects());
+
+      goBack();
     } catch (error) {
-      console.error('Error adding prayer:', error);
+      console.error('Error saving prayer:', error);
+      Alert.alert('Error', 'Something went wrong while saving the prayer.');
+    } finally {
       setIsSaving(false);
-      Alert.alert('Error', 'Something went wrong while adding the prayer.');
     }
   }, [
     prayerTitle,
     prayerDescription,
     isPrivate,
+    isAnswered,
+    selectedSubjectId,
+    selectedCircleIds,
+    isEditMode,
+    route.params?.prayer,
     isSaving,
     dispatch,
-    resetForm,
-    navigation,
+    goBack,
+    auth.token,
+    auth.user,
   ]);
 
-  const handleEditPrayer = useCallback(async () => {
-    if (!prayerTitle.trim() || !prayerDescription.trim()) {
-      Alert.alert('Validation Error', 'Please fill in all required fields.');
-      return;
-    }
+  const handleSelectSubject = (subject: PrayerSubject | null) => {
+    setSelectedSubjectId(subject?.prayerSubjectId || null);
+  };
 
-    if (!route.params.prayer) {
-      Alert.alert('Error', 'Failed to edit prayer. Please try again.');
-      return;
-    }
+  const handleQuickAddSuccess = (newSubjectId: number) => {
+    setSelectedSubjectId(newSubjectId);
+    dispatch(fetchPrayerSubjects());
+  };
 
-    if (isSaving) {
-      return; // Prevent multiple submissions
-    }
-
-    const prayerData: CreateUserPrayerRequest = {
-      title: prayerTitle.trim(),
-      prayerDescription: prayerDescription.trim(),
-      isPrivate,
-      prayerType: 'general',
-    };
-
-    setIsSaving(true);
-
-    try {
-      await dispatch(putUserPrayer(route.params.prayer!.prayerId, prayerData));
-      resetForm();
-      setIsSaving(false);
-      navigation.goBack(); // Close the modal/screen
-    } catch (error) {
-      console.error('Error editing prayer:', error);
-      setIsSaving(false);
-      Alert.alert('Error', 'Something went wrong while editing the prayer.');
-    }
-  }, [
-    prayerTitle,
-    prayerDescription,
-    isPrivate,
-    isSaving,
-    dispatch,
-    resetForm,
-    navigation,
-    prayer,
-  ]);
-
-  /* todo -- fix styling to be consistent with rest of app, aka add linear gradient */
+  const handleNavigateToAddContact = () => {
+    navigation.navigate('AddPrayerCardModal', { returnToPrayer: true });
+  };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[{ paddingTop: headerHeight }, styles.container]}
+    <LinearGradient
+      colors={['#90C590', '#F6EDD9']}
+      style={StyleSheet.absoluteFillObject}
+      start={{ x: 0, y: headerGradientEnd }}
+      end={{ x: 0, y: 1 }}
     >
-      <TextInput
-        style={styles.input}
-        placeholder='Enter prayer title'
-        placeholderTextColor='#888'
-        value={prayerTitle}
-        onChangeText={onPrayerTitleChange}
-        autoCorrect={true}
-        autoCapitalize="sentences"
-      />
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder='Enter prayer details'
-        placeholderTextColor='#888'
-        value={prayerDescription}
-        onChangeText={onPrayerDescriptionChange}
-        multiline
-        autoCorrect={true}
-        autoCapitalize="sentences"
-      />
-      <View style={styles.checkboxContainer}>
-        <Text style={styles.checkboxLabel}>Mark as Private</Text>
-        <Switch
-          value={isPrivate}
-          onValueChange={onIsPrivateChange}
-          thumbColor={isPrivate ? 'white' : 'white'}
-          trackColor={{ false: '#ccc', true: '#008000' }}
-        />
-      </View>
-      <View style={styles.buttonContainer}>
+      {/* Custom Header */}
+      <View style={[styles.header, { height: HEADER_HEIGHT + 12, paddingTop: 12 }]}>
         <Pressable
-          style={[styles.button, styles.cancelButton]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.buttonText}>Cancel</Text>
-        </Pressable>
-        <Pressable
-          style={[
-            styles.button,
-            styles.addButton,
-            (isSaving || !prayerTitle || !prayerDescription) && styles.disabledButton
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.headerButtonPressed,
           ]}
-          onPress={
-            route.params.mode === 'add' ? handleAddPrayer : handleEditPrayer
-          }
-          disabled={isSaving || !prayerTitle || !prayerDescription}
+          onPress={goBack}
         >
-          <Text style={styles.buttonText}>
-            {route.params.mode === 'add' ? 'Add' : 'Save'}
-          </Text>
+          <Ionicons name="close" size={24} color={DARK_TEXT} />
+        </Pressable>
+
+        <Text style={styles.headerTitle}>
+          {isEditMode ? 'Edit Prayer' : 'New Prayer'}
+        </Text>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.headerButtonPressed,
+            !canSave && styles.headerButtonDisabled,
+          ]}
+          onPress={handleSave}
+          disabled={!canSave || isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color={ACTIVE_GREEN} />
+          ) : (
+            <Ionicons
+              name="checkmark"
+              size={24}
+              color={canSave ? ACTIVE_GREEN : SUBTLE_TEXT}
+            />
+          )}
         </Pressable>
       </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={Keyboard.dismiss}
+      >
+        {/* Prayer Subject Selector */}
+        {auth.token && auth.user && (
+          <PrayerSubjectPicker
+            subjects={prayerSubjects || []}
+            selectedSubjectId={selectedSubjectId}
+            onSelectSubject={handleSelectSubject}
+            onQuickAddSuccess={handleQuickAddSuccess}
+            onNavigateToAddContact={handleNavigateToAddContact}
+            label="Who is this prayer for?"
+            invalidHint="Select a contact or add new"
+            token={auth.token}
+            userProfileId={auth.user.userProfileId}
+          />
+        )}
+
+        {/* Prayer Details */}
+        <View style={styles.section}>
+          <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+            <View style={styles.sectionContent}>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.titleInput}
+                  placeholder="Prayer title"
+                  placeholderTextColor={SUBTLE_TEXT}
+                  value={prayerTitle}
+                  onChangeText={setPrayerTitle}
+                  autoCapitalize="sentences"
+                  autoCorrect
+                />
+              </View>
+              <View style={styles.inputRowBorder} />
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.descriptionInput, styles.multilineInput]}
+                  placeholder="Prayer description (optional)"
+                  placeholderTextColor={SUBTLE_TEXT}
+                  value={prayerDescription}
+                  onChangeText={setPrayerDescription}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                  autoCapitalize="sentences"
+                  autoCorrect
+                />
+              </View>
+            </View>
+          </BlurView>
+        </View>
+
+        {/* Options */}
+        <View style={styles.section}>
+          <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+            <View style={styles.sectionContent}>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Mark as Private</Text>
+                <Switch
+                  value={isPrivate}
+                  onValueChange={setIsPrivate}
+                  thumbColor="#FFFFFF"
+                  trackColor={{ false: '#ccc', true: ACTIVE_GREEN }}
+                />
+              </View>
+              <View style={styles.inputRowBorder} />
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Mark as Answered</Text>
+                <Switch
+                  value={isAnswered}
+                  onValueChange={setIsAnswered}
+                  thumbColor="#FFFFFF"
+                  trackColor={{ false: '#ccc', true: ACTIVE_GREEN }}
+                />
+              </View>
+            </View>
+          </BlurView>
+        </View>
+
+        {/* Prayer Circle Sharing Section - only show in add mode and when user has circles */}
+        {!isEditMode && userGroups && userGroups.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionLabelContainer}>
+              <Text style={styles.sectionLabel}>Share with Prayer Circle</Text>
+              <View style={styles.sectionLabelLine} />
+            </View>
+            {/* Show BlurView when not picking or when there are selected circles */}
+            {(!showCirclePicker || selectedCircles.length > 0) && (
+              <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
+                <View style={styles.sectionContent}>
+                  {/* Show all selected circles with remove buttons */}
+                  {selectedCircles.map((circle, index) => (
+                    <View key={circle.groupId}>
+                      {index > 0 && <View style={styles.inputRowBorder} />}
+                      <View style={styles.circleRow}>
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.removeCircleButton,
+                            pressed && styles.removeCircleButtonPressed,
+                          ]}
+                          onPress={() => setSelectedCircleIds(prev => prev.filter(id => id !== circle.groupId))}
+                        >
+                          <Ionicons name="remove-circle" size={24} color="#D32F2F" />
+                        </Pressable>
+                        <View style={styles.circleInfo}>
+                          <FontAwesome name="users" size={16} color={ACTIVE_GREEN} style={styles.circleIcon} />
+                          <Text style={styles.circleName}>{circle.groupName}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                  {/* Always show add button if there are available circles and not currently picking */}
+                  {!showCirclePicker && availableCircles.length > 0 && (
+                    <>
+                      {selectedCircles.length > 0 && <View style={styles.inputRowBorder} />}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.addCircleRow,
+                          pressed && styles.addCircleRowPressed,
+                        ]}
+                        onPress={() => setShowCirclePicker(true)}
+                      >
+                        <Ionicons
+                          name="add-circle"
+                          size={22}
+                          color={ACTIVE_GREEN}
+                          style={styles.addCircleIcon}
+                        />
+                        <Text style={styles.addCircleText}>share with prayer circle</Text>
+                      </Pressable>
+                    </>
+                  )}
+                </View>
+              </BlurView>
+            )}
+            {/* Show picker for available circles */}
+            {showCirclePicker && availableCircles.length > 0 && (
+              <BlurView intensity={8} tint="regular" style={[styles.sectionBlur, selectedCircles.length > 0 && { marginTop: 8 }]}>
+                <View style={styles.sectionContent}>
+                  {availableCircles.map((group, index) => (
+                    <View key={group.groupId}>
+                      {index > 0 && <View style={styles.inputRowBorder} />}
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.circlePickerRow,
+                          pressed && styles.circlePickerRowPressed,
+                        ]}
+                        onPress={() => {
+                          setSelectedCircleIds(prev => [...prev, group.groupId]);
+                          setShowCirclePicker(false);
+                        }}
+                      >
+                        <FontAwesome name="users" size={16} color={ACTIVE_GREEN} style={styles.circleIcon} />
+                        <Text style={styles.circleName}>{group.groupName}</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                  <View style={styles.inputRowBorder} />
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.cancelRow,
+                      pressed && styles.cancelRowPressed,
+                    ]}
+                    onPress={() => setShowCirclePicker(false)}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              </BlurView>
+            )}
+          </View>
+        )}
+
+        {/* Bottom padding */}
+        <View style={{ height: insets.bottom + 40 }} />
+      </ScrollView>
 
       {/* Loading Overlay */}
       {isSaving && (
@@ -234,87 +502,71 @@ export default function AddPrayer({ mode, prayer }: AddPrayerProps) {
             <View style={styles.extraLargeSpinner}>
               <ActivityIndicator size="large" color="#b2d8b2" />
             </View>
-            <Text style={styles.loadingText}>
-              {route.params.mode === 'add' ? 'Saving...' : 'Updating...'}
-            </Text>
+            <Text style={styles.loadingText}>Saving...</Text>
           </View>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f9f9f9',
-    flex: 1,
-    padding: 20,
+  descriptionInput: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 15,
+    lineHeight: 22,
+    paddingVertical: 4,
   },
-  // contentContainer: {
-  //   backgroundColor: '#fff',
-  //   borderRadius: 10,
-  //   padding: 20,
-  //   shadowColor: '#000',
-  //   shadowOffset: { width: 0, height: 2 },
-  //   shadowOpacity: 0.25,
-  //   shadowRadius: 4,
-  //   elevation: 5,
-  // },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
+  extraLargeSpinner: {
+    transform: [{ scale: 2 }],
   },
-  input: {
-    backgroundColor: '#F1FDED',
-    borderColor: '#ccc',
-    borderRadius: 5,
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  headerButton: {
+    alignItems: 'center',
+    backgroundColor: MUTED_GREEN,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 18,
     borderWidth: 1,
-    fontSize: 16,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    height: 36,
+    justifyContent: 'center',
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    width: 36,
   },
-  textArea: {
-    height: 200,
-    textAlignVertical: 'top',
+  headerButtonDisabled: {
+    opacity: 0.6,
   },
-  checkboxContainer: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 10,
+  headerButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.5)',
   },
-  checkboxLabel: {
-    color: '#333',
-    fontSize: 16,
+  headerTitle: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 18,
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  button: {
-    alignItems: 'center',
-    borderRadius: 5,
-    flex: 1,
-    marginHorizontal: 5,
+  inputRow: {
     paddingVertical: 10,
   },
-  cancelButton: {
-    backgroundColor: '#ccc',
+  inputRowBorder: {
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    height: StyleSheet.hairlineWidth,
   },
-  addButton: {
-    backgroundColor: '#008000',
-  },
-  disabledButton: {
-    backgroundColor: '#aaa',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  loadingContainer: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderRadius: 8,
+    paddingBottom: 30,
+    paddingHorizontal: 60,
+    paddingTop: 48,
   },
   loadingOverlay: {
     alignItems: 'center',
@@ -327,21 +579,135 @@ const styles = StyleSheet.create({
     top: 0,
     zIndex: 1000,
   },
-  loadingContainer: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderRadius: 8,
-    paddingBottom: 30,
-    paddingHorizontal: 60,
-    paddingTop: 48,
-  },
-  extraLargeSpinner: {
-    transform: [{ scale: 2 }],
-  },
   loadingText: {
     color: '#b2d8b2',
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 24,
     marginTop: 48,
+  },
+  multilineInput: {
+    minHeight: 120,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionBlur: {
+    borderColor: 'rgba(252, 251, 231, 0.58)',
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  sectionContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  sectionLabel: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 13,
+    letterSpacing: 0.5,
+    marginLeft: 12,
+    marginRight: 12,
+    textTransform: 'uppercase',
+  },
+  sectionLabelContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  sectionLabelLine: {
+    backgroundColor: 'rgba(45, 62, 49, 0.2)',
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  switchLabel: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  switchRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  titleInput: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 17,
+    paddingVertical: 4,
+  },
+  // Prayer Circle styles
+  addCircleIcon: {
+    marginRight: 8,
+  },
+  addCircleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  addCircleRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  addCircleText: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 16,
+  },
+  cancelRow: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  cancelRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  cancelText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+  },
+  circleIcon: {
+    marginRight: 10,
+  },
+  circleInfo: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+  },
+  circleName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  circlePickerRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  circlePickerRowPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.2)',
+  },
+  circleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 12,
+  },
+  removeCircleButton: {
+    padding: 4,
+  },
+  removeCircleButtonPressed: {
+    opacity: 0.7,
   },
 });

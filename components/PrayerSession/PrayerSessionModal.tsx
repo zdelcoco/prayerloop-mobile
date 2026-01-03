@@ -9,7 +9,7 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Prayer, User } from '@/util/shared.types';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -58,11 +58,7 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
     return null;
   }
 
-  const sessionTitle = contextTitle
-    ? contextTitle === 'Personal Prayers'
-      ? contextTitle
-      : `Praying for ${contextTitle}`
-    : 'Prayer Session';
+  const headerTitle = contextTitle || 'Prayer Session';
 
   return (
     <Modal
@@ -75,14 +71,27 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
         <View style={styles.container}>
           {/* Header - Top 1/4 */}
           <View style={styles.header}>
-            <Text style={styles.title}>{sessionTitle}</Text>
-            <Pressable style={styles.closeButton} onPress={handleClose}>
-              <FontAwesome name='times' size={28} color='#fff' />
+            <Text style={styles.title}>{headerTitle}</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeButton,
+                pressed && styles.closeButtonPressed,
+              ]}
+              onPress={handleClose}
+            >
+              <Ionicons name='close' size={22} color='#2d3e31' />
             </Pressable>
           </View>
 
           {/* Card Container - Center 1/2 */}
           <View style={styles.cardContainer}>
+            {/* Pray for subject name */}
+            {currentPrayer.prayerSubjectDisplayName && (
+              <View style={styles.subjectHeader}>
+                <Text style={styles.subjectLabel}>Pray for</Text>
+                <Text style={styles.subjectName}>{currentPrayer.prayerSubjectDisplayName}</Text>
+              </View>
+            )}
             <View style={styles.prayerCard}>
               <Text style={styles.prayerTitle}>
                 {currentPrayer.title}
@@ -103,17 +112,18 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
           <View style={styles.footer}>
             <View style={styles.navigationContainer}>
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.navButton,
                   isFirstPrayer && styles.navButtonDisabled,
+                  pressed && !isFirstPrayer && styles.navButtonPressed,
                 ]}
                 onPress={goToPrevious}
                 disabled={isFirstPrayer}
               >
-                <FontAwesome
-                  name='chevron-left'
-                  size={24}
-                  color={isFirstPrayer ? '#ccc' : '#fff'}
+                <Ionicons
+                  name='chevron-back'
+                  size={28}
+                  color={isFirstPrayer ? '#a0a0a0' : '#2d3e31'}
                 />
               </Pressable>
 
@@ -132,17 +142,18 @@ const PrayerSessionModal: React.FC<PrayerSessionModalProps> = ({
               </View>
 
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.navButton,
                   isLastPrayer && styles.navButtonDisabled,
+                  pressed && !isLastPrayer && styles.navButtonPressed,
                 ]}
                 onPress={goToNext}
                 disabled={isLastPrayer}
               >
-                <FontAwesome
-                  name='chevron-right'
-                  size={24}
-                  color={isLastPrayer ? '#ccc' : '#fff'}
+                <Ionicons
+                  name='chevron-forward'
+                  size={28}
+                  color={isLastPrayer ? '#a0a0a0' : '#2d3e31'}
                 />
               </Pressable>
             </View>
@@ -161,12 +172,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   closeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 22,
-    padding: 12,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
     position: 'absolute',
     right: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     top: 60,
+    width: 44,
+  },
+  closeButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.7)',
   },
   container: {
     flex: 1,
@@ -188,14 +211,24 @@ const styles = StyleSheet.create({
   },
   navButton: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#ccf0ccff',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 30,
+    borderWidth: 1,
     height: 60,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     width: 60,
   },
   navButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(204, 240, 204, 0.4)',
+    shadowOpacity: 0.1,
+  },
+  navButtonPressed: {
+    backgroundColor: 'rgba(165, 214, 167, 0.7)',
   },
   navigationContainer: {
     alignItems: 'center',
@@ -207,11 +240,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   prayerCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#F1FDED',
     borderRadius: 20,
     padding: 32,
     width: '100%',
-    height: '80%', // Consistent height regardless of content
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
@@ -220,8 +253,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   prayerText: {
-    fontSize: 18, // One notch larger
-    color: '#666',
+    color: '#5a6b5e',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 18,
     lineHeight: 28,
     textAlign: 'left',
   },
@@ -229,9 +263,9 @@ const styles = StyleSheet.create({
     flex: 1, // Take remaining space in card
   },
   prayerTitle: {
-    fontSize: 22, // One notch larger
-    fontWeight: 'bold',
-    color: '#333', // Dark text on white card background
+    color: '#2d3e31',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 22,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -254,14 +288,29 @@ const styles = StyleSheet.create({
   },
   progressText: {
     color: '#fff',
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
     marginBottom: 12,
   },
+  subjectHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subjectLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  subjectName: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 20,
+  },
   title: {
-    fontSize: 22, // One notch larger
-    fontWeight: 'bold',
-    color: 'rgba(255, 255, 255, 0.46)',
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontFamily: 'InstrumentSans-Bold',
+    fontSize: 22,
     textAlign: 'center',
   },
 });
