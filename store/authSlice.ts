@@ -73,7 +73,9 @@ const authSlice = createSlice({
       state.token = null;
       state.status = 'idle';
       state.isAuthenticated = false;
-      state.isTokenValidated = false; // Reset for next login cycle
+      // Keep isTokenValidated true so navigation can proceed to login screen
+      // The flag will be reset on app restart via initialState
+      state.isTokenValidated = true;
     },
     tokenValidationComplete: (state) => {
       state.isTokenValidated = true;
