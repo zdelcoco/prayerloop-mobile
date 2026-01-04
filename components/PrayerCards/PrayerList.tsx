@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Pressable,
   Image,
+  Keyboard,
 } from 'react-native';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -516,6 +517,9 @@ const PrayerList: React.FC<PrayerListProps> = ({
             renderItem={renderSection}
             onDragEnd={({ data }) => handleSectionReorder(data)}
             contentContainerStyle={styles.listContent}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             refreshControl={
               onRefresh ? (
                 <RefreshControl

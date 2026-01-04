@@ -7,6 +7,7 @@ import {
   TextInput,
   RefreshControl,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
@@ -220,6 +221,9 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
               renderItem={renderDraggableItem}
               onDragEnd={({ data }) => handleDragEnd(data)}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              onScrollBeginDrag={Keyboard.dismiss}
               contentContainerStyle={styles.listContent}
               refreshControl={
                 onRefresh ? (
@@ -243,6 +247,9 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
             keyExtractor={(item) => item.groupId.toString()}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             contentContainerStyle={styles.listContent}
             refreshControl={
               onRefresh ? (

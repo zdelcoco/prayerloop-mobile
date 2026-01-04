@@ -13,6 +13,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -812,6 +813,9 @@ export default function ContactDetail() {
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
           onScrollOffsetChange={(offset) => scrollY.setValue(offset)}
         />
       </GestureHandlerRootView>

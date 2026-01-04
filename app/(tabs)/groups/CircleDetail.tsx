@@ -15,6 +15,7 @@ import {
   FlatList,
   TextInput,
   Share,
+  Keyboard,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -390,11 +391,12 @@ export default function CircleDetail() {
               <Pressable
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  (pressed || searchVisible) && styles.headerButtonPressed,
+                  searchVisible && styles.headerButtonActive,
                 ]}
                 onPress={() => setSearchVisible(prev => !prev)}
               >
-                <Ionicons name='search' size={18} color={DARK_TEXT} />
+                <Ionicons name='search' size={18} color={searchVisible ? '#FFFFFF' : DARK_TEXT} />
               </Pressable>
               {user?.userProfileId === group.createdBy && (
                 <Pressable
@@ -784,6 +786,9 @@ export default function CircleDetail() {
             ListHeaderComponent={ListHeader}
             ListFooterComponent={ListFooter}
             contentContainerStyle={styles.listContent}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -927,6 +932,9 @@ const styles = StyleSheet.create({
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerButtonActive: {
+    backgroundColor: ACTIVE_GREEN,
   },
   headerRightContainer: {
     alignItems: 'center',

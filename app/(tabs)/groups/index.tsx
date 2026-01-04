@@ -142,16 +142,17 @@ export default function Groups() {
                 onPress={() => setSearchVisible((prev) => !prev)}
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  (pressed || searchVisible) && styles.headerButtonPressed,
+                  searchVisible && styles.headerButtonActive,
                 ]}
               >
-                <Ionicons name='search' size={18} color='#2d3e31' />
+                <Ionicons name='search' size={18} color={searchVisible ? '#FFFFFF' : '#2d3e31'} />
               </Pressable>
             </View>
           ),
         });
       }
-    }, [navigation, user, handleCircleAction])
+    }, [navigation, user, handleCircleAction, searchVisible])
   );
 
   // Expose functions to global for tab layout to access
@@ -286,6 +287,9 @@ const styles = StyleSheet.create({
   },
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
+  },
+  headerButtonActive: {
+    backgroundColor: '#2E7D32',
   },
   headerLeftContainer: {
     alignItems: 'center',

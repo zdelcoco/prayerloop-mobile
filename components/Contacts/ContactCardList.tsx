@@ -8,6 +8,7 @@ import {
   TextInput,
   RefreshControl,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
@@ -362,6 +363,9 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
             onDragEnd={({ data }) => handleDragEnd(data)}
             ListEmptyComponent={renderEmptyComponent}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             contentContainerStyle={
               localContacts.length === 0
                 ? styles.emptyListContent
@@ -378,6 +382,9 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
           ListEmptyComponent={renderEmptyComponent}
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
           contentContainerStyle={
             sortedContacts.length === 0
               ? styles.emptyListContent
@@ -401,6 +408,9 @@ const ContactCardList: React.FC<ContactCardListProps> = ({
           renderItem={renderItem}
           ListEmptyComponent={renderEmptyComponent}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
           contentContainerStyle={
             sortedContacts.length === 0
               ? styles.emptyListContent
