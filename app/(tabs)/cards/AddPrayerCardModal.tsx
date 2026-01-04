@@ -264,8 +264,9 @@ export default function AddPrayerCardModal() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={Keyboard.dismiss}
+        automaticallyAdjustKeyboardInsets={true}
       >
-        {/* Type Selector Section */}
+          {/* Type Selector Section */}
         <View style={styles.section}>
           <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
             <View style={styles.sectionContent}>
