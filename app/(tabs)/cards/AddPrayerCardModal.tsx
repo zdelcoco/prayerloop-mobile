@@ -337,7 +337,7 @@ export default function AddPrayerCardModal() {
                   placeholderTextColor={SUBTLE_TEXT}
                   value={displayName}
                   onChangeText={setDisplayName}
-                  autoCapitalize="none"
+                  autoCapitalize="words"
                   autoCorrect={false}
                 />
               </View>

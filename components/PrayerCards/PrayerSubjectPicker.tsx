@@ -301,7 +301,7 @@ export default function PrayerSubjectPicker({
             onBlur={() => {
               setTimeout(() => setShowAutocomplete(false), 200);
             }}
-            autoCapitalize="none"
+            autoCapitalize="words"
             autoCorrect={false}
             editable={!disabled}
           />
