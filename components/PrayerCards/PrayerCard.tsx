@@ -76,7 +76,7 @@ const Card = ({
             />
           )}
         </View>
-        {prayer.prayerSubjectDisplayName && (
+        {prayer.prayerSubjectDisplayName && !isDetailView && (
           <View style={styles.subjectRow}>
             <Text style={styles.subjectLabel}>Pray for</Text>
             <Text style={styles.subjectName}>{prayer.prayerSubjectDisplayName}</Text>

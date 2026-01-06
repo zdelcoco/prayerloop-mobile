@@ -545,17 +545,19 @@ export default function ContactDetail() {
       <View style={styles.contentSpacer} />
 
       {/* Prayer Requests section header */}
-      <View style={styles.sectionLabelContainer}>
-        <Text style={styles.sectionLabel}>Prayer Requests</Text>
-        <View style={styles.sectionLabelLine} />
-      </View>
-
-      {/* Empty state if no active prayers */}
-      {activePrayers.length === 0 && (
-        <View style={styles.sectionCardSingle}>
-          <Text style={styles.emptyText}>No active prayer requests.</Text>
+      <View style={styles.prayerRequestsSection}>
+        <View style={styles.sectionLabelContainer}>
+          <Text style={styles.sectionLabel}>Prayer Requests</Text>
+          <View style={styles.sectionLabelLine} />
         </View>
-      )}
+
+        {/* Empty state if no active prayers */}
+        {activePrayers.length === 0 && (
+          <View style={styles.sectionCardSingle}>
+            <Text style={styles.emptyText}>No active prayer requests.</Text>
+          </View>
+        )}
+      </View>
     </View>
   ), [contact.prayerSubjectDisplayName, contact.notes, insets.top, activePrayers.length]);
 
@@ -1046,6 +1048,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  prayerRequestsSection: {
+    alignSelf: 'stretch',
   },
   prayerItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
