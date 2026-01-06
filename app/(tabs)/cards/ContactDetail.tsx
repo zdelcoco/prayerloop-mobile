@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginRight: 8,
+    marginRight: 16,
   },
   initialsText: {
     color: '#FFFFFF',

@@ -16,6 +16,8 @@ import {
   TextInput,
   Share,
   Keyboard,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -35,7 +37,7 @@ import PrayerDetailModal from '@/components/PrayerCards/PrayerDetailModal';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
 import HeaderTitleActionDropdown, { ActionOption } from '@/components/ui/HeaderTitleActionDropdown';
 import { groupUsersCache } from '@/util/groupUsersCache';
-import { createPrayerSubject as createPrayerSubjectAPI } from '@/util/prayerSubjects';
+import { createPrayerSubject as createPrayerSubjectAPI, updatePrayerSubject } from '@/util/prayerSubjects';
 import { createGroupInvite } from '@/util/createGroupInvite';
 
 import type { Group, Prayer, User, PrayerSubject } from '@/util/shared.types';
@@ -138,6 +140,11 @@ export default function CircleDetail() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Contact picker modal state (for selecting existing or creating new contact)
+  const [contactPickerVisible, setContactPickerVisible] = useState(false);
+  const [pendingMember, setPendingMember] = useState<User | null>(null);
+  const [isCreatingContact, setIsCreatingContact] = useState(false);
+
   // Track if navigating to a modal (to prevent tab bar flash)
   const isNavigatingToModal = useRef(false);
 
@@ -165,43 +172,100 @@ export default function CircleDetail() {
     return lookup;
   }, [members]);
 
+  // Create a lookup map for the current user's custom display names
+  // Maps linked userProfileId -> user's custom display name from their contact cards
+  const myDisplayNamesLookup = useMemo(() => {
+    const lookup: { [userProfileId: number]: string } = {};
+    if (prayerSubjects) {
+      prayerSubjects.forEach(subject => {
+        // Only include linked subjects (where userProfileId is set)
+        if (subject.userProfileId && subject.linkStatus === 'linked') {
+          lookup[subject.userProfileId] = subject.prayerSubjectDisplayName;
+        }
+      });
+    }
+    return lookup;
+  }, [prayerSubjects]);
+
+  // Create a modified members lookup that uses custom display names when available
+  // This is passed to PrayerCard/PrayerDetailModal so "Created by X" shows custom names
+  const membersLookupWithCustomNames = useMemo(() => {
+    const lookup: { [id: number]: User } = {};
+    members.forEach(m => {
+      const customName = myDisplayNamesLookup[m.userProfileId];
+      if (customName) {
+        // Override with custom name (put full name in firstName, clear lastName)
+        lookup[m.userProfileId] = { ...m, firstName: customName, lastName: '' };
+      } else {
+        lookup[m.userProfileId] = m;
+      }
+    });
+    return lookup;
+  }, [members, myDisplayNamesLookup]);
+
   // Group prayers by prayer subject (who the prayer is FOR)
+  // When a prayer subject is linked to a Prayerloop user, group by that user's ID
+  // This ensures prayers for the same person are grouped together even if created by different users
   const sections = useMemo<PrayerSection[]>(() => {
     if (!prayers || prayers.length === 0) return [];
 
-    // Group prayers by prayer subject
-    const grouped: { [subjectId: number]: { subjectName: string; prayers: Prayer[] } } = {};
+    // Use string keys to handle different ID types, then convert to numbers for sections
+    // Key format: "linked:{userId}" or "subject:{subjectId}" or "fallback:{createdBy}"
+    const grouped: { [key: string]: { subjectName: string; prayers: Prayer[]; linkedUserId?: number } } = {};
 
     prayers.forEach(prayer => {
-      // Use prayer subject info directly from the prayer object (returned by API)
       if (prayer.prayerSubjectId && prayer.prayerSubjectDisplayName) {
-        const subjectId = prayer.prayerSubjectId;
-        const subjectName = prayer.prayerSubjectDisplayName;
-        if (!grouped[subjectId]) {
-          grouped[subjectId] = { subjectName, prayers: [] };
+        // If the prayer subject is linked to a Prayerloop user, group by linked user ID
+        // This ensures all prayers for the same person are grouped together
+        const linkedUserId = prayer.prayerSubjectUserProfileId;
+        const groupKey = linkedUserId
+          ? `linked:${linkedUserId}`
+          : `subject:${prayer.prayerSubjectId}`;
+        // Prefer the current user's custom display name for this person, fall back to prayer's subject name
+        const subjectName = (linkedUserId && myDisplayNamesLookup[linkedUserId])
+          ? myDisplayNamesLookup[linkedUserId]
+          : prayer.prayerSubjectDisplayName;
+
+        if (!grouped[groupKey]) {
+          grouped[groupKey] = { subjectName, prayers: [], linkedUserId: linkedUserId || undefined };
         }
-        grouped[subjectId].prayers.push(prayer);
+        grouped[groupKey].prayers.push(prayer);
       } else {
         // Fallback: no subject found, group by creator as "Unknown Subject"
-        // Use negative createdBy to avoid collision with real subject IDs
-        const fallbackId = -prayer.createdBy;
-        const creator = membersLookup[prayer.createdBy];
-        const fallbackName = creator
-          ? `${creator.firstName} ${creator.lastName}`
-          : 'Unknown';
+        const fallbackKey = `fallback:${prayer.createdBy}`;
+        // Prefer the current user's custom name for this creator
+        const fallbackName = myDisplayNamesLookup[prayer.createdBy]
+          || (membersLookup[prayer.createdBy]
+            ? `${membersLookup[prayer.createdBy].firstName} ${membersLookup[prayer.createdBy].lastName}`
+            : 'Unknown');
 
-        if (!grouped[fallbackId]) {
-          grouped[fallbackId] = { subjectName: fallbackName, prayers: [] };
+        if (!grouped[fallbackKey]) {
+          grouped[fallbackKey] = { subjectName: fallbackName, prayers: [] };
         }
-        grouped[fallbackId].prayers.push(prayer);
+        grouped[fallbackKey].prayers.push(prayer);
       }
     });
 
     // Convert to sections array
     const result: PrayerSection[] = [];
 
-    Object.entries(grouped).forEach(([subjectIdStr, data]) => {
-      const subjectId = parseInt(subjectIdStr, 10);
+    // Large offset to distinguish unlinked prayer subject IDs from linked user IDs
+    const SUBJECT_ID_OFFSET = 1000000000;
+
+    Object.entries(grouped).forEach(([groupKey, data]) => {
+      // Parse the group key to get a numeric subjectId
+      // Format: "linked:{userId}" | "subject:{subjectId}" | "fallback:{createdBy}"
+      let subjectId: number;
+      if (groupKey.startsWith('linked:')) {
+        // Use linked user ID directly
+        subjectId = parseInt(groupKey.substring(7), 10);
+      } else if (groupKey.startsWith('subject:')) {
+        // Use prayer subject ID with offset to avoid collision with user IDs
+        subjectId = parseInt(groupKey.substring(8), 10) + SUBJECT_ID_OFFSET;
+      } else {
+        // Fallback: use negative creator ID
+        subjectId = -parseInt(groupKey.substring(9), 10);
+      }
 
       // Sort prayers: active first, then by date
       const sortedPrayers = [...data.prayers].sort((a, b) => {
@@ -209,9 +273,15 @@ export default function CircleDetail() {
         return new Date(b.datetimeCreate).getTime() - new Date(a.datetimeCreate).getTime();
       });
 
-      // Get submitter info from the first prayer's creator
-      const firstCreatorId = sortedPrayers[0]?.createdBy;
-      const submitter = firstCreatorId ? membersLookup[firstCreatorId] || null : null;
+      // Get submitter info: prefer the linked user if available, otherwise use first prayer's creator
+      let submitter: User | null = null;
+      if (data.linkedUserId) {
+        submitter = membersLookup[data.linkedUserId] || null;
+      }
+      if (!submitter) {
+        const firstCreatorId = sortedPrayers[0]?.createdBy;
+        submitter = firstCreatorId ? membersLookup[firstCreatorId] || null : null;
+      }
 
       result.push({
         subjectId,
@@ -225,7 +295,7 @@ export default function CircleDetail() {
     result.sort((a, b) => a.subjectName.toLowerCase().localeCompare(b.subjectName.toLowerCase()));
 
     return result;
-  }, [prayers, membersLookup]);
+  }, [prayers, membersLookup, myDisplayNamesLookup]);
 
   // Filter sections by search query and active/answered filter
   const filteredSections = useMemo(() => {
@@ -304,12 +374,12 @@ export default function CircleDetail() {
       const result = await createGroupInvite(token, group.groupId);
       if (result.success && result.data) {
         const inviteCode = result.data.inviteCode;
-        const inviteLink = `prayerloop://join?code=${inviteCode}`;
-        const message = `Join my prayer circle "${group.groupName}" on PrayerLoop!\n\nUse invite code: ${inviteCode}\n\nOr tap this link: ${inviteLink}`;
+        const inviteLink = `prayerloop://join-group?code=${inviteCode}`;
+        const message = `Join my prayer circle "${group.groupName}" on prayerloop!\n\nUse invite code: ${inviteCode}\n\nOr tap this link: ${inviteLink}`;
 
         await Share.share({
           message,
-          title: `Join ${group.groupName} on PrayerLoop`,
+          title: `Join ${group.groupName} on prayerloop`,
         });
       } else {
         Alert.alert('Error', 'Failed to create invite link. Please try again.');
@@ -452,48 +522,155 @@ export default function CircleDetail() {
     dispatch(fetchGroupPrayers(group.groupId));
   };
 
-  // Handle member press - navigate to contact detail or create prayer_subject
-  const handleMemberPress = useCallback(async (member: User) => {
+  // Handle member press - navigate to contact detail or show picker
+  const handleMemberPress = useCallback((member: User) => {
     if (!token || !user) return;
 
-    // Check if a prayer_subject already exists for this user
-    const existingSubject = prayerSubjects?.find(
+    // Check if a prayer_subject already exists linked to this user's profile
+    const linkedSubject = prayerSubjects?.find(
       s => s.userProfileId === member.userProfileId
     );
 
-    if (existingSubject) {
-      // Navigate to existing contact detail (stay within groups tab)
+    if (linkedSubject) {
+      // Navigate directly to existing linked contact
       router.push({
         pathname: '/(tabs)/groups/ContactDetail',
-        params: { contact: JSON.stringify(existingSubject) },
+        params: { contact: JSON.stringify(linkedSubject) },
       });
     } else {
-      // Create a new prayer_subject linked to this user
-      try {
-        const result = await createPrayerSubjectAPI(token, user.userProfileId, {
-          prayerSubjectType: 'individual',
-          prayerSubjectDisplayName: `${member.firstName} ${member.lastName}`,
-          userProfileId: member.userProfileId,
+      // No linked contact - show picker to select existing or create new
+      setPendingMember(member);
+      setContactPickerVisible(true);
+    }
+  }, [token, user, prayerSubjects]);
+
+  // Get contacts sorted with name matches first for the picker
+  const sortedContactsForPicker = useMemo(() => {
+    if (!prayerSubjects || !pendingMember) return [];
+
+    const memberFullName = `${pendingMember.firstName} ${pendingMember.lastName}`.toLowerCase();
+    // Filter to individual contacts that are NOT already linked to a user
+    const individualContacts = prayerSubjects.filter(
+      s => s.prayerSubjectType === 'individual' && !s.userProfileId
+    );
+
+    // Separate name matches from others
+    const nameMatches: PrayerSubject[] = [];
+    const others: PrayerSubject[] = [];
+
+    individualContacts.forEach(contact => {
+      const contactName = contact.prayerSubjectDisplayName.toLowerCase();
+      // Check for exact or partial name match
+      if (contactName === memberFullName ||
+          contactName.includes(memberFullName) ||
+          memberFullName.includes(contactName)) {
+        nameMatches.push(contact);
+      } else {
+        others.push(contact);
+      }
+    });
+
+    // Sort each group alphabetically
+    nameMatches.sort((a, b) => a.prayerSubjectDisplayName.localeCompare(b.prayerSubjectDisplayName));
+    others.sort((a, b) => a.prayerSubjectDisplayName.localeCompare(b.prayerSubjectDisplayName));
+
+    return [...nameMatches, ...others];
+  }, [prayerSubjects, pendingMember]);
+
+  // Check if a contact is a name match for highlighting
+  const isNameMatch = useCallback((contact: PrayerSubject) => {
+    if (!pendingMember) return false;
+    const memberFullName = `${pendingMember.firstName} ${pendingMember.lastName}`.toLowerCase();
+    const contactName = contact.prayerSubjectDisplayName.toLowerCase();
+    return contactName === memberFullName ||
+           contactName.includes(memberFullName) ||
+           memberFullName.includes(contactName);
+  }, [pendingMember]);
+
+  // Handle selecting an existing contact from the picker
+  const handleSelectExistingContact = useCallback(async (contact: PrayerSubject) => {
+    if (!token || !pendingMember) {
+      setContactPickerVisible(false);
+      setPendingMember(null);
+      return;
+    }
+
+    setIsCreatingContact(true);
+    try {
+      // Link the existing contact to the pending member's user profile
+      const result = await updatePrayerSubject(token, contact.prayerSubjectId, {
+        userProfileId: pendingMember.userProfileId,
+      });
+
+      if (result.success) {
+        // Refresh prayer subjects to get the updated link status
+        await dispatch(fetchPrayerSubjects());
+
+        // Update the contact object with the new linked user info
+        const updatedContact: PrayerSubject = {
+          ...contact,
+          userProfileId: pendingMember.userProfileId,
+          linkStatus: 'linked',
+        };
+
+        setContactPickerVisible(false);
+        setPendingMember(null);
+
+        router.push({
+          pathname: '/(tabs)/groups/ContactDetail',
+          params: { contact: JSON.stringify(updatedContact) },
         });
+      } else {
+        Alert.alert('Error', 'Failed to link contact to this member.');
+      }
+    } catch (error) {
+      console.error('Error linking contact:', error);
+      Alert.alert('Error', 'Failed to link contact to this member.');
+    } finally {
+      setIsCreatingContact(false);
+    }
+  }, [token, pendingMember, dispatch]);
 
-        if (result.success && result.data) {
-          // Refresh prayer subjects to get the new one
-          await dispatch(fetchPrayerSubjects());
+  // Handle creating a new linked contact
+  const handleCreateNewContact = useCallback(async () => {
+    if (!token || !user || !pendingMember) return;
 
-          // Navigate to the new contact detail (stay within groups tab)
-          router.push({
-            pathname: '/(tabs)/groups/ContactDetail',
-            params: { contact: JSON.stringify(result.data) },
-          });
-        } else {
-          Alert.alert('Error', 'Failed to create prayer card for this member.');
-        }
-      } catch (error) {
-        console.error('Error creating prayer subject:', error);
+    setIsCreatingContact(true);
+    try {
+      const result = await createPrayerSubjectAPI(token, user.userProfileId, {
+        prayerSubjectType: 'individual',
+        prayerSubjectDisplayName: `${pendingMember.firstName} ${pendingMember.lastName}`,
+        userProfileId: pendingMember.userProfileId,
+      });
+
+      if (result.success && result.data) {
+        // Refresh prayer subjects to get the new one
+        await dispatch(fetchPrayerSubjects());
+
+        setContactPickerVisible(false);
+        setPendingMember(null);
+
+        // Navigate to the new contact detail
+        router.push({
+          pathname: '/(tabs)/groups/ContactDetail',
+          params: { contact: JSON.stringify(result.data) },
+        });
+      } else {
         Alert.alert('Error', 'Failed to create prayer card for this member.');
       }
+    } catch (error) {
+      console.error('Error creating prayer subject:', error);
+      Alert.alert('Error', 'Failed to create prayer card for this member.');
+    } finally {
+      setIsCreatingContact(false);
     }
-  }, [token, user, prayerSubjects, dispatch]);
+  }, [token, user, pendingMember, dispatch]);
+
+  // Handle closing the contact picker
+  const handleCloseContactPicker = useCallback(() => {
+    setContactPickerVisible(false);
+    setPendingMember(null);
+  }, []);
 
   // Render section header (prayer subject info - who the prayer is FOR)
   const renderSectionHeader = useCallback((subjectName: string, prayerCount: number) => {
@@ -600,7 +777,8 @@ export default function CircleDetail() {
         <View>
           {item.prayers.map((prayer, index) => {
             // Get the creator for this specific prayer (for footer display)
-            const creator = membersLookup[prayer.createdBy] || {
+            // Use membersLookupWithCustomNames to show user's custom names
+            const creator = membersLookupWithCustomNames[prayer.createdBy] || {
               userProfileId: prayer.createdBy,
               firstName: 'Unknown',
               lastName: 'User',
@@ -611,7 +789,7 @@ export default function CircleDetail() {
         </View>
       </View>
     );
-  }, [renderSectionHeader, renderPrayerItem, membersLookup]);
+  }, [renderSectionHeader, renderPrayerItem, membersLookupWithCustomNames]);
 
   // Render empty state
   const renderEmptyState = () => (
@@ -716,8 +894,12 @@ export default function CircleDetail() {
             members.map((member, index) => {
               const isFirst = index === 0;
               const isLast = index === members.length - 1;
-              const initials = getInitials(member.firstName, member.lastName);
-              const avatarColor = getAvatarColor(`${member.firstName} ${member.lastName}`);
+              // Use custom display name if user has a linked contact for this member
+              const customName = myDisplayNamesLookup[member.userProfileId];
+              const displayName = customName || `${member.firstName} ${member.lastName}`;
+              const nameParts = displayName.split(' ');
+              const initials = getInitials(nameParts[0], nameParts[nameParts.length - 1]);
+              const avatarColor = getAvatarColor(displayName);
 
               return (
                 <Pressable
@@ -736,7 +918,7 @@ export default function CircleDetail() {
                   </View>
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>
-                      {member.firstName} {member.lastName}
+                      {displayName}
                     </Text>
                     {member.userProfileId === group.createdBy && (
                       <Text style={styles.memberRole}>Creator</Text>
@@ -762,7 +944,7 @@ export default function CircleDetail() {
       {/* Bottom padding for scroll */}
       <View style={styles.bottomPadding} />
     </View>
-  ), [members, group.createdBy, handleMemberPress]);
+  ), [members, group.createdBy, handleMemberPress, myDisplayNamesLookup]);
 
   return (
     <LinearGradient
@@ -813,6 +995,7 @@ export default function CircleDetail() {
           onClose={handleModalClose}
           onActionComplete={handleActionComplete}
           onShare={() => {}}
+          usersLookup={membersLookupWithCustomNames}
           context='groups'
         />
       )}
@@ -822,10 +1005,131 @@ export default function CircleDetail() {
         visible={prayerSessionVisible}
         prayers={(prayers || []).filter(p => !p.isAnswered)}
         currentUserId={user?.userProfileId || 0}
-        usersLookup={membersLookup}
+        usersLookup={membersLookupWithCustomNames}
         onClose={() => setPrayerSessionVisible(false)}
         contextTitle={group.groupName}
       />
+
+      {/* Contact Picker Modal */}
+      <Modal
+        visible={contactPickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseContactPicker}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.contactPickerContainer}>
+            {/* Header */}
+            <View style={styles.contactPickerHeader}>
+              <Text style={styles.contactPickerTitle}>
+                Select Contact for {pendingMember?.firstName} {pendingMember?.lastName}
+              </Text>
+              <Pressable
+                onPress={handleCloseContactPicker}
+                style={styles.contactPickerCloseButton}
+              >
+                <Ionicons name="close" size={24} color={DARK_TEXT} />
+              </Pressable>
+            </View>
+
+            {/* Subtitle */}
+            <Text style={styles.contactPickerSubtitle}>
+              Choose an existing contact or create a new one
+            </Text>
+
+            {/* Contact List */}
+            <ScrollView
+              style={styles.contactPickerList}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Create New Contact Option */}
+              <Pressable
+                onPress={handleCreateNewContact}
+                disabled={isCreatingContact}
+                style={({ pressed }) => [
+                  styles.contactPickerItem,
+                  styles.createNewItem,
+                  pressed && styles.contactPickerItemPressed,
+                ]}
+              >
+                <View style={styles.createNewIcon}>
+                  <Ionicons name="add" size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.contactPickerItemInfo}>
+                  <Text style={styles.createNewText}>
+                    {isCreatingContact ? 'Creating...' : 'Create New Contact'}
+                  </Text>
+                  <Text style={styles.contactPickerItemSubtext}>
+                    {pendingMember?.firstName} {pendingMember?.lastName} (linked)
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Divider */}
+              {sortedContactsForPicker.length > 0 && (
+                <View style={styles.contactPickerDivider}>
+                  <View style={styles.contactPickerDividerLine} />
+                  <Text style={styles.contactPickerDividerText}>or select existing</Text>
+                  <View style={styles.contactPickerDividerLine} />
+                </View>
+              )}
+
+              {/* Existing Contacts */}
+              {sortedContactsForPicker.map((contact, index) => {
+                const matched = isNameMatch(contact);
+                const initials = getInitials(
+                  contact.prayerSubjectDisplayName.split(' ')[0],
+                  contact.prayerSubjectDisplayName.split(' ').slice(-1)[0]
+                );
+                const avatarColor = getAvatarColor(contact.prayerSubjectDisplayName);
+
+                return (
+                  <Pressable
+                    key={contact.prayerSubjectId}
+                    onPress={() => handleSelectExistingContact(contact)}
+                    style={({ pressed }) => [
+                      styles.contactPickerItem,
+                      matched && styles.contactPickerItemMatched,
+                      pressed && styles.contactPickerItemPressed,
+                      index === sortedContactsForPicker.length - 1 && styles.contactPickerItemLast,
+                    ]}
+                  >
+                    <View style={[styles.contactPickerAvatar, { backgroundColor: avatarColor }]}>
+                      <Text style={styles.contactPickerAvatarText}>{initials}</Text>
+                    </View>
+                    <View style={styles.contactPickerItemInfo}>
+                      <Text style={styles.contactPickerItemName}>
+                        {contact.prayerSubjectDisplayName}
+                      </Text>
+                      {matched && (
+                        <Text style={styles.contactPickerMatchBadge}>Name matches</Text>
+                      )}
+                      {contact.notes && (
+                        <Text style={styles.contactPickerItemSubtext} numberOfLines={1}>
+                          {contact.notes}
+                        </Text>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={SUBTLE_TEXT} />
+                  </Pressable>
+                );
+              })}
+
+              {/* Empty State */}
+              {sortedContactsForPicker.length === 0 && (
+                <View style={styles.contactPickerEmpty}>
+                  <Text style={styles.contactPickerEmptyText}>
+                    No existing contacts. Create a new one above.
+                  </Text>
+                </View>
+              )}
+
+              {/* Bottom padding */}
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -940,7 +1244,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginRight: 8,
+    marginRight: 16,
   },
   listContent: {
     paddingBottom: 20,
@@ -1195,5 +1499,153 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 13,
     marginRight: 4,
+  },
+  // Contact Picker Modal Styles
+  modalOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  contactPickerContainer: {
+    backgroundColor: '#F6EDD9',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  contactPickerHeader: {
+    alignItems: 'center',
+    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  contactPickerTitle: {
+    color: DARK_TEXT,
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
+  },
+  contactPickerCloseButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: 12,
+    width: 32,
+  },
+  contactPickerSubtitle: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  contactPickerList: {
+    paddingHorizontal: 16,
+  },
+  contactPickerItem: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  contactPickerItemMatched: {
+    backgroundColor: 'rgba(144, 197, 144, 0.3)',
+    borderColor: ACTIVE_GREEN,
+    borderWidth: 1,
+  },
+  contactPickerItemPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.4)',
+  },
+  contactPickerItemLast: {
+    marginBottom: 0,
+  },
+  contactPickerAvatar: {
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  contactPickerAvatarText: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 14,
+  },
+  contactPickerItemInfo: {
+    flex: 1,
+  },
+  contactPickerItemName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  contactPickerItemSubtext: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  contactPickerMatchBadge: {
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  contactPickerDivider: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginVertical: 12,
+    paddingHorizontal: 8,
+  },
+  contactPickerDividerLine: {
+    backgroundColor: 'rgba(45, 62, 49, 0.2)',
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  contactPickerDividerText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    marginHorizontal: 12,
+  },
+  contactPickerEmpty: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  contactPickerEmptyText: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  createNewItem: {
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    borderColor: ACTIVE_GREEN,
+    borderWidth: 1,
+  },
+  createNewIcon: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  createNewText: {
+    color: ACTIVE_GREEN,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
   },
 });

@@ -66,6 +66,13 @@ export default function GroupsLayout() {
           gestureDirection: 'vertical',
         }}
       />
+      <Stack.Screen
+        name='EditPrayerCardModal'
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
     </Stack>
   );
 }

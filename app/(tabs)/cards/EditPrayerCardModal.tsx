@@ -1507,46 +1507,40 @@ export default function EditPrayerCardModal() {
           <View style={styles.section}>
             <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
               <View style={styles.sectionContent}>
-                {linkedUserId && (
-                  <>
-                    <View style={styles.linkedUserRow}>
-                      <Text style={styles.linkedUserText}>
-                        {contact.linkStatus === 'linked'
-                          ? 'Linked to Prayerloop user'
-                          : contact.linkStatus === 'pending'
-                          ? 'Link request pending'
-                          : `Linked to user #${linkedUserId}`}
-                      </Text>
-                      {contact.linkStatus !== 'linked' && (
-                        <Pressable
-                          onPress={() => setLinkedUserId(null)}
-                          style={({ pressed }) => [
-                            styles.removeButton,
-                            pressed && styles.removeButtonPressed,
-                          ]}
-                        >
-                          <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
-                        </Pressable>
-                      )}
-                    </View>
-                    <View style={styles.inputRowBorder} />
-                  </>
+                {linkedUserId ? (
+                  <View style={styles.linkedUserRow}>
+                    <Text style={styles.linkedUserText}>
+                      {contact.linkStatus === 'pending'
+                        ? 'Link request pending'
+                        : `Linked to Prayerloop user #${linkedUserId}`}
+                    </Text>
+                    <Pressable
+                      onPress={() => setLinkedUserId(null)}
+                      style={({ pressed }) => [
+                        styles.removeButton,
+                        pressed && styles.removeButtonPressed,
+                      ]}
+                    >
+                      <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.addRow,
+                      pressed && styles.addRowPressed,
+                    ]}
+                    onPress={handleLinkUser}
+                  >
+                    <Ionicons
+                      name="add-circle"
+                      size={22}
+                      color={ACTIVE_GREEN}
+                      style={styles.addIcon}
+                    />
+                    <Text style={styles.addRowText}>link card to prayerloop user</Text>
+                  </Pressable>
                 )}
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.addRow,
-                    pressed && styles.addRowPressed,
-                  ]}
-                  onPress={handleLinkUser}
-                >
-                  <Ionicons
-                    name="add-circle"
-                    size={22}
-                    color={ACTIVE_GREEN}
-                    style={styles.addIcon}
-                  />
-                  <Text style={styles.addRowText}>link card to prayerloop user</Text>
-                </Pressable>
               </View>
             </BlurView>
           </View>
@@ -1726,7 +1720,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   headerButton: {
     alignItems: 'center',
@@ -1736,7 +1730,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
-    marginHorizontal: 12,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

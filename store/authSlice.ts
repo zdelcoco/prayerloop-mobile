@@ -10,6 +10,7 @@ import { SignupRequest, SignupResponse } from '../util/signup.types';
 import { clearUserPrayers } from './userPrayersSlice';
 import { clearUserGroups } from './groupsSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { groupUsersCache } from '../util/groupUsersCache';
 
 interface JWTPayload {
   exp: number;
@@ -193,6 +194,9 @@ export const logout = (): AppThunk => async (dispatch) => {
   } catch (error) {
     console.error('Error clearing saved credentials on logout:', error);
   }
+
+  // Clear group users cache to prevent stale data when switching users
+  groupUsersCache.clear();
 
   dispatch(logoutSuccess());
   dispatch(clearUserPrayers());

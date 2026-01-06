@@ -48,6 +48,7 @@ export interface Prayer {
   prayerPriority: number;
   prayerSubjectId?: number;
   prayerSubjectDisplayName?: string;
+  prayerSubjectUserProfileId?: number;
   prayerType: string;
   title: string;
   updatedBy: number;
@@ -122,6 +123,7 @@ export interface UpdatePrayerSubjectRequest {
   notes?: string;
   photoS3Key?: string;
   useLinkedUserPhoto?: boolean;
+  userProfileId?: number;
 }
 
 export interface CreatePrayerResponse {
