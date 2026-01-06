@@ -60,12 +60,6 @@ const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 // Max width for header title (screen width minus back button, right buttons, and padding)
 const HEADER_TITLE_MAX_WIDTH = SCREEN_WIDTH - 220;
 
-// Dropdown action options
-const CIRCLE_ACTION_OPTIONS: ActionOption[] = [
-  { value: 'add_prayer', label: 'Add Prayer', icon: 'add-outline' },
-  { value: 'invite', label: 'Invite to Circle', icon: 'person-add-outline' },
-];
-
 // Section type for grouping prayers by prayer subject (who the prayer is FOR)
 interface PrayerSection {
   subjectId: number;
@@ -390,14 +384,39 @@ export default function CircleDetail() {
     }
   }, [token, group]);
 
+  // Check if user can edit this circle
+  const canEdit = user?.userProfileId === group.createdBy;
+
+  // Build dropdown options dynamically based on permissions
+  const circleActionOptions: ActionOption[] = useMemo(() => {
+    const options: ActionOption[] = [];
+
+    // Edit option (only if user is creator) - first in list
+    if (canEdit) {
+      options.push({ value: 'edit', label: 'Edit Circle', icon: 'pencil-outline' });
+    }
+
+    // Invite option - second
+    options.push({ value: 'invite', label: 'Invite to Circle', icon: 'person-add-outline' });
+
+    // Add prayer option - third
+    options.push({ value: 'add_prayer', label: 'Add Prayer', icon: 'add-outline' });
+
+    return options;
+  }, [canEdit]);
+
   // Handle dropdown action selection
   const handleCircleAction = useCallback((value: string) => {
-    if (value === 'add_prayer') {
+    if (value === 'edit') {
+      navigation.navigate('EditCircle', {
+        group: JSON.stringify(group),
+      });
+    } else if (value === 'add_prayer') {
       handleAddPrayer();
     } else if (value === 'invite') {
       handleInviteToCircle();
     }
-  }, [handleAddPrayer, handleInviteToCircle]);
+  }, [handleAddPrayer, handleInviteToCircle, navigation, group]);
 
   // Hide tab bar when focused
   useFocusEffect(
@@ -425,7 +444,7 @@ export default function CircleDetail() {
           headerTitle: () => (
             <HeaderTitleActionDropdown
               title={group.groupName}
-              options={CIRCLE_ACTION_OPTIONS}
+              options={circleActionOptions}
               onSelect={handleCircleAction}
               maxWidth={HEADER_TITLE_MAX_WIDTH}
             />
@@ -468,26 +487,11 @@ export default function CircleDetail() {
               >
                 <Ionicons name='search' size={18} color={searchVisible ? '#FFFFFF' : DARK_TEXT} />
               </Pressable>
-              {user?.userProfileId === group.createdBy && (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.headerButton,
-                    pressed && styles.headerButtonPressed,
-                  ]}
-                  onPress={() => {
-                    navigation.navigate('EditCircle', {
-                      group: JSON.stringify(group),
-                    });
-                  }}
-                >
-                  <Text style={{ fontSize: 18 }}>✏️</Text>
-                </Pressable>
-              )}
             </View>
           ),
         });
       }
-    }, [navigation, group, searchVisible, handleCircleAction, activePrayers, user])
+    }, [navigation, group, searchVisible, handleCircleAction, activePrayers, circleActionOptions])
   );
 
   // Handle refresh
