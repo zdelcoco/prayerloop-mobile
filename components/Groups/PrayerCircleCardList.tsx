@@ -27,6 +27,7 @@ const SUBTLE_TEXT = '#5a6b5e';
 interface PrayerCircleCardListProps {
   groups: Group[];
   groupMembers?: { [groupId: number]: User[] };
+  displayNamesLookup?: { [userProfileId: number]: string };
   onGroupPress?: (group: Group) => void;
   onGroupLongPress?: (group: Group) => void;
   onRefresh?: () => void;
@@ -48,6 +49,7 @@ const sortGroups = (groups: Group[]): Group[] => {
 const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
   groups,
   groupMembers = {},
+  displayNamesLookup,
   onGroupPress,
   onGroupLongPress,
   onRefresh,
@@ -180,13 +182,14 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
         <PrayerCircleCard
           group={item}
           members={members}
+          displayNamesLookup={displayNamesLookup}
           onPress={() => handleGroupPress(item)}
           onLongPress={drag}
           isDragging={isActive}
         />
       );
     },
-    [localGroups.length, groupMembers, handleGroupPress]
+    [localGroups.length, groupMembers, displayNamesLookup, handleGroupPress]
   );
 
   const renderItem = ({
@@ -202,6 +205,7 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
       <PrayerCircleCard
         group={item}
         members={members}
+        displayNamesLookup={displayNamesLookup}
         onPress={() => handleGroupPress(item)}
         onLongPress={() => handleGroupLongPress(item)}
       />

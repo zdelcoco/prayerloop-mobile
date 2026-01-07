@@ -18,6 +18,7 @@ interface PrayerCircleCardProps {
   group: Group;
   members?: User[];
   memberCount?: number;
+  displayNamesLookup?: { [userProfileId: number]: string };
   onPress?: () => void;
   onLongPress?: () => void;
   isActive?: boolean;
@@ -56,9 +57,22 @@ const getAvatarColor = (groupName: string): string => {
 };
 
 // Format members string for display
-const formatMembersText = (members?: User[], memberCount?: number): string => {
+// Uses custom display names from contact cards when available
+const formatMembersText = (
+  members?: User[],
+  memberCount?: number,
+  displayNamesLookup?: { [userProfileId: number]: string }
+): string => {
   if (members && members.length > 0) {
-    const names = members.slice(0, 3).map(m => m.firstName || 'Unknown');
+    const names = members.slice(0, 3).map(m => {
+      // Use custom display name if available, otherwise fall back to first name
+      const customName = displayNamesLookup?.[m.userProfileId];
+      if (customName) {
+        // Extract first name from custom display name (e.g., "John Smith" -> "John")
+        return customName.split(' ')[0] || customName;
+      }
+      return m.firstName || 'Unknown';
+    });
     if (members.length > 3) {
       return `${names.join(', ')} +${members.length - 3} more`;
     }
@@ -74,6 +88,7 @@ const PrayerCircleCard: React.FC<PrayerCircleCardProps> = ({
   group,
   members,
   memberCount,
+  displayNamesLookup,
   onPress,
   onLongPress,
   isActive = false,
@@ -82,7 +97,7 @@ const PrayerCircleCard: React.FC<PrayerCircleCardProps> = ({
 }) => {
   const initials = getInitials(group.groupName);
   const avatarColor = getAvatarColor(group.groupName);
-  const membersText = formatMembersText(members, memberCount);
+  const membersText = formatMembersText(members, memberCount, displayNamesLookup);
 
   return (
     <View style={styles.cardWrapper}>

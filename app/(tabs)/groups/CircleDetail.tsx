@@ -285,11 +285,22 @@ export default function CircleDetail() {
       });
     });
 
-    // Sort sections by subject name
-    result.sort((a, b) => a.subjectName.toLowerCase().localeCompare(b.subjectName.toLowerCase()));
+    // Sort sections by subject name, but keep current user's section at the bottom
+    const currentUserId = user?.userProfileId;
+    result.sort((a, b) => {
+      // Current user's section always goes to the bottom
+      const aIsCurrentUser = a.subjectId === currentUserId;
+      const bIsCurrentUser = b.subjectId === currentUserId;
+
+      if (aIsCurrentUser && !bIsCurrentUser) return 1;  // a goes after b
+      if (!aIsCurrentUser && bIsCurrentUser) return -1; // a goes before b
+
+      // Otherwise sort alphabetically
+      return a.subjectName.toLowerCase().localeCompare(b.subjectName.toLowerCase());
+    });
 
     return result;
-  }, [prayers, membersLookup, myDisplayNamesLookup]);
+  }, [prayers, membersLookup, myDisplayNamesLookup, user?.userProfileId]);
 
   // Filter sections by search query and active/answered filter
   const filteredSections = useMemo(() => {
@@ -677,7 +688,11 @@ export default function CircleDetail() {
   }, []);
 
   // Render section header (prayer subject info - who the prayer is FOR)
-  const renderSectionHeader = useCallback((subjectName: string, prayerCount: number) => {
+  const renderSectionHeader = useCallback((subjectName: string, prayerCount: number, subjectId: number) => {
+    // Check if this section is for the logged-in user
+    const isCurrentUser = subjectId === user?.userProfileId;
+    const headerText = isCurrentUser ? 'My Prayer Requests' : `Pray for ${subjectName}`;
+
     // Parse subject name for initials (handle "First Last" format)
     const nameParts = subjectName.trim().split(/\s+/);
     const firstName = nameParts[0] || '';
@@ -693,14 +708,14 @@ export default function CircleDetail() {
           </View>
         </View>
         <Text style={styles.sectionHeaderText} numberOfLines={1}>
-          Pray for {subjectName}
+          {headerText}
         </Text>
         <Text style={styles.prayerCount}>
           {prayerCount} prayer{prayerCount !== 1 ? 's' : ''}
         </Text>
       </View>
     );
-  }, []);
+  }, [user?.userProfileId]);
 
   // Render prayer item
   const renderPrayerItem = useCallback((
@@ -775,7 +790,7 @@ export default function CircleDetail() {
     return (
       <View style={styles.sectionContainer}>
         {/* Section Header */}
-        {renderSectionHeader(item.subjectName, item.prayers.length)}
+        {renderSectionHeader(item.subjectName, item.prayers.length, item.subjectId)}
 
         {/* Prayer List */}
         <View>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -208,6 +208,17 @@ export default function EditPrayerCardModal() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
+
+  // Ref for scrolling when picker is focused
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Scroll to bottom when picker input is focused to make room for dropdown
+  const handlePickerInputFocus = useCallback(() => {
+    // Delay to allow keyboard to appear first
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
 
   // Fetch members for family/group types to check if type can be changed
   useEffect(() => {
@@ -946,8 +957,13 @@ export default function EditPrayerCardModal() {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          // Add extra padding when picker is active to allow scrolling for dropdown
+          (showMemberPicker || showGroupPicker) && { paddingBottom: 100 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -1374,6 +1390,7 @@ export default function EditPrayerCardModal() {
                     handleAddMember(minimalSubject);
                   }}
                   onDropdownVisibilityChange={setMemberDropdownVisible}
+                  onInputFocus={handlePickerInputFocus}
                   filterType="individual-only"
                   showAddContactButton={false}
                   placeholder="Search for a contact to add..."
@@ -1484,6 +1501,7 @@ export default function EditPrayerCardModal() {
                   selectedSubjectId={null}
                   onSelectSubject={handleAddToGroup}
                   onDropdownVisibilityChange={setGroupDropdownVisible}
+                  onInputFocus={handlePickerInputFocus}
                   filterType="group-family-only"
                   showQuickAdd={false}
                   showAddContactButton={false}

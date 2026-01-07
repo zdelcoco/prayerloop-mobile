@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups, reorderGroups } from '@/store/groupsSlice';
 import { RootState } from '@/store/store';
 import { clearGroupPrayers } from '@/store/groupPrayersSlice';
+import { selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 
 import LoadingModal from '@/components/ui/LoadingModal';
 import PrayerSessionModal from '@/components/PrayerSession/PrayerSessionModal';
@@ -42,6 +43,22 @@ export default function Groups() {
 
   const { groups, status } = useAppSelector((state: RootState) => state.userGroups);
   const { user, token } = useAppSelector((state: RootState) => state.auth);
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
+
+  // Create a lookup map for custom display names from contact cards
+  // Maps linked userProfileId -> user's custom display name
+  const displayNamesLookup = useMemo(() => {
+    const lookup: { [userProfileId: number]: string } = {};
+    if (prayerSubjects) {
+      prayerSubjects.forEach(subject => {
+        // Only include linked subjects (where userProfileId is set)
+        if (subject.userProfileId && subject.linkStatus === 'linked') {
+          lookup[subject.userProfileId] = subject.prayerSubjectDisplayName;
+        }
+      });
+    }
+    return lookup;
+  }, [prayerSubjects]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -252,6 +269,7 @@ export default function Groups() {
         <PrayerCircleCardList
           groups={groups || []}
           groupMembers={groupMembers}
+          displayNamesLookup={displayNamesLookup}
           onGroupPress={handleGroupPress}
           onGroupLongPress={handleGroupLongPress}
           onRefresh={onRefresh}
