@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,17 @@ import {
   TextInput,
   RefreshControl,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Group, User } from '@/util/shared.types';
 import PrayerCircleCard from './PrayerCircleCard';
+
+const SORT_PREFERENCE_KEY = 'prayerCircleSortAlphabetically';
 
 // Color constants matching the app theme
 const ACTIVE_GREEN = '#2E7D32';
@@ -23,6 +27,7 @@ const SUBTLE_TEXT = '#5a6b5e';
 interface PrayerCircleCardListProps {
   groups: Group[];
   groupMembers?: { [groupId: number]: User[] };
+  displayNamesLookup?: { [userProfileId: number]: string };
   onGroupPress?: (group: Group) => void;
   onGroupLongPress?: (group: Group) => void;
   onRefresh?: () => void;
@@ -44,6 +49,7 @@ const sortGroups = (groups: Group[]): Group[] => {
 const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
   groups,
   groupMembers = {},
+  displayNamesLookup,
   onGroupPress,
   onGroupLongPress,
   onRefresh,
@@ -56,18 +62,33 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [reorderedGroups, setReorderedGroups] = useState<Group[] | null>(null);
+  const [sortAlphabetically, setSortAlphabetically] = useState(true);
 
-  // Compute local groups for reorder mode
-  const localGroups = useMemo(() => {
-    if (!enableReorder) {
-      return groups;
+  // Load sort preference from AsyncStorage on mount
+  useEffect(() => {
+    const loadSortPreference = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(SORT_PREFERENCE_KEY);
+        if (saved !== null) {
+          setSortAlphabetically(saved === 'true');
+        }
+      } catch (error) {
+        console.error('Error loading sort preference:', error);
+      }
+    };
+    loadSortPreference();
+  }, []);
+
+  // Save sort preference when it changes
+  const handleSortToggle = useCallback(async () => {
+    const newValue = !sortAlphabetically;
+    setSortAlphabetically(newValue);
+    try {
+      await AsyncStorage.setItem(SORT_PREFERENCE_KEY, String(newValue));
+    } catch (error) {
+      console.error('Error saving sort preference:', error);
     }
-    // Use reordered state if available, otherwise use original order
-    if (reorderedGroups) {
-      return reorderedGroups;
-    }
-    return [...groups];
-  }, [groups, enableReorder, reorderedGroups]);
+  }, [sortAlphabetically]);
 
   // Use searchQuery directly
   const currentSearchQuery = searchVisible ? searchQuery : '';
@@ -94,10 +115,37 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
     return result;
   }, [groups, currentSearchQuery]);
 
-  // Sort filtered groups alphabetically
+  // Compute local groups for reorder mode (applies both search filter and sorting)
+  const localGroups = useMemo(() => {
+    let result: Group[];
+
+    if (!enableReorder) {
+      result = filteredGroups;
+    } else if (reorderedGroups) {
+      // Use reordered state if available, but filter by search query
+      result = reorderedGroups.filter((group) => {
+        if (!currentSearchQuery.trim()) return true;
+        const query = currentSearchQuery.toLowerCase().trim();
+        return (
+          group.groupName.toLowerCase().includes(query) ||
+          group.groupDescription?.toLowerCase().includes(query)
+        );
+      });
+    } else {
+      result = filteredGroups;
+    }
+
+    // Apply alphabetical sorting if enabled
+    if (sortAlphabetically) {
+      return sortGroups(result);
+    }
+    return result;
+  }, [filteredGroups, enableReorder, reorderedGroups, sortAlphabetically, currentSearchQuery]);
+
+  // Sort filtered groups (alphabetically or by display order)
   const sortedGroups = useMemo(
-    () => sortGroups(filteredGroups),
-    [filteredGroups]
+    () => sortAlphabetically ? sortGroups(filteredGroups) : filteredGroups,
+    [filteredGroups, sortAlphabetically]
   );
 
   const handleGroupPress = useCallback(
@@ -134,13 +182,14 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
         <PrayerCircleCard
           group={item}
           members={members}
+          displayNamesLookup={displayNamesLookup}
           onPress={() => handleGroupPress(item)}
           onLongPress={drag}
           isDragging={isActive}
         />
       );
     },
-    [localGroups.length, groupMembers, handleGroupPress]
+    [localGroups.length, groupMembers, displayNamesLookup, handleGroupPress]
   );
 
   const renderItem = ({
@@ -156,6 +205,7 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
       <PrayerCircleCard
         group={item}
         members={members}
+        displayNamesLookup={displayNamesLookup}
         onPress={() => handleGroupPress(item)}
         onLongPress={() => handleGroupLongPress(item)}
       />
@@ -178,33 +228,50 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
     <View style={styles.container}>
       {/* Search Bar - controlled by parent */}
       {searchVisible && (
-        <View style={styles.searchContainer}>
-          <BlurView intensity={60} tint="light" style={styles.searchBlur}>
-            <FontAwesome
-              name="search"
+        <View style={styles.searchRow}>
+          <View style={styles.searchContainer}>
+            <BlurView intensity={60} tint="light" style={styles.searchBlur}>
+              <FontAwesome
+                name="search"
+                size={16}
+                color={SUBTLE_TEXT}
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search prayer circles..."
+                placeholderTextColor={SUBTLE_TEXT}
+                value={currentSearchQuery}
+                onChangeText={handleSearchChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus={true}
+              />
+              {currentSearchQuery.length > 0 && (
+                <Pressable
+                  onPress={() => handleSearchChange('')}
+                  style={styles.clearButton}
+                >
+                  <FontAwesome name="times-circle" size={16} color={SUBTLE_TEXT} />
+                </Pressable>
+              )}
+            </BlurView>
+          </View>
+          {/* Sort Toggle Button */}
+          <Pressable
+            onPress={handleSortToggle}
+            style={({ pressed }) => [
+              styles.sortButton,
+              sortAlphabetically && styles.sortButtonActive,
+              pressed && styles.sortButtonPressed,
+            ]}
+          >
+            <FontAwesome5
+              name="sort-alpha-down"
               size={16}
-              color={SUBTLE_TEXT}
-              style={styles.searchIcon}
+              color={sortAlphabetically ? '#FFFFFF' : DARK_TEXT}
             />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search prayer circles..."
-              placeholderTextColor={SUBTLE_TEXT}
-              value={currentSearchQuery}
-              onChangeText={handleSearchChange}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus={true}
-            />
-            {currentSearchQuery.length > 0 && (
-              <Pressable
-                onPress={() => handleSearchChange('')}
-                style={styles.clearButton}
-              >
-                <FontAwesome name="times-circle" size={16} color={SUBTLE_TEXT} />
-              </Pressable>
-            )}
-          </BlurView>
+          </Pressable>
         </View>
       )}
 
@@ -220,6 +287,9 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
               renderItem={renderDraggableItem}
               onDragEnd={({ data }) => handleDragEnd(data)}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              onScrollBeginDrag={Keyboard.dismiss}
               contentContainerStyle={styles.listContent}
               refreshControl={
                 onRefresh ? (
@@ -243,6 +313,9 @@ const PrayerCircleCardList: React.FC<PrayerCircleCardListProps> = ({
             keyExtractor={(item) => item.groupId.toString()}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
             contentContainerStyle={styles.listContent}
             refreshControl={
               onRefresh ? (
@@ -300,10 +373,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  searchContainer: {
+  searchRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
     paddingBottom: 8,
     paddingHorizontal: 16,
     paddingTop: 8,
+  },
+  searchContainer: {
+    flex: 1,
+  },
+  sortButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  sortButtonActive: {
+    backgroundColor: ACTIVE_GREEN,
+    borderColor: ACTIVE_GREEN,
+  },
+  sortButtonPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.5)',
   },
   searchIcon: {
     marginRight: 8,

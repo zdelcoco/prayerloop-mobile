@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups } from '@/store/groupsSlice';
 import { router, useLocalSearchParams } from 'expo-router';
 import { joinGroup } from '@/util/joinGroup';
+import { groupUsersCache } from '@/util/groupUsersCache';
 
 // Color constants matching the app theme
 const ACTIVE_GREEN = '#2E7D32';
@@ -101,6 +102,8 @@ export default function JoinGroupModal() {
       const result = await joinGroup(token, groupId, inviteCode);
 
       if (result.success) {
+        // Clear the cache for this group so fresh member data is fetched
+        groupUsersCache.invalidate(groupId);
         await dispatch(fetchUserGroups());
 
         Alert.alert('Success!', 'You have successfully joined the prayer circle!', [

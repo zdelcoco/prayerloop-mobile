@@ -264,8 +264,9 @@ export default function AddPrayerCardModal() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={Keyboard.dismiss}
+        automaticallyAdjustKeyboardInsets={true}
       >
-        {/* Type Selector Section */}
+          {/* Type Selector Section */}
         <View style={styles.section}>
           <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
             <View style={styles.sectionContent}>
@@ -337,7 +338,7 @@ export default function AddPrayerCardModal() {
                   placeholderTextColor={SUBTLE_TEXT}
                   value={displayName}
                   onChangeText={setDisplayName}
-                  autoCapitalize="none"
+                  autoCapitalize="words"
                   autoCorrect={false}
                 />
               </View>
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   headerButton: {
     alignItems: 'center',
@@ -549,7 +550,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
-    marginHorizontal: 12,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

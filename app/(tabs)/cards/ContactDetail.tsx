@@ -13,6 +13,7 @@ import {
   Image,
   Animated,
   Dimensions,
+  Keyboard,
 } from 'react-native';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -544,17 +545,19 @@ export default function ContactDetail() {
       <View style={styles.contentSpacer} />
 
       {/* Prayer Requests section header */}
-      <View style={styles.sectionLabelContainer}>
-        <Text style={styles.sectionLabel}>Prayer Requests</Text>
-        <View style={styles.sectionLabelLine} />
-      </View>
-
-      {/* Empty state if no active prayers */}
-      {activePrayers.length === 0 && (
-        <View style={styles.sectionCardSingle}>
-          <Text style={styles.emptyText}>No active prayer requests.</Text>
+      <View style={styles.prayerRequestsSection}>
+        <View style={styles.sectionLabelContainer}>
+          <Text style={styles.sectionLabel}>Prayer Requests</Text>
+          <View style={styles.sectionLabelLine} />
         </View>
-      )}
+
+        {/* Empty state if no active prayers */}
+        {activePrayers.length === 0 && (
+          <View style={styles.sectionCardSingle}>
+            <Text style={styles.emptyText}>No active prayer requests.</Text>
+          </View>
+        )}
+      </View>
     </View>
   ), [contact.prayerSubjectDisplayName, contact.notes, insets.top, activePrayers.length]);
 
@@ -812,6 +815,9 @@ export default function ContactDetail() {
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={Keyboard.dismiss}
           onScrollOffsetChange={(offset) => scrollY.setValue(offset)}
         />
       </GestureHandlerRootView>
@@ -935,7 +941,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginRight: 8,
+    marginRight: 16,
   },
   initialsText: {
     color: '#FFFFFF',
@@ -1042,6 +1048,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  prayerRequestsSection: {
+    alignSelf: 'stretch',
   },
   prayerItemBorder: {
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',

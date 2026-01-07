@@ -136,16 +136,17 @@ export default function Cards() {
                 onPress={() => setSearchVisible((prev) => !prev)}
                 style={({ pressed }) => [
                   styles.headerButton,
-                  pressed && styles.headerButtonPressed,
+                  (pressed || searchVisible) && styles.headerButtonPressed,
+                  searchVisible && styles.headerButtonActive,
                 ]}
               >
-                <Ionicons name='search' size={18} color='#2d3e31' />
+                <Ionicons name='search' size={18} color={searchVisible ? '#FFFFFF' : '#2d3e31'} />
               </Pressable>
             </View>
           ),
         });
       }
-    }, [navigation, prayerSubjects, user, viewMode, allPrayers])
+    }, [navigation, prayerSubjects, user, viewMode, allPrayers, searchVisible])
   );
 
   // Expose functions to global for tab layout to access
@@ -300,6 +301,9 @@ const styles = StyleSheet.create({
   headerButtonPressed: {
     backgroundColor: 'rgba(165, 214, 167, 0.5)',
   },
+  headerButtonActive: {
+    backgroundColor: '#2E7D32',
+  },
   headerLeftContainer: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -311,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
-    marginRight: 8,
+    marginRight: 16,
   },
   text: {
     color: '#000',

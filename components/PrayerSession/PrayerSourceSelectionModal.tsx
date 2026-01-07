@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,16 +8,15 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  TouchableWithoutFeedback,
+  Animated,
+  Dimensions,
 } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '@/hooks/redux';
 import { RootState } from '@/store/store';
 import { selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 import { getUserGroups } from '@/util/getUserGroups';
 import { getGroupPrayers } from '@/util/getGroupPrayers';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
 import type { Group, Prayer } from '@/util/shared.types';
 
 interface PrayerSource {
@@ -36,21 +35,49 @@ interface PrayerSourceSelectionModalProps {
 
 // Design colors
 const ACTIVE_GREEN = '#2E7D32';
-const MUTED_GREEN = '#ccf0ccff';
 const DARK_TEXT = '#2d3e31';
 const SUBTLE_TEXT = '#5a6b5e';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function PrayerSourceSelectionModal({
   visible,
   onClose,
   onStartSession,
 }: PrayerSourceSelectionModalProps) {
-  const insets = useSafeAreaInsets();
   const { user, token } = useAppSelector((state: RootState) => state.auth);
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const [sources, setSources] = useState<PrayerSource[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Animation for slide up
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  // Animate slide up when visible changes
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      slideAnim.setValue(SCREEN_HEIGHT);
+    }
+  }, [visible, slideAnim]);
+
+  // Handle close with animation
+  const handleClose = useCallback(() => {
+    Animated.timing(slideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      onClose();
+    });
+  }, [slideAnim, onClose]);
 
   const loadPrayerSources = useCallback(async () => {
     if (!user || !token) return;
@@ -186,139 +213,123 @@ export default function PrayerSourceSelectionModal({
       animationType="fade"
       transparent
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback>
-            <View style={[styles.modalContainer, { marginTop: insets.top + 80 }]}>
-              <LinearGradient
-                colors={['#90C590', '#F6EDD9']}
-                style={styles.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
+      <Pressable style={styles.overlay} onPress={handleClose}>
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            { transform: [{ translateY: slideAnim }] }
+          ]}
+        >
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Select Prayer Sources</Text>
+              <Pressable
+                onPress={handleClose}
+                style={styles.closeButton}
               >
-                {/* Header */}
-                <View style={styles.header}>
-                  <Text style={styles.title}>Select Prayer Sources</Text>
-                  <Text style={styles.subtitle}>
-                    Choose which prayers to include in your session
-                  </Text>
-                </View>
-
-                {/* Sources List */}
-                <ScrollView
-                  style={styles.scrollContainer}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.scrollContent}
-                >
-                  {initialLoading ? (
-                    <View style={styles.loadingContainer}>
-                      <ActivityIndicator size="large" color={ACTIVE_GREEN} />
-                      <Text style={styles.loadingText}>Loading sources...</Text>
-                    </View>
-                  ) : (
-                    sources.map(source => (
-                      <Pressable
-                        key={source.id}
-                        onPress={() => toggleSource(source.id)}
-                        style={({ pressed }) => [
-                          styles.sourceCard,
-                          source.selected && styles.sourceCardSelected,
-                          pressed && styles.sourceCardPressed,
-                        ]}
-                      >
-                        <View style={styles.sourceInfo}>
-                          <FontAwesome
-                            name={source.type === 'personal' ? 'user' : 'users'}
-                            size={16}
-                            color={source.selected ? ACTIVE_GREEN : SUBTLE_TEXT}
-                            style={styles.sourceIcon}
-                          />
-                          <View style={styles.sourceTextContainer}>
-                            <Text style={[
-                              styles.sourceName,
-                              source.selected && styles.sourceNameSelected,
-                            ]}>
-                              {source.name}
-                            </Text>
-                            <Text style={styles.sourceType}>
-                              {source.type === 'personal' ? 'Personal' : 'Prayer Circle'}
-                            </Text>
-                          </View>
-                        </View>
-                        <View style={[
-                          styles.checkbox,
-                          source.selected && styles.checkboxSelected,
-                        ]}>
-                          {source.selected && (
-                            <FontAwesome name="check" size={14} color="#fff" />
-                          )}
-                        </View>
-                      </Pressable>
-                    ))
-                  )}
-                </ScrollView>
-
-                {/* Footer Buttons */}
-                <View style={styles.footer}>
-                  <Pressable
-                    onPress={onClose}
-                    style={({ pressed }) => [
-                      styles.cancelButton,
-                      pressed && styles.cancelButtonPressed,
-                    ]}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={startPrayerSession}
-                    disabled={loading || sources.filter(s => s.selected).length === 0}
-                    style={({ pressed }) => [
-                      styles.startButton,
-                      pressed && styles.startButtonPressed,
-                      (loading || sources.filter(s => s.selected).length === 0) && styles.startButtonDisabled,
-                    ]}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <FontAwesome name="play" size={14} color="#fff" />
-                        <Text style={styles.startButtonText}>Start Session</Text>
-                      </>
-                    )}
-                  </Pressable>
-                </View>
-              </LinearGradient>
+                <Ionicons name="close" size={24} color={DARK_TEXT} />
+              </Pressable>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+
+          {/* Subtitle */}
+          <Text style={styles.subtitle}>
+            Choose which prayers to include in your session
+          </Text>
+
+          {/* Sources List */}
+          <ScrollView
+            style={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {initialLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={ACTIVE_GREEN} />
+                <Text style={styles.loadingText}>Loading sources...</Text>
+              </View>
+            ) : (
+              sources.map((source, index) => (
+                <Pressable
+                  key={source.id}
+                  onPress={() => toggleSource(source.id)}
+                  style={({ pressed }) => [
+                    styles.sourceCard,
+                    source.selected && styles.sourceCardSelected,
+                    pressed && styles.sourceCardPressed,
+                    index === sources.length - 1 && styles.sourceCardLast,
+                  ]}
+                >
+                  <View style={styles.sourceInfo}>
+                    <View style={[
+                      styles.sourceIconContainer,
+                      source.selected && styles.sourceIconContainerSelected,
+                    ]}>
+                      <FontAwesome
+                        name={source.type === 'personal' ? 'user' : 'users'}
+                        size={16}
+                        color={source.selected ? '#FFFFFF' : SUBTLE_TEXT}
+                      />
+                    </View>
+                    <View style={styles.sourceTextContainer}>
+                      <Text style={[
+                        styles.sourceName,
+                        source.selected && styles.sourceNameSelected,
+                      ]}>
+                        {source.name}
+                      </Text>
+                      <Text style={styles.sourceType}>
+                        {source.type === 'personal' ? 'Personal' : 'Prayer Circle'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[
+                    styles.checkbox,
+                    source.selected && styles.checkboxSelected,
+                  ]}>
+                    {source.selected && (
+                      <FontAwesome name="check" size={14} color="#fff" />
+                    )}
+                  </View>
+                </Pressable>
+              ))
+            )}
+
+            {/* Bottom padding */}
+            <View style={{ height: 20 }} />
+          </ScrollView>
+
+          {/* Footer Buttons */}
+          <View style={styles.footer}>
+            <Pressable
+              onPress={startPrayerSession}
+              disabled={loading || sources.filter(s => s.selected).length === 0}
+              style={({ pressed }) => [
+                styles.startButton,
+                pressed && styles.startButtonPressed,
+                (loading || sources.filter(s => s.selected).length === 0) && styles.startButtonDisabled,
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <FontAwesome name="play" size={14} color="#fff" />
+                  <Text style={styles.startButtonText}>Start Session</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+          </Pressable>
+        </Animated.View>
+      </Pressable>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  cancelButton: {
-    alignItems: 'center',
-    backgroundColor: MUTED_GREEN,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 12,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: 'center',
-    marginRight: 8,
-    paddingVertical: 14,
-  },
-  cancelButtonPressed: {
-    backgroundColor: 'rgba(165, 214, 167, 0.7)',
-  },
-  cancelButtonText: {
-    color: DARK_TEXT,
-    fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 15,
-  },
   checkbox: {
     alignItems: 'center',
     borderColor: SUBTLE_TEXT,
@@ -332,19 +343,28 @@ const styles = StyleSheet.create({
     backgroundColor: ACTIVE_GREEN,
     borderColor: ACTIVE_GREEN,
   },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: 12,
+    width: 32,
+  },
   footer: {
     borderTopColor: 'rgba(45, 62, 49, 0.1)',
-    borderTopWidth: 1,
-    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
     padding: 16,
-  },
-  gradient: {
-    borderRadius: 20,
+    paddingBottom: 24,
   },
   header: {
+    alignItems: 'center',
     borderBottomColor: 'rgba(45, 62, 49, 0.1)',
-    borderBottomWidth: 1,
-    paddingBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -359,35 +379,35 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   modalContainer: {
-    borderRadius: 20,
-    elevation: 10,
-    marginHorizontal: 20,
-    maxHeight: '70%',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    backgroundColor: '#F6EDD9',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
   },
   overlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     flex: 1,
+    justifyContent: 'flex-end',
   },
   scrollContainer: {
-    maxHeight: 300,
+    maxHeight: 350,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
   },
   sourceCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  sourceCardLast: {
+    marginBottom: 0,
   },
   sourceCardPressed: {
     backgroundColor: 'rgba(144, 197, 144, 0.4)',
@@ -397,9 +417,17 @@ const styles = StyleSheet.create({
     borderColor: ACTIVE_GREEN,
     borderWidth: 1,
   },
-  sourceIcon: {
+  sourceIconContainer: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
     marginRight: 12,
-    width: 20,
+    width: 40,
+  },
+  sourceIconContainerSelected: {
+    backgroundColor: ACTIVE_GREEN,
   },
   sourceInfo: {
     alignItems: 'center',
@@ -427,16 +455,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: ACTIVE_GREEN,
     borderRadius: 12,
-    flex: 1.5,
     flexDirection: 'row',
     gap: 8,
     justifyContent: 'center',
-    marginLeft: 8,
     paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
   },
   startButtonDisabled: {
     backgroundColor: '#a0a0a0',
@@ -447,19 +469,20 @@ const styles = StyleSheet.create({
   startButtonText: {
     color: '#fff',
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 15,
+    fontSize: 16,
   },
   subtitle: {
     color: SUBTLE_TEXT,
     fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
-    marginTop: 4,
-    textAlign: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   title: {
     color: DARK_TEXT,
-    fontFamily: 'InstrumentSans-Bold',
-    fontSize: 20,
-    textAlign: 'center',
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
   },
 });

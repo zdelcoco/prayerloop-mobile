@@ -49,6 +49,13 @@ export default function GroupsLayout() {
         }}
       />
       <Stack.Screen
+        name='AddPrayerCardModal'
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
         name='UsersModal'
         options={{
           title: 'Circle Members',
@@ -57,6 +64,13 @@ export default function GroupsLayout() {
           animation: 'slide_from_bottom',
           gestureEnabled: true,
           gestureDirection: 'vertical',
+        }}
+      />
+      <Stack.Screen
+        name='EditPrayerCardModal'
+        options={{
+          headerShown: false,
+          presentation: 'modal',
         }}
       />
     </Stack>

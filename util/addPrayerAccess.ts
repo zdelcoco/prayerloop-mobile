@@ -3,7 +3,7 @@ import apiClient from './apiClient';
 import { defaultNetworkCatch, Result } from './shared.types';
 
 export interface AddPrayerAccessRequest {
-  accessType: 'group' | 'user';
+  accessType: 'group' | 'user' | 'subject';
   accessTypeId: number;
 }
 
@@ -15,7 +15,7 @@ export interface AddPrayerAccessResponse {
 export const addPrayerAccess = async (
   token: string,
   prayerId: number,
-  accessType: 'group' | 'user',
+  accessType: 'group' | 'user' | 'subject',
   accessTypeId: number
 ): Promise<Result> => {
   if (!token) {
