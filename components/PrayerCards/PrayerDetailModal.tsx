@@ -1,5 +1,5 @@
-import { Prayer, Group, User } from '@/util/shared.types';
-import React, { useState, useCallback, useEffect } from 'react';
+import { Prayer, Group, User, PrayerSubject } from '@/util/shared.types';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   Share,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Card from './PrayerCard';
@@ -21,8 +22,16 @@ import { removePrayerAccess } from '@/util/removePrayerAccess';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers } from '@/store/userPrayersSlice';
 import { fetchUserGroups } from '@/store/groupsSlice';
+import { fetchPrayerSubjects, selectPrayerSubjects } from '@/store/prayerSubjectsSlice';
 import { addPrayerAccess } from '@/util/addPrayerAccess';
 import { RootState } from '@/store/store';
+
+// Design colors
+const ACTIVE_GREEN = '#2E7D32';
+const DARK_TEXT = '#2d3e31';
+const SUBTLE_TEXT = '#5a6b5e';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type RootStackParamList = {
   PrayerModal: { mode: string; prayer: Prayer; prayerSubjectId?: number };
@@ -63,14 +72,51 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const dispatch = useAppDispatch();
   const { groups, status: groupsStatus } = useAppSelector((state: RootState) => state.userGroups);
+  const prayerSubjects = useAppSelector(selectPrayerSubjects);
+
+  // Animation for share modal slide up
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   const canEditAndDelete = () => userId === prayer.createdBy;
   const canShare = () => !prayer.isPrivate;
 
-  // Fetch user's groups when modal opens
+  // Find the linked contact for the prayer creator (for groups context)
+  // This is the contact card that corresponds to the group member who created the prayer
+  const linkedContact = useMemo(() => {
+    if (!prayerSubjects || context !== 'groups') return null;
+    return prayerSubjects.find(subject =>
+      subject.userProfileId === prayer.createdBy &&
+      subject.linkStatus === 'linked'
+    ) || null;
+  }, [prayerSubjects, prayer.createdBy, context]);
+
+  // Check if prayer already exists on the linked contact
+  const prayerExistsOnLinkedContact = useMemo(() => {
+    if (!linkedContact) return false;
+    return linkedContact.prayers?.some(p => p.prayerId === prayer.prayerId) || false;
+  }, [linkedContact, prayer.prayerId]);
+
+  // Animate share modal when entering share/selection modes
   useEffect(() => {
-    if (visible && (!groups || groups.length === 0)) {
-      dispatch(fetchUserGroups());
+    if (modalMode === 'share' || modalMode === 'groupSelection') {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      slideAnim.setValue(SCREEN_HEIGHT);
+    }
+  }, [modalMode, slideAnim]);
+
+  // Fetch user's groups and prayer subjects when modal opens
+  useEffect(() => {
+    if (visible) {
+      if (!groups || groups.length === 0) {
+        dispatch(fetchUserGroups());
+      }
+      dispatch(fetchPrayerSubjects());
     }
   }, [visible, groups, dispatch]);
 
@@ -180,7 +226,7 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   const handleNativeShare = useCallback(async () => {
     try {
       const shareMessage = `Prayer Request: ${prayer.title}\n\n${prayer.prayerDescription}`;
-      
+
       await Share.share({
         message: shareMessage,
         title: 'Prayer Request',
@@ -191,8 +237,46 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     }
   }, [prayer]);
 
+  const handleAddToLinkedContact = useCallback(async () => {
+    if (!linkedContact) return;
+
+    setSharing(true);
+    try {
+      const result = await addPrayerAccess(
+        userToken,
+        prayer.prayerId,
+        'subject',
+        linkedContact.prayerSubjectId
+      );
+
+      if (result.success) {
+        dispatch(fetchPrayerSubjects());
+        Alert.alert(
+          'Success!',
+          `Prayer has been added to "${linkedContact.prayerSubjectDisplayName}"`,
+          [{
+            text: 'OK',
+            onPress: () => {
+              onActionComplete();
+              onClose();
+            }
+          }]
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          result.error?.message || 'Failed to add prayer to contact'
+        );
+      }
+    } catch (error) {
+      console.error('Error adding prayer to contact:', error);
+      Alert.alert('Error', 'Failed to add prayer. Please try again.');
+    } finally {
+      setSharing(false);
+    }
+  }, [userToken, prayer.prayerId, linkedContact, dispatch, onActionComplete, onClose]);
+
   const onShareHandler = () => {
-    console.log('PrayerDetailModal: Share button pressed');
     setModalMode('share');
   };
 
@@ -268,129 +352,217 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
     );
   };
 
+  // Generate initials and color for contact avatars
+  const getInitials = (name: string): string => {
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getAvatarColor = (name: string): string => {
+    const colors = ['#4CAF50', '#2196F3', '#9C27B0', '#FF9800', '#00BCD4', '#E91E63', '#607D8B', '#795548'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const hasGroups = groups && Array.isArray(groups) && groups.length > 0;
+  // Show "Add to Contact" option only if:
+  // - We're in groups context
+  // - There's a linked contact for the prayer creator
+  // - The prayer isn't already on that contact
+  const showAddToContact = context === 'groups' && linkedContact && !prayerExistsOnLinkedContact;
+
   const renderShareView = () => (
-    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('detail')} activeOpacity={1}>
-      <TouchableOpacity style={styles.shareModalContainer} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-        <Text style={styles.shareTitle}>Share Prayer</Text>
-        <Text style={styles.shareSubtitle}>How would you like to share this prayer?</Text>
-        
-        <View style={styles.shareOptionsContainer}>
-          <Pressable
-            style={[
-              styles.shareOptionButton,
-              (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionButton
-            ]}
-            onPress={() => {
-              if (groups && Array.isArray(groups) && groups.length > 0) {
-                setModalMode('groupSelection');
-              }
-            }}
-            disabled={!groups || !Array.isArray(groups) || groups.length === 0}
-          >
-            <View style={styles.shareOptionHeader}>
-              <Text style={[
-                styles.shareOptionTitle,
-                (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionText
-              ]}>
-                Share with Group
-              </Text>
-              {(!groups || !Array.isArray(groups) || groups.length === 0) && (
-                <View style={styles.disabledIndicator}>
-                  <FontAwesome name="lock" size={16} color="#999" />
+    <Pressable style={styles.shareOverlay} onPress={() => setModalMode('detail')}>
+      <Animated.View
+        style={[
+          styles.shareModalContainer,
+          { transform: [{ translateY: slideAnim }] }
+        ]}
+      >
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <View style={styles.shareHeader}>
+            <Text style={styles.shareTitle}>Share Prayer</Text>
+            <Pressable
+              onPress={() => setModalMode('detail')}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={DARK_TEXT} />
+            </Pressable>
+          </View>
+
+          {/* Subtitle */}
+          <Text style={styles.shareSubtitle}>
+            How would you like to share this prayer?
+          </Text>
+
+          {/* Options */}
+          <ScrollView style={styles.shareOptionsScroll} showsVerticalScrollIndicator={false}>
+            {/* Add to linked contact - only in groups context when linked contact exists */}
+            {showAddToContact && linkedContact && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.shareOptionButton,
+                  pressed && styles.shareOptionButtonPressed,
+                ]}
+                onPress={handleAddToLinkedContact}
+                disabled={sharing}
+              >
+                <View style={[styles.shareOptionIconContainer, { backgroundColor: getAvatarColor(linkedContact.prayerSubjectDisplayName) }]}>
+                  <Text style={styles.avatarText}>
+                    {getInitials(linkedContact.prayerSubjectDisplayName)}
+                  </Text>
                 </View>
-              )}
-            </View>
-            <Text style={[
-              styles.shareOptionDescription,
-              (!groups || !Array.isArray(groups) || groups.length === 0) && styles.disabledOptionText
-            ]}>
-              {(!groups || !Array.isArray(groups) || groups.length === 0)
-                ? "You need to join a group first to share prayers with groups"
-                : "Share privately with members of your prayer groups"
-              }
-            </Text>
-            {(!groups || !Array.isArray(groups) || groups.length === 0) && (
-              <View style={styles.disabledBanner}>
-                <FontAwesome name="info-circle" size={14} color="#666" />
-                <Text style={styles.disabledBannerText}>
-                  Not available - Join a group to enable this feature
+                <View style={styles.shareOptionTextContainer}>
+                  <Text style={styles.shareOptionTitle}>Add to {linkedContact.prayerSubjectDisplayName}</Text>
+                  <Text style={styles.shareOptionDescription}>
+                    Save this prayer to your contact card
+                  </Text>
+                </View>
+                {sharing ? (
+                  <ActivityIndicator size="small" color={ACTIVE_GREEN} />
+                ) : (
+                  <Ionicons name="add-circle" size={24} color={ACTIVE_GREEN} />
+                )}
+              </Pressable>
+            )}
+
+            {/* Share with Group */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.shareOptionButton,
+                !hasGroups && styles.shareOptionButtonDisabled,
+                pressed && hasGroups && styles.shareOptionButtonPressed,
+              ]}
+              onPress={() => hasGroups && setModalMode('groupSelection')}
+              disabled={!hasGroups}
+            >
+              <View style={[styles.shareOptionIconContainerActive, !hasGroups && styles.shareOptionIconDisabled]}>
+                <Ionicons name="people" size={18} color={hasGroups ? '#FFFFFF' : '#999'} />
+              </View>
+              <View style={styles.shareOptionTextContainer}>
+                <Text style={[styles.shareOptionTitle, !hasGroups && styles.shareOptionTextDisabled]}>
+                  Share with Group
+                </Text>
+                <Text style={[styles.shareOptionDescription, !hasGroups && styles.shareOptionTextDisabled]}>
+                  {hasGroups
+                    ? 'Share privately with members of your prayer groups'
+                    : 'Join a group first to share prayers'
+                  }
                 </Text>
               </View>
-            )}
-          </Pressable>
-          
-          <Pressable
-            style={styles.shareOptionButton}
-            onPress={handleNativeShare}
-          >
-            <Text style={styles.shareOptionTitle}>Share Externally</Text>
-            <Text style={styles.shareOptionDescription}>
-              Share via text, email, or other apps
-            </Text>
-          </Pressable>
-        </View>
-        
-        <View style={styles.shareButtonRow}>
-          <Pressable
-            style={[styles.button, styles.cancelButton]}
-            onPress={() => setModalMode('detail')}
-          >
-            <Text style={styles.buttonText}>Back</Text>
-          </Pressable>
-        </View>
-      </TouchableOpacity>
-    </TouchableOpacity>
+              {hasGroups ? (
+                <Ionicons name="chevron-forward" size={20} color={ACTIVE_GREEN} />
+              ) : (
+                <Ionicons name="lock-closed" size={16} color="#999" />
+              )}
+            </Pressable>
+
+            {/* Share Externally */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.shareOptionButton,
+                pressed && styles.shareOptionButtonPressed,
+              ]}
+              onPress={handleNativeShare}
+            >
+              <View style={styles.shareOptionIconContainerActive}>
+                <Ionicons name="share-social" size={18} color="#FFFFFF" />
+              </View>
+              <View style={styles.shareOptionTextContainer}>
+                <Text style={styles.shareOptionTitle}>Share Externally</Text>
+                <Text style={styles.shareOptionDescription}>
+                  Share via text, email, or other apps
+                </Text>
+              </View>
+              <Ionicons name="open-outline" size={20} color={ACTIVE_GREEN} />
+            </Pressable>
+
+            <View style={{ height: 20 }} />
+          </ScrollView>
+        </Pressable>
+      </Animated.View>
+    </Pressable>
   );
 
   const renderGroupSelectionView = () => (
-    <TouchableOpacity style={styles.overlay} onPress={() => setModalMode('share')} activeOpacity={1}>
-      <TouchableOpacity style={styles.shareModalContainer} activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-        <Text style={styles.shareTitle}>Share with Group</Text>
-        <Text style={styles.shareSubtitle}>Select a group to share this prayer with:</Text>
-        
-        {groupsStatus === 'loading' ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#008000" />
-            <Text style={styles.loadingText}>Loading your groups...</Text>
+    <Pressable style={styles.shareOverlay} onPress={() => setModalMode('share')}>
+      <Animated.View
+        style={[
+          styles.shareModalContainer,
+          { transform: [{ translateY: slideAnim }] }
+        ]}
+      >
+        <Pressable onPress={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <View style={styles.shareHeader}>
+            <Text style={styles.shareTitle}>Share with Group</Text>
+            <Pressable
+              onPress={() => setModalMode('share')}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color={DARK_TEXT} />
+            </Pressable>
           </View>
-        ) : !groups || !Array.isArray(groups) || groups.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>You don't belong to any groups yet.</Text>
-            <Text style={styles.emptySubtext}>Join a group to share prayers with others!</Text>
-          </View>
-        ) : (
-          <ScrollView style={styles.groupsList} showsVerticalScrollIndicator={false}>
-            {groups.map((group) => (
-              <Pressable
-                key={group.groupId}
-                style={styles.groupItem}
-                onPress={() => handleShareWithGroup(group)}
-                disabled={sharing}
-              >
-                <View style={styles.groupInfo}>
-                  <Text style={styles.groupName}>{group.groupName}</Text>
-                  <Text style={styles.groupDescription} numberOfLines={2}>
-                    {group.groupDescription}
-                  </Text>
-                </View>
-                {sharing && (
-                  <ActivityIndicator size="small" color="#008000" />
-                )}
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-        
-        <View style={styles.shareButtonRow}>
-          <Pressable
-            style={[styles.button, styles.cancelButton]}
-            onPress={() => setModalMode('share')}
-          >
-            <Text style={styles.buttonText}>Back</Text>
-          </Pressable>
-        </View>
-      </TouchableOpacity>
-    </TouchableOpacity>
+
+          {/* Subtitle */}
+          <Text style={styles.shareSubtitle}>
+            Select a group to share this prayer with:
+          </Text>
+
+          {/* Groups List */}
+          {groupsStatus === 'loading' ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={ACTIVE_GREEN} />
+              <Text style={styles.loadingText}>Loading your groups...</Text>
+            </View>
+          ) : !hasGroups ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No groups available</Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.selectionList} showsVerticalScrollIndicator={false}>
+              {groups.map((group, index) => (
+                <Pressable
+                  key={group.groupId}
+                  style={({ pressed }) => [
+                    styles.selectionItem,
+                    pressed && styles.selectionItemPressed,
+                    index === groups.length - 1 && styles.selectionItemLast,
+                  ]}
+                  onPress={() => handleShareWithGroup(group)}
+                  disabled={sharing}
+                >
+                  <View style={[styles.selectionAvatar, { backgroundColor: getAvatarColor(group.groupName) }]}>
+                    <Ionicons name="people" size={18} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.selectionInfo}>
+                    <Text style={styles.selectionName}>{group.groupName}</Text>
+                    {group.groupDescription && (
+                      <Text style={styles.selectionSubtext} numberOfLines={1}>
+                        {group.groupDescription}
+                      </Text>
+                    )}
+                  </View>
+                  {sharing ? (
+                    <ActivityIndicator size="small" color={ACTIVE_GREEN} />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color={ACTIVE_GREEN} />
+                  )}
+                </Pressable>
+              ))}
+              <View style={{ height: 20 }} />
+            </ScrollView>
+          )}
+        </Pressable>
+      </Animated.View>
+    </Pressable>
   );
 
   return (
@@ -432,21 +604,27 @@ const styles = StyleSheet.create({
     marginTop: 12,
     width: '100%',
   },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#2E7D32',
-    borderRadius: 12,
-    flex: 1,
-    marginHorizontal: 5,
-    padding: 12,
-  },
-  buttonText: {
-    color: '#fff',
+  avatarText: {
+    color: '#FFFFFF',
     fontFamily: 'InstrumentSans-SemiBold',
-    fontSize: 16,
+    fontSize: 14,
   },
-  cancelButton: {
-    backgroundColor: '#6c757d',
+  cardStyle: {
+    marginHorizontal: 0,
+    marginVertical: 0,
+    width: '100%',
+  },
+  cardWrapper: {
+    flex: 1,
+  },
+  closeButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    borderRadius: 16,
+    height: 32,
+    justifyContent: 'center',
+    marginLeft: 12,
+    width: 32,
   },
   deleteActionButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -459,100 +637,35 @@ const styles = StyleSheet.create({
     fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 15,
   },
-  cardStyle: {
-    marginHorizontal: 0,
-    marginVertical: 0,
-    width: '100%',
-  },
-  cardWrapper: {
-    flex: 1,
-  },
   detailContainer: {
     backgroundColor: 'transparent',
     width: '90%',
-  },
-  disabledBanner: {
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    marginTop: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  disabledBannerText: {
-    color: '#666',
-    fontSize: 12,
-    fontStyle: 'italic',
-    marginLeft: 6,
-  },
-  disabledIndicator: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  disabledOptionButton: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#d0d0d0',
-    opacity: 0.6,
-  },
-  disabledOptionText: {
-    color: '#999',
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   emptySubtext: {
-    color: '#666',
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
     fontSize: 14,
+    marginTop: 4,
     textAlign: 'center',
   },
   emptyText: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  groupDescription: {
-    color: '#666',
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  groupInfo: {
-    flex: 1,
-  },
-  groupItem: {
-    alignItems: 'center',
-    backgroundColor: '#F1FDED',
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    marginBottom: 12,
-    padding: 16,
-  },
-  groupName: {
-    color: '#333',
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
     fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  groupsList: {
-    marginBottom: 24,
-    maxHeight: 300,
+    textAlign: 'center',
   },
   loadingContainer: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   loadingText: {
-    color: '#666',
-    fontSize: 16,
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
     marginTop: 12,
   },
   overlay: {
@@ -566,6 +679,145 @@ const styles = StyleSheet.create({
   },
   scrollableContentContainer: {
     flexGrow: 1,
+  },
+  selectionAvatar: {
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  selectionAvatarText: {
+    color: '#FFFFFF',
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 14,
+  },
+  selectionInfo: {
+    flex: 1,
+  },
+  selectionItem: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  selectionItemLast: {
+    marginBottom: 0,
+  },
+  selectionItemPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.4)',
+  },
+  selectionList: {
+    maxHeight: 350,
+    paddingHorizontal: 16,
+  },
+  selectionName: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  selectionSubtext: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  shareHeader: {
+    alignItems: 'center',
+    borderBottomColor: 'rgba(45, 62, 49, 0.1)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  shareModalContainer: {
+    backgroundColor: '#F6EDD9',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  shareOptionButton: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 12,
+    flexDirection: 'row',
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  shareOptionButtonDisabled: {
+    opacity: 0.5,
+  },
+  shareOptionButtonPressed: {
+    backgroundColor: 'rgba(144, 197, 144, 0.4)',
+  },
+  shareOptionDescription: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  shareOptionIconContainer: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(45, 62, 49, 0.1)',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  shareOptionIconContainerActive: {
+    alignItems: 'center',
+    backgroundColor: ACTIVE_GREEN,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    marginRight: 12,
+    width: 40,
+  },
+  shareOptionIconDisabled: {
+    backgroundColor: 'rgba(150, 150, 150, 0.2)',
+  },
+  shareOptionsScroll: {
+    maxHeight: 350,
+    paddingHorizontal: 16,
+  },
+  shareOptionTextContainer: {
+    flex: 1,
+  },
+  shareOptionTextDisabled: {
+    color: '#999',
+  },
+  shareOptionTitle: {
+    color: DARK_TEXT,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 16,
+  },
+  shareOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  shareSubtitle: {
+    color: SUBTLE_TEXT,
+    fontFamily: 'InstrumentSans-Regular',
+    fontSize: 14,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  shareTitle: {
+    color: DARK_TEXT,
+    flex: 1,
+    fontFamily: 'InstrumentSans-SemiBold',
+    fontSize: 18,
   },
   subjectHeader: {
     alignItems: 'center',
@@ -581,58 +833,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: 'InstrumentSans-Bold',
     fontSize: 20,
-  },
-  shareButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  shareModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginHorizontal: 20,
-    maxHeight: '80%',
-    padding: 20,
-  },
-  shareOptionButton: {
-    backgroundColor: '#F1FDED',
-    borderColor: '#e0e0e0',
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-  },
-  shareOptionDescription: {
-    color: '#666',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  shareOptionHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  shareOptionTitle: {
-    color: '#333',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  shareOptionsContainer: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  shareSubtitle: {
-    color: '#666',
-    fontSize: 16,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  shareTitle: {
-    color: '#333',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
   },
   text: {
     fontSize: 16,

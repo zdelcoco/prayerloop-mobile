@@ -273,10 +273,11 @@ export default function EditPrayerCardModal() {
     const nameChanged = displayName !== contact.prayerSubjectDisplayName;
     const notesChanged = notes !== (contact.notes || '');
     const typeChanged = subjectType !== contact.prayerSubjectType;
+    const linkChanged = linkedUserId !== contact.userProfileId;
     const prayersChanged = prayers.some((p) => p.isNew || p.isModified);
     const prayersDeleted = deletedPrayers.length > 0;
-    return nameChanged || notesChanged || typeChanged || prayersChanged || prayersDeleted;
-  }, [displayName, notes, subjectType, prayers, deletedPrayers, contact]);
+    return nameChanged || notesChanged || typeChanged || linkChanged || prayersChanged || prayersDeleted;
+  }, [displayName, notes, subjectType, linkedUserId, prayers, deletedPrayers, contact]);
 
   const handleSave = useCallback(async () => {
     if (!displayName.trim()) {
@@ -309,6 +310,12 @@ export default function EditPrayerCardModal() {
       const oldNotes = contact.notes || '';
       if (newNotes !== oldNotes) {
         updateData.notes = newNotes;
+      }
+
+      // Check if linked user has changed
+      if (linkedUserId !== contact.userProfileId) {
+        // Send 0 to unlink, or the new userProfileId to link
+        updateData.userProfileId = linkedUserId ?? 0;
       }
 
       if (Object.keys(updateData).length > 0) {
