@@ -16,7 +16,7 @@ const config: ExpoConfig = {
     backgroundColor: "#90C590"
   },
   runtimeVersion: {
-    policy: "appVersion"  // OTA updates tied to app version
+    policy: "fingerprint"  // OTA updates work across builds with same native code
   },
   updates: {
     url: "https://u.expo.dev/fc5504a0-2a5e-4124-a0b0-1a91636e0ff6",
@@ -31,7 +31,8 @@ const config: ExpoConfig = {
     buildNumber: "2",
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
-      ITSAppUsesNonExemptEncryption: false
+      ITSAppUsesNonExemptEncryption: false,
+      UIRequiredDeviceCapabilities: ["arm64", "telephony"]  // telephony excludes iPads
     },
     backgroundColor: "#90C590"
   },

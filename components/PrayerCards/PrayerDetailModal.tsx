@@ -375,7 +375,8 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   // - We're in groups context
   // - There's a linked contact for the prayer creator
   // - The prayer isn't already on that contact
-  const showAddToContact = context === 'groups' && linkedContact && !prayerExistsOnLinkedContact;
+  // - The linked contact is not the current user (don't offer to add your own prayer to your own contact card)
+  const showAddToContact = context === 'groups' && linkedContact && !prayerExistsOnLinkedContact && linkedContact.userProfileId !== userId;
 
   const renderShareView = () => (
     <Pressable style={styles.shareOverlay} onPress={() => setModalMode('detail')}>
