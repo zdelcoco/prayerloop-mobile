@@ -80,15 +80,15 @@ const PrayerDetailModal: React.FC<PrayerDetailModalProps> = ({
   const canEditAndDelete = () => userId === prayer.createdBy;
   const canShare = () => !prayer.isPrivate;
 
-  // Find the linked contact for the prayer creator (for groups context)
-  // This is the contact card that corresponds to the group member who created the prayer
+  // Find the linked contact for the prayer subject (for groups context)
+  // This is the contact card that corresponds to who the prayer is FOR
   const linkedContact = useMemo(() => {
-    if (!prayerSubjects || context !== 'groups') return null;
+    if (!prayerSubjects || context !== 'groups' || !prayer.prayerSubjectUserProfileId) return null;
     return prayerSubjects.find(subject =>
-      subject.userProfileId === prayer.createdBy &&
+      subject.userProfileId === prayer.prayerSubjectUserProfileId &&
       subject.linkStatus === 'linked'
     ) || null;
-  }, [prayerSubjects, prayer.createdBy, context]);
+  }, [prayerSubjects, prayer.prayerSubjectUserProfileId, context]);
 
   // Check if prayer already exists on the linked contact
   const prayerExistsOnLinkedContact = useMemo(() => {
