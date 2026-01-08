@@ -4,7 +4,7 @@ const config: ExpoConfig = {
   name: "prayerloop",
   owner: "delsuckahh",
   slug: "prayerloop",
-  version: "2026.1.3",
+  version: "2026.1.4",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "prayerloop",
@@ -32,7 +32,7 @@ const config: ExpoConfig = {
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      UIRequiredDeviceCapabilities: ["arm64", "telephony"]  // telephony excludes iPads
+      UIRequiredDeviceCapabilities: ["arm64"]
     },
     backgroundColor: "#90C590"
   },
