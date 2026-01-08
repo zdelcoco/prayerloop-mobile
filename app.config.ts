@@ -32,7 +32,7 @@ const config: ExpoConfig = {
     googleServicesFile: "./GoogleService-Info.plist",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      UIRequiredDeviceCapabilities: ["arm64", "telephony"]  // telephony excludes iPads
+      UIRequiredDeviceCapabilities: ["arm64"]
     },
     backgroundColor: "#90C590"
   },
