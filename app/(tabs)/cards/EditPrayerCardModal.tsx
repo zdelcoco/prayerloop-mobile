@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -209,6 +209,17 @@ export default function EditPrayerCardModal() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
 
+  // Ref for scrolling when picker is focused
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Scroll to bottom when picker input is focused to make room for dropdown
+  const handlePickerInputFocus = useCallback(() => {
+    // Delay to allow keyboard to appear first
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  }, []);
+
   // Fetch members for family/group types to check if type can be changed
   useEffect(() => {
     const fetchMembers = async () => {
@@ -273,10 +284,11 @@ export default function EditPrayerCardModal() {
     const nameChanged = displayName !== contact.prayerSubjectDisplayName;
     const notesChanged = notes !== (contact.notes || '');
     const typeChanged = subjectType !== contact.prayerSubjectType;
+    const linkChanged = linkedUserId !== contact.userProfileId;
     const prayersChanged = prayers.some((p) => p.isNew || p.isModified);
     const prayersDeleted = deletedPrayers.length > 0;
-    return nameChanged || notesChanged || typeChanged || prayersChanged || prayersDeleted;
-  }, [displayName, notes, subjectType, prayers, deletedPrayers, contact]);
+    return nameChanged || notesChanged || typeChanged || linkChanged || prayersChanged || prayersDeleted;
+  }, [displayName, notes, subjectType, linkedUserId, prayers, deletedPrayers, contact]);
 
   const handleSave = useCallback(async () => {
     if (!displayName.trim()) {
@@ -309,6 +321,12 @@ export default function EditPrayerCardModal() {
       const oldNotes = contact.notes || '';
       if (newNotes !== oldNotes) {
         updateData.notes = newNotes;
+      }
+
+      // Check if linked user has changed
+      if (linkedUserId !== contact.userProfileId) {
+        // Send 0 to unlink, or the new userProfileId to link
+        updateData.userProfileId = linkedUserId ?? 0;
       }
 
       if (Object.keys(updateData).length > 0) {
@@ -939,14 +957,20 @@ export default function EditPrayerCardModal() {
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          // Add extra padding when picker is active to allow scrolling for dropdown
+          (showMemberPicker || showGroupPicker) && { paddingBottom: 100 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         onScrollBeginDrag={Keyboard.dismiss}
+        automaticallyAdjustKeyboardInsets={true}
       >
-        {/* Type Selector Section */}
+          {/* Type Selector Section */}
         <View style={styles.section}>
           <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
             <View style={styles.sectionContent}>
@@ -1366,6 +1390,7 @@ export default function EditPrayerCardModal() {
                     handleAddMember(minimalSubject);
                   }}
                   onDropdownVisibilityChange={setMemberDropdownVisible}
+                  onInputFocus={handlePickerInputFocus}
                   filterType="individual-only"
                   showAddContactButton={false}
                   placeholder="Search for a contact to add..."
@@ -1476,6 +1501,7 @@ export default function EditPrayerCardModal() {
                   selectedSubjectId={null}
                   onSelectSubject={handleAddToGroup}
                   onDropdownVisibilityChange={setGroupDropdownVisible}
+                  onInputFocus={handlePickerInputFocus}
                   filterType="group-family-only"
                   showQuickAdd={false}
                   showAddContactButton={false}
@@ -1506,46 +1532,40 @@ export default function EditPrayerCardModal() {
           <View style={styles.section}>
             <BlurView intensity={8} tint="regular" style={styles.sectionBlur}>
               <View style={styles.sectionContent}>
-                {linkedUserId && (
-                  <>
-                    <View style={styles.linkedUserRow}>
-                      <Text style={styles.linkedUserText}>
-                        {contact.linkStatus === 'linked'
-                          ? 'Linked to Prayerloop user'
-                          : contact.linkStatus === 'pending'
-                          ? 'Link request pending'
-                          : `Linked to user #${linkedUserId}`}
-                      </Text>
-                      {contact.linkStatus !== 'linked' && (
-                        <Pressable
-                          onPress={() => setLinkedUserId(null)}
-                          style={({ pressed }) => [
-                            styles.removeButton,
-                            pressed && styles.removeButtonPressed,
-                          ]}
-                        >
-                          <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
-                        </Pressable>
-                      )}
-                    </View>
-                    <View style={styles.inputRowBorder} />
-                  </>
+                {linkedUserId ? (
+                  <View style={styles.linkedUserRow}>
+                    <Text style={styles.linkedUserText}>
+                      {contact.linkStatus === 'pending'
+                        ? 'Link request pending'
+                        : `Linked to Prayerloop user #${linkedUserId}`}
+                    </Text>
+                    <Pressable
+                      onPress={() => setLinkedUserId(null)}
+                      style={({ pressed }) => [
+                        styles.removeButton,
+                        pressed && styles.removeButtonPressed,
+                      ]}
+                    >
+                      <Ionicons name="remove-circle" size={24} color={DANGER_RED} />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.addRow,
+                      pressed && styles.addRowPressed,
+                    ]}
+                    onPress={handleLinkUser}
+                  >
+                    <Ionicons
+                      name="add-circle"
+                      size={22}
+                      color={ACTIVE_GREEN}
+                      style={styles.addIcon}
+                    />
+                    <Text style={styles.addRowText}>link card to prayerloop user</Text>
+                  </Pressable>
                 )}
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.addRow,
-                    pressed && styles.addRowPressed,
-                  ]}
-                  onPress={handleLinkUser}
-                >
-                  <Ionicons
-                    name="add-circle"
-                    size={22}
-                    color={ACTIVE_GREEN}
-                    style={styles.addIcon}
-                  />
-                  <Text style={styles.addRowText}>link card to prayerloop user</Text>
-                </Pressable>
               </View>
             </BlurView>
           </View>
@@ -1725,7 +1745,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   headerButton: {
     alignItems: 'center',
@@ -1735,7 +1755,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     height: 36,
     justifyContent: 'center',
-    marginHorizontal: 12,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,

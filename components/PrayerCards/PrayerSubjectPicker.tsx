@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   FlatList,
   ScrollView,
   ActivityIndicator,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createPrayerSubject } from '@/util/prayerSubjects';
@@ -30,6 +32,7 @@ export interface PrayerSubjectPickerProps {
   onQuickAddSuccess?: (newSubjectId: number, displayName: string) => void;
   onNavigateToAddContact?: () => void;
   onDropdownVisibilityChange?: (visible: boolean) => void;
+  onInputFocus?: () => void;
 
   // Options
   filterType?: 'individual' | 'family' | 'group' | 'individual-only' | 'group-family-only';
@@ -52,6 +55,7 @@ export default function PrayerSubjectPicker({
   onQuickAddSuccess,
   onNavigateToAddContact,
   onDropdownVisibilityChange,
+  onInputFocus,
   filterType,
   showQuickAdd = true,
   showAddContactButton = true,
@@ -67,6 +71,25 @@ export default function PrayerSubjectPicker({
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isCreatingContact, setIsCreatingContact] = useState(false);
   const [quickAddedName, setQuickAddedName] = useState<string | null>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Track keyboard visibility to position dropdown above input when keyboard is open
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const keyboardShowListener = Keyboard.addListener(showEvent, () => {
+      setKeyboardVisible(true);
+    });
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+    };
+  }, []);
 
   // Initialize search text from selected subject
   React.useEffect(() => {
@@ -297,11 +320,14 @@ export default function PrayerSubjectPicker({
             placeholderTextColor={SUBTLE_TEXT}
             value={searchText}
             onChangeText={handleSearchTextChange}
-            onFocus={() => setShowAutocomplete(searchText.trim().length > 0)}
+            onFocus={() => {
+              setShowAutocomplete(searchText.trim().length > 0);
+              onInputFocus?.();
+            }}
             onBlur={() => {
               setTimeout(() => setShowAutocomplete(false), 200);
             }}
-            autoCapitalize="none"
+            autoCapitalize="words"
             autoCorrect={false}
             editable={!disabled}
           />
@@ -318,7 +344,10 @@ export default function PrayerSubjectPicker({
 
           {/* Autocomplete Results */}
           {showAutocomplete && (autocompleteResults.length > 0 || shouldShowQuickAdd) && (
-            <View style={styles.autocompleteContainer}>
+            <View style={[
+              styles.autocompleteContainer,
+              keyboardVisible && styles.autocompleteContainerAbove,
+            ]}>
               <ScrollView
                 style={styles.autocompleteScrollView}
                 showsVerticalScrollIndicator={true}
@@ -475,6 +504,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     top: 48,
     zIndex: 100,
+  },
+  autocompleteContainerAbove: {
+    bottom: 52,
+    marginBottom: 4,
+    marginTop: 0,
+    shadowOffset: { width: 0, height: -2 },
+    top: undefined,
   },
   autocompleteItem: {
     alignItems: 'center',
