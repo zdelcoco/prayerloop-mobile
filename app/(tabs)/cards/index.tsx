@@ -11,7 +11,7 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
-import ProfileButton from '@/components/ui/ProfileButton';
+import ProfileButtonWithBadge from '@/components/ui/ProfileButtonWithBadge';
 import HeaderDropdown from '@/components/ui/HeaderDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserPrayers, setFilters, selectFilters } from '@/store/userPrayersSlice';
@@ -49,6 +49,7 @@ export default function Cards() {
   const dispatch = useAppDispatch();
 
   const { user, token } = useAppSelector((state: RootState) => state.auth);
+  const unreadCount = useAppSelector((state: RootState) => state.notifications.unreadCount);
 
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
   const { status: subjectsStatus, error: subjectsError } = useAppSelector(
@@ -106,7 +107,7 @@ export default function Cards() {
           ),
           headerLeft: () => (
             <View style={styles.headerLeftContainer}>
-              <ProfileButton
+              <ProfileButtonWithBadge
                 firstName={user?.firstName || ''}
                 lastName={user?.lastName || ''}
                 onPress={() => router.navigate('/userProfile')}
@@ -146,7 +147,7 @@ export default function Cards() {
           ),
         });
       }
-    }, [navigation, prayerSubjects, user, viewMode, allPrayers, searchVisible])
+    }, [navigation, prayerSubjects, user, viewMode, allPrayers, searchVisible, unreadCount])
   );
 
   // Expose functions to global for tab layout to access

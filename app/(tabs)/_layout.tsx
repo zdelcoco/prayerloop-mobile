@@ -1,16 +1,18 @@
 import { Tabs, router } from 'expo-router';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useAppSelector } from '@/hooks/redux';
+import { useAppSelector, useAppDispatch } from '@/hooks/redux';
+import { fetchNotifications } from '@/store/notificationsSlice';
 import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGradientCompat';
-import { Dimensions, StyleSheet, View, Animated, Pressable } from 'react-native';
+import { Dimensions, StyleSheet, View, Animated, Pressable, Platform } from 'react-native';
 import { RootState } from '@/store/store';
-import ProfileButton from '@/components/ui/ProfileButton';
+import ProfileButtonWithBadge from '@/components/ui/ProfileButtonWithBadge';
 import ProfileDrawer from '@/components/Profile/ProfileDrawer';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { DrawerLayoutMethods } from 'react-native-gesture-handler/ReanimatedDrawerLayout';
+import * as Notifications from 'expo-notifications';
 // Global add button handler - screens register their add action here
 // This allows nested screens (like GroupPrayers) to override the default behavior
 declare global {
@@ -234,8 +236,24 @@ function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 export default function TabsLayout() {
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state: RootState) => state.auth.user);
+  const unreadCount = useAppSelector((state: RootState) => state.notifications.unreadCount);
   const drawerRef = useRef<DrawerLayoutMethods>(null);
+
+  // Fetch notifications when app loads
+  useEffect(() => {
+    dispatch(fetchNotifications());
+  }, [dispatch]);
+
+  // Update app icon badge with unread notification count
+  useEffect(() => {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Notifications.setBadgeCountAsync(unreadCount).catch((error) => {
+        console.warn('Failed to set badge count:', error);
+      });
+    }
+  }, [unreadCount]);
 
   function ms(size: number): number {
     const scale = 1.2;
@@ -282,7 +300,7 @@ export default function TabsLayout() {
               title: 'Prayer Cards',
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
-                  <ProfileButton
+                  <ProfileButtonWithBadge
                     firstName={user?.firstName || ''}
                     lastName={user?.lastName || ''}
                     onPress={() => router.navigate('/userProfile')}
@@ -328,7 +346,7 @@ export default function TabsLayout() {
               title: 'Prayer Circles',
               headerLeft: () => (
                 <View style={styles.headerLeftContainer}>
-                  <ProfileButton
+                  <ProfileButtonWithBadge
                     firstName={user?.firstName || ''}
                     lastName={user?.lastName || ''}
                     onPress={() => router.navigate('/userProfile')}

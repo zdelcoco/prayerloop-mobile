@@ -10,7 +10,7 @@ import { LinearGradientCompat as LinearGradient } from '@/components/ui/LinearGr
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFocusEffect, useNavigation, router } from 'expo-router';
 import { StackNavigationProp } from '@react-navigation/stack';
-import ProfileButton from '@/components/ui/ProfileButton';
+import ProfileButtonWithBadge from '@/components/ui/ProfileButtonWithBadge';
 import HeaderTitleActionDropdown, { ActionOption } from '@/components/ui/HeaderTitleActionDropdown';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchUserGroups, reorderGroups } from '@/store/groupsSlice';
@@ -44,6 +44,7 @@ export default function Groups() {
   const { groups, status } = useAppSelector((state: RootState) => state.userGroups);
   const { user, token } = useAppSelector((state: RootState) => state.auth);
   const prayerSubjects = useAppSelector(selectPrayerSubjects);
+  const unreadCount = useAppSelector((state: RootState) => state.notifications.unreadCount);
 
   // Create a lookup map for custom display names from contact cards
   // Maps linked userProfileId -> user's custom display name
@@ -146,7 +147,7 @@ export default function Groups() {
           ),
           headerLeft: () => (
             <View style={styles.headerLeftContainer}>
-              <ProfileButton
+              <ProfileButtonWithBadge
                 firstName={user?.firstName || ''}
                 lastName={user?.lastName || ''}
                 onPress={() => router.navigate('/userProfile')}
@@ -169,7 +170,7 @@ export default function Groups() {
           ),
         });
       }
-    }, [navigation, user, handleCircleAction, searchVisible])
+    }, [navigation, user, handleCircleAction, searchVisible, unreadCount])
   );
 
   // Expose functions to global for tab layout to access

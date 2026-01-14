@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const MUTED_GREEN = '#ccf0ccff';
 const ACTIVE_GREEN = '#2E7D32';
@@ -9,6 +9,7 @@ interface ProfileButtonProps {
   lastName: string;
   onPress: () => void;
   size?: number;
+  badge?: number;
 }
 
 export default function ProfileButton({
@@ -16,6 +17,7 @@ export default function ProfileButton({
   lastName,
   onPress,
   size = 36,
+  badge,
 }: ProfileButtonProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -51,25 +53,46 @@ export default function ProfileButton({
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-    >
-      <Animated.View
-        style={[
-          styles.button,
-          dynamicStyles.button,
-          { transform: [{ scale: scaleAnim }] },
-        ]}
+    <View style={styles.container}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
       >
-        <Text style={[styles.text, dynamicStyles.text]}>{initials}</Text>
-      </Animated.View>
-    </Pressable>
+        <Animated.View
+          style={[
+            styles.button,
+            dynamicStyles.button,
+            { transform: [{ scale: scaleAnim }] },
+          ]}
+        >
+          <Text style={[styles.text, dynamicStyles.text]}>{initials}</Text>
+        </Animated.View>
+      </Pressable>
+      {/* Green dot badge indicator for unread notifications */}
+      {badge !== undefined && badge > 0 && (
+        <View style={styles.badge} />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  badge: {
+    backgroundColor: ACTIVE_GREEN,
+    borderColor: '#fff',
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 12,
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    width: 12,
+    zIndex: 10,
+  },
   button: {
     alignItems: 'center',
     backgroundColor: MUTED_GREEN,

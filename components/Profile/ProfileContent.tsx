@@ -6,7 +6,7 @@ import { useAppDispatch } from '@/hooks/redux';
 import { logout } from '@/store/authSlice';
 
 import UserProfileCard from '@/components/Home/UserProfileCard';
-import UserPreferencesCard from '@/components/Home/UserPreferencesCard';
+import NotificationsCard from '@/components/Home/NotificationsCard';
 import PrayerReminderCard from '@/components/Home/PrayerReminderCard';
 import StartPrayerSessionCard from '@/components/Home/StartPrayerSessionCard';
 
@@ -46,7 +46,7 @@ export default function ProfileContent({ user, onUserUpdate, containerStyle }: P
 
       <StartPrayerSessionCard />
       <PrayerReminderCard />
-      <UserPreferencesCard />
+      <NotificationsCard />
 
       <View style={styles.logoutContainer}>
         <Pressable
